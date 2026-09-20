@@ -65,7 +65,8 @@ test("刷新页面后项目与配件自动恢复", async ({ page }) => {
   await waitUntilLoaded(page);
 
   await expect(page.getByText("1 / 8 类")).toBeVisible();
-  await expect(page.getByText("AMD Ryzen 7 7800X3D")).toBeVisible();
+  // 机器画布的悬浮提示会包含同文案，用精确匹配锁定清单行内的型号
+  await expect(page.getByText("AMD Ryzen 7 7800X3D", { exact: true })).toBeVisible();
   await expect(page.getByText("已恢复最近的项目")).toBeVisible();
 });
 

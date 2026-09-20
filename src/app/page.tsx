@@ -9,6 +9,10 @@ import {
   type FieldDef,
   type ItemSpec,
 } from "@/ui/category-form";
+import { FindingCard } from "@/ui/components/finding-card";
+import { StatusChip } from "@/ui/components/status-chip";
+import { BuildCanvas } from "@/ui/canvas/build-canvas";
+import type { Finding, FindingStatus } from "@/domain/build/types";
 
 type Category = keyof typeof CATEGORY_META;
 
@@ -26,31 +30,6 @@ type Build = {
   status: string;
   updatedAt: string;
   items: Item[];
-};
-
-type FindingStatus = "pass" | "block" | "warn" | "unknown";
-
-type Finding = {
-  ruleId: string;
-  status: FindingStatus;
-  conclusion: string;
-  evidence: string[];
-  missingFields: string[];
-  suggestedAction: string;
-};
-
-const statusText: Record<FindingStatus, string> = {
-  pass: "通过",
-  block: "阻断",
-  warn: "警告",
-  unknown: "待补充",
-};
-
-const statusIcon: Record<FindingStatus, string> = {
-  pass: "✓",
-  block: "!",
-  warn: "⚠",
-  unknown: "?",
 };
 
 type CategoryDraft = { label: string; fields: Record<string, string> };
@@ -128,7 +107,13 @@ export default function Home() {
   }, []);
 
   const counts = useMemo(() => {
-    const result: Record<FindingStatus, number> = { pass: 0, block: 0, warn: 0, unknown: 0 };
+    const result: Record<FindingStatus, number> = {
+      pass: 0,
+      block: 0,
+      warn: 0,
+      unknown: 0,
+      not_applicable: 0,
+    };
     for (const finding of findings) result[finding.status] += 1;
     return result;
   }, [findings]);
@@ -314,158 +299,155 @@ export default function Home() {
           <div>
             <p className="eyebrow">RIGMATE / DIY WORKBENCH</p>
             <h1>装机清单工作台</h1>
+            <p className="tagline">先确认能装，再决定买什么。</p>
           </div>
         </div>
-        <div className="topbar-status"><span className="status-dot" /> 规则引擎在线 · 12 条规则</div>
+        <div className="topbar-side">
+          <div className="topbar-status"><span className="status-dot" /> 规则引擎在线 · 12 条规则</div>
+        </div>
       </header>
 
-      <section className="intro-grid">
-        <div>
-          <p className="eyebrow accent">V1-A · EIGHT CATEGORIES</p>
-          <h2>先确认能装，<br /><span>再决定买什么。</span></h2>
-          <p className="intro-copy">把八类核心配件整理成一份可检查的清单。清单实时保存，刷新页面后自动恢复，每条结论都能追溯到规则和字段。</p>
-        </div>
-        <div className="principle-note">
-          <span className="note-line" />
-          <p>覆盖插槽、内存、板型、尺寸、功率和接口检查。BIOS 支持暂无数据来源，会在后续版本补充。</p>
-        </div>
-      </section>
-
-      <section className="workspace-grid">
-        <div className="panel project-panel">
-          <div className="panel-heading">
-            <div><span className="step-label">01 / 项目</span><h3>装机任务</h3></div>
-            <span className="panel-index">A</span>
-          </div>
-          {projects.length > 0 && (
-            <label>
-              历史项目（切换后自动加载清单）
-              <select value={build?.id ?? ""} onChange={(event) => switchProject(event.target.value)} disabled={busy}>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}（{project.items.length} 配件 · {formatTime(project.updatedAt)}）
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <label>新项目名称<input value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：我的第一台 DIY 主机" disabled={busy} /></label>
-          <label>主要用途<input value={useCase} onChange={(event) => setUseCase(event.target.value)} placeholder="例如：2K 游戏 / 开发" disabled={busy} /></label>
-          <button className="button primary" onClick={createProject} disabled={busy || !name.trim()}>{busy ? "处理中…" : "新建项目"}<span>→</span></button>
-          {build && <div className="project-created"><span className="check-icon">✓</span><div><strong>{build.name}</strong><small>{build.useCase ?? "未设置用途"} · {build.items.length} 个配件 · 数据已保存到 SQLite</small></div></div>}
-          {build && (
-            <button className={`button ${confirmDelete ? "danger-active" : "danger"}`} onClick={deleteProject} disabled={busy}>
-              {confirmDelete ? `确认删除「${build.name}」？再点一次` : "删除当前项目"}<span>✕</span>
-            </button>
-          )}
-        </div>
-
-        <div className="panel item-panel">
-          <div className="panel-heading">
-            <div><span className="step-label">02 / 配件</span><h3>添加配件</h3></div>
-            <span className="panel-index">B</span>
-          </div>
-          <div className="chip-row" role="tablist" aria-label="配件类别">
-            {CATEGORY_ORDER.map((category) => (
-              <button
-                key={category}
-                className={`chip ${itemCategory === category ? "selected" : ""}`}
-                onClick={() => setItemCategory(category)}
-                disabled={busy}
-              >
-                {CATEGORY_META[category].label}
-              </button>
-            ))}
-          </div>
-          <label>型号或商品名称<input value={draft.label} onChange={(event) => setDrafts((prev) => ({ ...prev, [itemCategory]: { label: event.target.value, fields: prev[itemCategory]?.fields ?? {} } }))} placeholder={`${meta.label}型号`} disabled={busy} /></label>
-          {meta.fields.map(renderField)}
-          <button className="button secondary" onClick={addItem} disabled={!build || !draft.label.trim() || busy}>加入清单 <span>＋</span></button>
-          {!build && <p className="helper">请先创建或选择一个项目。</p>}
-        </div>
-      </section>
-
-      <section className="panel list-panel">
-        <div className="panel-heading list-heading">
-          <div><span className="step-label">03 / 当前清单</span><h3>{build ? build.name : "还没有活动项目"}</h3></div>
-          <span className="count-badge">{build?.items.length ?? 0} / 8 类</span>
-        </div>
-        {build?.items.length ? (
-          <div className="item-list">
-            {build.items.map((item) => (
-              <div className="item-row" key={item.id}>
-                <div className={`part-icon part-${item.category}`}>{CATEGORY_META[item.category].badge}</div>
-                <div className="item-main">
-                  <strong>{item.label}</strong>
-                  <span>{CATEGORY_META[item.category].label} · {CATEGORY_META[item.category].summary(item.spec ?? {})}</span>
-                </div>
-                <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
-                  {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <div className="empty-symbol">＋</div>
-            <p>添加配件后，这里会显示你的当前清单，数据实时保存。</p>
-          </div>
-        )}
-        <div className="list-actions">
-          <span className="data-note">数据由你确认 · 不自动猜测具体型号</span>
-          <button className="button check-button" onClick={runCheck} disabled={!build || build.items.length === 0 || busy}>运行兼容性检查 <span>↗</span></button>
-        </div>
-      </section>
-
-      <section className="results-section">
-        <div className="results-heading">
-          <div><span className="step-label">04 / 检查结果</span><h3>兼容性摘要</h3></div>
-          {findings.length > 0 && resultMeta && <span className="result-time">结果时间：{resultMeta.time}</span>}
-        </div>
-        {resultMeta?.stale && (
-          <div className="stale-banner">清单在这次检查之后发生过变化，以下结论基于旧清单，请重新运行检查。</div>
-        )}
-        {findings.length ? (
-          <>
-            <div className="count-row">
-              <span className="count-chip block">阻断 {counts.block}</span>
-              <span className="count-chip unknown">待补充 {counts.unknown}</span>
-              <span className="count-chip warn">警告 {counts.warn}</span>
-              <span className="count-chip pass">通过 {counts.pass}</span>
+      <div className="workbench">
+        {/* 左栏：项目 + 添加配件 */}
+        <div className="col col-left">
+          <section className="panel">
+            <div className="panel-heading">
+              <div><span className="step-label">01 / 项目</span><h3>装机任务</h3></div>
+              <span className="panel-index">A</span>
             </div>
-            <div className="findings">
-              {findings.map((finding) => (
-                <article className={`finding ${finding.status}`} key={finding.ruleId}>
-                  <div className="finding-status">
-                    <span>{statusIcon[finding.status]}</span>
-                    <small>{statusText[finding.status]}</small>
-                  </div>
-                  <div className="finding-content">
-                    <div className="finding-title-row">
-                      <strong>{finding.conclusion}</strong>
-                      <code>{finding.ruleId}</code>
-                    </div>
-                    <div className="evidence-list">
-                      {finding.evidence.map((evidence) => <span key={evidence}>· {evidence}</span>)}
-                    </div>
-                    {finding.missingFields.length > 0 && (
-                      <p className="missing-fields">待补充：{finding.missingFields.join("、")}</p>
-                    )}
-                    <p className="suggestion">下一步：{finding.suggestedAction}</p>
-                  </div>
-                </article>
+            {projects.length > 0 && (
+              <label>
+                历史项目（切换后自动加载清单）
+                <select value={build?.id ?? ""} onChange={(event) => switchProject(event.target.value)} disabled={busy}>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}（{project.items.length} 配件 · {formatTime(project.updatedAt)}）
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label>新项目名称<input value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：我的第一台 DIY 主机" disabled={busy} /></label>
+            <label>主要用途<input value={useCase} onChange={(event) => setUseCase(event.target.value)} placeholder="例如：2K 游戏 / 开发" disabled={busy} /></label>
+            <button className="button primary" onClick={createProject} disabled={busy || !name.trim()}>{busy ? "处理中…" : "新建项目"}<span>→</span></button>
+            {build && <div className="project-created"><span className="check-icon">✓</span><div><strong>{build.name}</strong><small>{build.useCase ?? "未设置用途"} · {build.items.length} 个配件 · 数据已保存到 SQLite</small></div></div>}
+            {build && (
+              <button className={`button ${confirmDelete ? "danger-active" : "danger"}`} onClick={deleteProject} disabled={busy}>
+                {confirmDelete ? `确认删除「${build.name}」？再点一次` : "删除当前项目"}<span>✕</span>
+              </button>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div><span className="step-label">02 / 配件</span><h3>添加配件</h3></div>
+              <span className="panel-index">B</span>
+            </div>
+            <div className="chip-row" role="tablist" aria-label="配件类别">
+              {CATEGORY_ORDER.map((category) => (
+                <button
+                  key={category}
+                  className={`chip ${itemCategory === category ? "selected" : ""}`}
+                  onClick={() => setItemCategory(category)}
+                  disabled={busy}
+                >
+                  {CATEGORY_META[category].label}
+                </button>
               ))}
             </div>
-          </>
-        ) : (
-          <div className="results-empty">
-            <div className="results-icon">◎</div>
-            <div>
-              <strong>检查结果会显示在这里</strong>
-              <p>完成配件录入后运行检查，结论按阻断、待补充、警告、通过的顺序展示。</p>
+            <label>型号或商品名称<input value={draft.label} onChange={(event) => setDrafts((prev) => ({ ...prev, [itemCategory]: { label: event.target.value, fields: prev[itemCategory]?.fields ?? {} } }))} placeholder={`${meta.label}型号`} disabled={busy} /></label>
+            {meta.fields.map(renderField)}
+            <button className="button secondary" onClick={addItem} disabled={!build || !draft.label.trim() || busy}>加入清单 <span>＋</span></button>
+            {!build && <p className="helper">请先创建或选择一个项目。</p>}
+          </section>
+        </div>
+
+        {/* 中栏：机器画布 + 当前清单 */}
+        <div className="col col-mid">
+          <section className="panel">
+            <div className="panel-heading">
+              <div><span className="step-label">03 / 机器视图</span><h3>这台机器现在长这样</h3></div>
+              <span className="panel-index">C</span>
             </div>
-          </div>
-        )}
-      </section>
+            <BuildCanvas
+              items={(build?.items ?? []).map((item) => ({
+                category: item.category,
+                label: item.label,
+                spec: item.spec ?? {},
+              }))}
+            />
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading list-heading">
+              <div><span className="step-label">04 / 当前清单</span><h3>{build ? build.name : "还没有活动项目"}</h3></div>
+              <span className="count-badge">{build?.items.length ?? 0} / 8 类</span>
+            </div>
+            {build?.items.length ? (
+              <div className="item-list">
+                {build.items.map((item) => (
+                  <div className="item-row" key={item.id}>
+                    <div className={`part-icon part-${item.category}`}>{CATEGORY_META[item.category].badge}</div>
+                    <div className="item-main">
+                      <strong>{item.label}</strong>
+                      <span>{CATEGORY_META[item.category].label} · {CATEGORY_META[item.category].summary(item.spec ?? {})}</span>
+                    </div>
+                    <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
+                      {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-symbol">＋</div>
+                <p>添加配件后，这里会显示你的当前清单，数据实时保存。</p>
+              </div>
+            )}
+            <div className="list-actions">
+              <span className="data-note">数据由你确认 · 不自动猜测具体型号</span>
+            </div>
+          </section>
+        </div>
+
+        {/* 右栏：诊断流 */}
+        <div className="col col-right">
+          <section className="panel">
+            <div className="results-heading">
+              <div><span className="step-label">05 / 检查结果</span><h3>兼容性诊断</h3></div>
+              {findings.length > 0 && resultMeta && <span className="result-time">结果时间：{resultMeta.time}</span>}
+            </div>
+            {resultMeta?.stale && (
+              <div className="stale-banner">清单在这次检查之后发生过变化，以下结论基于旧清单，请重新运行检查。</div>
+            )}
+            <div className="count-row">
+              <StatusChip status="block" count={counts.block} />
+              <StatusChip status="unknown" count={counts.unknown} />
+              <StatusChip status="warn" count={counts.warn} />
+              <StatusChip status="pass" count={counts.pass} />
+            </div>
+            {findings.length ? (
+              <div className="findings">
+                {findings.map((finding) => (
+                  <FindingCard key={finding.ruleId} finding={finding} />
+                ))}
+              </div>
+            ) : (
+              <div className="results-empty">
+                <div className="results-icon">◎</div>
+                <div>
+                  <strong>检查结果会显示在这里</strong>
+                  <p>完成配件录入后运行检查，结论按阻断、待补充、警告、通过的顺序展示。</p>
+                </div>
+              </div>
+            )}
+            <div className="list-actions">
+              <span className="data-note">数据由你确认 · 不自动猜测具体型号</span>
+              <button className="button check-button" onClick={runCheck} disabled={!build || build.items.length === 0 || busy}>运行兼容性检查 <span>↗</span></button>
+            </div>
+          </section>
+        </div>
+      </div>
 
       <footer className="footer"><span>RIGMATE / 业务规则优先</span><span>{message}</span></footer>
     </main>

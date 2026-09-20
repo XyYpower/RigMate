@@ -83,6 +83,15 @@
 - 协同清理：按 ID 删除 6 个自动化测试生成的项目，保留用户真实项目（配件"9800X3d"）。
 关键文件：`src/app/page.tsx`、`tests/e2e/diy-workbench.spec.ts`。
 
+### M9（2026-09-20）前端重写落地：三栏装机台 + 深色主题 + 机器画布（前端窗口）
+按 `docs/PC_DIY_装机助手_前端UI设计_v1.md` 与 §11 交接契约完成 F1 接线，**只改动冻结区文件**：
+- `src/app/page.tsx`：三栏布局（左=项目+录入 / 中=机器画布+清单 / 右=诊断流）；状态逻辑零改动，§11 的 7 条功能契约全部保留；
+- `src/app/globals.css`：整体切换深色硬件终端主题（蓝图网格底纹，消费 `--rm-*` tokens），含 1240px/860px 两级响应式；
+- `src/ui/canvas/layout.ts`：画布布局引擎（纯函数）——spec 毫米数字 → 比例正确的机箱剖视；显卡限长/散热器限高/板型支持超差标红，缺规格部件渲染虚线幽灵件；
+- `src/ui/canvas/build-canvas.tsx`：SVG 渲染（部件/限长限高标尺/图例/越界说明）；
+- 诊断流接入 `FindingCard`（补齐数据日期/置信度/假设条件三要素，此前 page.tsx 本地类型丢失）与 `StatusChip`（计数章）；接入领域层 `Finding` 类型，删除页内降级类型；
+- 测试：新增 `tests/ui/canvas-layout.test.ts` 8 用例；E2E 一处选择器改精确匹配（画布悬浮提示与清单行文案相同导致 strict mode 冲突）；**E2E 6/6 全绿**，lint/typecheck/build 通过，并经真实浏览器截图视觉验收。
+
 ## 5. 代码地图
 
 ```text
@@ -101,7 +110,8 @@ src/
 │  ├─ category-form.ts         # 八类表单元数据（字段定义/摘要/提交解析）
 │  ├─ theme.css                # F1 设计 tokens（--rm-* 语义色/深色基底，globals.css 已引入）
 │  ├─ finding-model.ts         # 结论状态映射 + 六要素视图模型（纯函数）
-│  └─ components/              # StatusChip / EvidenceStamp / FindingCard（F1，未接线）
+│  ├─ components/              # StatusChip / EvidenceStamp / FindingCard（M9 已接线）
+│  └─ canvas/                  # layout.ts（布局引擎纯函数）+ build-canvas.tsx（SVG 机器画布）
 └─ contracts/                   # contracts 目前为空占位
 tests/                          # domain(41) + application(10) + ui(7) 单元测试；e2e/(6 条 Playwright)
 docs/                          # 业务规格 / 架构 ADR / UI 设计 / 本文档
@@ -184,6 +194,7 @@ npm run test:e2e    # Playwright，6 条端到端（自动拉起 dev server）
 ---
 
 **版本记录**
+- 2026-09-20 v1.4：M9 前端重写落地（三栏装机台/深色主题/机器画布，§11 契约全保留，E2E 全绿）。
 - 2026-09-20 v1.3：前端重写启动——文件冻结与功能契约交接（§11）；本窗口暂停前端文件。
 - 2026-09-20 v1.2：新增 M8（删除体验修复 + 历史可辨识 + 测试数据清理）；§6 测试数更正为 58。
 - 2026-09-20 v1.1：M7 UI F1 铺底（语义 tokens + 六要素诊断卡，未接线）；代码地图与下一步同步。
