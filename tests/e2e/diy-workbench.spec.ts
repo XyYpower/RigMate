@@ -139,7 +139,21 @@ test("刷新后恢复检查结果，配件变化后提示过期，可删除项�
   await waitUntilLoaded(page);
   await expect(page.getByText(/清单在这次检查之后发生过变化/)).toBeVisible();
 
+  const historySelect = page.getByRole("combobox", { name: /历史项目/ });
+  const beforeCount = await historySelect.locator("option").count();
+
   await page.getByRole("button", { name: "删除当前项目 ✕" }).click();
-  await page.getByRole("button", { name: "再点一次确认删除 ✕" }).click();
+  await page.getByRole("button", { name: /确认删除「.+」？再点一次 ✕/ }).click();
   await expect(page.getByText(/项目已删除/)).toBeVisible();
+
+  const afterCount = await historySelect.locator("option").count();
+  expect(afterCount).toBe(beforeCount - 1);
+
+  await page.reload();
+  await waitUntilLoaded(page);
+  const reloadedCount = await page
+    .getByRole("combobox", { name: /历史项目/ })
+    .locator("option")
+    .count();
+  expect(reloadedCount).toBe(afterCount);
 });

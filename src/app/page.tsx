@@ -61,6 +61,15 @@ function latestFirst(builds: Build[]): Build[] {
   return [...builds].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function Home() {
   const [build, setBuild] = useState<Build | null>(null);
   const [projects, setProjects] = useState<Build[]>([]);
@@ -191,6 +200,8 @@ export default function Home() {
       setBuild(created);
       setProjects((prev) => latestFirst([created, ...prev]));
       setFindings([]);
+      setResultMeta(null);
+      setConfirmDelete(false);
       setMessage(`新项目「${created.name}」已创建并保存。旧项目仍在历史列表里，随时可以切回。`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "创建失败");
@@ -332,7 +343,7 @@ export default function Home() {
               <select value={build?.id ?? ""} onChange={(event) => switchProject(event.target.value)} disabled={busy}>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
-                    {project.name}（{project.items.length} 个配件）
+                    {project.name}（{project.items.length} 配件 · {formatTime(project.updatedAt)}）
                   </option>
                 ))}
               </select>
@@ -344,7 +355,7 @@ export default function Home() {
           {build && <div className="project-created"><span className="check-icon">✓</span><div><strong>{build.name}</strong><small>{build.useCase ?? "未设置用途"} · {build.items.length} 个配件 · 数据已保存到 SQLite</small></div></div>}
           {build && (
             <button className={`button ${confirmDelete ? "danger-active" : "danger"}`} onClick={deleteProject} disabled={busy}>
-              {confirmDelete ? "再点一次确认删除" : "删除当前项目"}<span>✕</span>
+              {confirmDelete ? `确认删除「${build.name}」？再点一次` : "删除当前项目"}<span>✕</span>
             </button>
           )}
         </div>
