@@ -21,6 +21,7 @@ export const buildItems = sqliteTable("build_items", {
   category: text("category").notNull(),
   label: text("label").notNull(),
   spec: text("spec").notNull().default("{}"),
+  priceCents: integer("price_cents"),
   source: text("source"),
   createdAt: text("created_at").notNull(),
 });

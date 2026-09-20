@@ -36,7 +36,7 @@
 | 检查结果落库 + 刷新后恢复 + 过期标记（清单指纹对比） | ✅ 完成 |
 | 历史项目切换 / 删除（两步确认）/ 表单草稿按类别隔离 | ✅ 完成 |
 | UI F1 铺底：语义状态 tokens + 六要素诊断卡组件（纯增量，未接线 page.tsx） | ✅ 完成 |
-| 预算字段与价格手动录入 | ⬜ **下一步** |
+| 预算字段与价格手动录入 | 🔶 后端契约完成（M10，73 测试全绿）；右栏预算汇总卡由前端窗口接线中 |
 | 标准型号目录（种子数据 + 点选替代手填 + 型号候选确认） | ⬜ |
 | 配件条目编辑 / 删除（当前只能追加） | ⬜ |
 | 数据库迁移版本检测（当前改表结构需重启 dev server） | ⬜ |
@@ -132,7 +132,7 @@ src/
 │  ├─ components/              # StatusChip / EvidenceStamp / FindingCard（M9 已接线）
 │  └─ canvas/                  # layout.ts（布局引擎纯函数）+ build-canvas.tsx（SVG 机器画布）
 └─ contracts/                   # contracts 目前为空占位
-tests/                          # domain(41) + application(10) + ui(7) 单元测试；e2e/(6 条 Playwright)
+tests/                          # domain(46) + application(12) + ui(15) 单元测试；e2e/(6 条 Playwright)
 docs/                          # 业务规格 / 架构 ADR / UI 设计 / 本文档
 scripts/migrate-db.ts          # 手动建表（一般不需要，服务首次访问自动建）
 ```
@@ -142,7 +142,7 @@ scripts/migrate-db.ts          # 手动建表（一般不需要，服务首次�
 ```bash
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit（strict）
-npm test            # Vitest，58 个单元测试（domain 41 + application 10 + ui 7）
+npm test            # Vitest，73 个单元测试（domain 46 + application 12 + ui 15）
 npm run build       # Next.js 生产构建（含类型检查）
 npm run test:e2e    # Playwright，6 条端到端（自动拉起 dev server）
 ```
@@ -162,7 +162,7 @@ npm run test:e2e    # Playwright，6 条端到端（自动拉起 dev server）
 
 ## 8. 下一步计划（建议顺序）
 
-1. **预算字段与价格手动录入**：项目加 `budgetCents`（已有字段）；条目加可选价格；报告加"已计价/未计价"汇总（业务规格 §10.1 五档口径）。
+1. **预算 UI 接线（本窗口前端侧进行中）**：后端契约已完成（M10，`priceCents` / `budgetSummary`）；右栏预算汇总卡按 M10 契约渲染，未知件不按 0 元计（业务规格 §10.1）。
 2. **标准型号目录 + 候选确认**：种子目录（人工维护高频型号）→ 录入时点选标准型号自动带出规格 → 模糊输入给候选列表由用户确认（规格 §8.3 三档：已确认/候选待确认/无法匹配）。
 3. **配件编辑/删除**：补 `PATCH/DELETE /api/builds/[id]/items/[itemId]`；变更后触发旧结果过期（复用指纹机制）。
 4. **迁移版本检测**：`schema_version` 表 + 迁移函数数组按版本执行 + 启动日志。
@@ -213,6 +213,7 @@ npm run test:e2e    # Playwright，6 条端到端（自动拉起 dev server）
 ---
 
 **版本记录**
+- 2026-09-20 v1.6：M10 预算后端契约补记（priceCents + budgetSummary，73 测试全绿）；进度快照/§6/§8 同步。
 - 2026-09-20 v1.5：M11 WebGL 氛围背景（用户原意的"3D 感"）+ 机器画布降级为尺寸核对示意；补回 §5 标题。
 - 2026-09-20 v1.4：M9 前端重写落地（三栏装机台/深色主题/机器画布，§11 契约全保留，E2E 全绿）。
 - 2026-09-20 v1.3：前端重写启动——文件冻结与功能契约交接（§11）；本窗口暂停前端文件。

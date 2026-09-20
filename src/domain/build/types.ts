@@ -47,54 +47,53 @@ export const createBuildInputSchema = z.object({
 
 const labelSchema = z.string().trim().min(1).max(160);
 const sourceSchema = z.string().trim().max(500);
+const priceCentsSchema = z.number().int().positive();
+
+const itemBaseSchema = {
+  label: labelSchema,
+  source: sourceSchema.optional(),
+  priceCents: priceCentsSchema.optional(),
+};
 
 export const buildItemInputSchema = z.discriminatedUnion("category", [
   z.object({
     category: z.literal("cpu"),
-    label: labelSchema,
-    source: sourceSchema.optional(),
+    ...itemBaseSchema,
     spec: cpuSpecSchema.default({}),
   }),
   z.object({
     category: z.literal("motherboard"),
-    label: labelSchema,
-    source: sourceSchema.optional(),
+    ...itemBaseSchema,
     spec: motherboardSpecSchema.default({}),
   }),
   z.object({
     category: z.literal("gpu"),
-    label: labelSchema,
-    source: sourceSchema.optional(),
+    ...itemBaseSchema,
     spec: gpuSpecSchema.default({}),
   }),
   z.object({
     category: z.literal("ram"),
-    label: labelSchema,
-    source: sourceSchema.optional(),
+    ...itemBaseSchema,
     spec: ramSpecSchema.default({}),
   }),
   z.object({
     category: z.literal("storage"),
-    label: labelSchema,
-    source: sourceSchema.optional(),
+    ...itemBaseSchema,
     spec: storageSpecSchema.default({}),
   }),
   z.object({
     category: z.literal("psu"),
-    label: labelSchema,
-    source: sourceSchema.optional(),
+    ...itemBaseSchema,
     spec: psuSpecSchema.default({}),
   }),
   z.object({
     category: z.literal("cooler"),
-    label: labelSchema,
-    source: sourceSchema.optional(),
+    ...itemBaseSchema,
     spec: coolerSpecSchema.default({}),
   }),
   z.object({
     category: z.literal("case"),
-    label: labelSchema,
-    source: sourceSchema.optional(),
+    ...itemBaseSchema,
     spec: caseSpecSchema.default({}),
   }),
 ]);
@@ -120,6 +119,19 @@ export type Build = {
   createdAt: string;
   updatedAt: string;
   items: BuildItem[];
+  /** 由服务层按业务规格 §10.1 计算附带；非持久化字段 */
+  budgetSummary?: BudgetSummary;
+};
+
+/** 业务规格 §10.1：预算结论。未知金额不按零元计入（differenceCents 仅基于已计价部分） */
+export type BudgetSummary = {
+  budgetCents: number | null;
+  pricedTotalCents: number;
+  pricedCount: number;
+  unpricedCount: number;
+  unpricedLabels: string[];
+  /** 预算 − 已计价总额；未设置预算时为 null。未计价件不参与该差值 */
+  differenceCents: number | null;
 };
 
 export type Finding = {

@@ -28,6 +28,7 @@ function mapItemRow(row: typeof buildItems.$inferSelect): BuildItem {
     category: row.category,
     label: row.label,
     source: row.source ?? undefined,
+    priceCents: row.priceCents ?? undefined,
     spec: row.spec && row.spec.trim() !== "" ? JSON.parse(row.spec) : {},
   });
   return { ...input, id: row.id, buildId: row.buildId, createdAt: row.createdAt };
@@ -77,6 +78,7 @@ export function saveBuildItem(item: BuildItem): void {
       category: item.category,
       label: item.label,
       spec: JSON.stringify(item.spec),
+      priceCents: item.priceCents,
       source: item.source,
       createdAt: item.createdAt,
     })

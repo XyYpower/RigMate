@@ -133,4 +133,36 @@ describe("装机项目服务（SQLite 持久化）", () => {
     expect(service.getBuild(build.id)).toBeUndefined();
     expect(() => service.getLatestCheck(build.id)).toThrow("BUILD_NOT_FOUND");
   });
+
+  it("配件价格持久化且预算汇总随响应附带", () => {
+    const build = service.createBuild({ name: "预算主机", budgetCents: 800_00 });
+    service.addBuildItem(build.id, {
+      category: "cpu",
+      label: "CPU",
+      spec: { socket: "AM5" },
+      priceCents: 200_00,
+    });
+    service.addBuildItem(build.id, { category: "case", label: "机箱" });
+
+    const loaded = service.getBuild(build.id);
+    expect(loaded?.items[0]?.priceCents).toBe(200_00);
+    expect(loaded?.budgetSummary).toEqual({
+      budgetCents: 800_00,
+      pricedTotalCents: 200_00,
+      pricedCount: 1,
+      unpricedCount: 1,
+      unpricedLabels: ["机箱"],
+      differenceCents: 600_00,
+    });
+  });
+
+  it("关闭连接后重新打开，价格字段仍然存在", () => {
+    const build = service.createBuild({ name: "价格重启项目" });
+    service.addBuildItem(build.id, { category: "psu", label: "电源", priceCents: 75_00 });
+
+    closeDatabase();
+
+    const reloaded = service.getBuild(build.id);
+    expect(reloaded?.items[0]?.priceCents).toBe(75_00);
+  });
 });

@@ -17,6 +17,7 @@ export function migrateSchema(db: RigmateDatabase): void {
     category text NOT NULL,
     label text NOT NULL,
     spec text NOT NULL DEFAULT '{}',
+    price_cents integer,
     source text,
     created_at text NOT NULL
   )`);
@@ -40,6 +41,10 @@ export function migrateSchema(db: RigmateDatabase): void {
 
   if (!names.includes("spec")) {
     db.run(sql`ALTER TABLE build_items ADD COLUMN spec text NOT NULL DEFAULT '{}'`);
+  }
+
+  if (!names.includes("price_cents")) {
+    db.run(sql`ALTER TABLE build_items ADD COLUMN price_cents integer`);
   }
 
   if (names.includes("socket")) {

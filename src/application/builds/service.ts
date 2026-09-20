@@ -9,6 +9,7 @@ import {
   type Finding,
 } from "@/domain/build/types";
 import { itemsFingerprint } from "@/domain/build/fingerprint";
+import { computeBudgetSummary } from "@/domain/build/budget";
 import { runBuildChecks, sortFindings } from "@/domain/rules/engine";
 import {
   deleteBuildRow,
@@ -25,6 +26,10 @@ function now(): string {
   return new Date().toISOString();
 }
 
+function withBudgetSummary(build: Build): Build {
+  return { ...build, budgetSummary: computeBudgetSummary(build.budgetCents, build.items) };
+}
+
 export function createBuild(input: CreateBuildInput): Build {
   const data = createBuildInputSchema.parse(input);
   const timestamp = now();
@@ -39,15 +44,16 @@ export function createBuild(input: CreateBuildInput): Build {
     items: [],
   };
   saveBuild(build);
-  return build;
+  return withBudgetSummary(build);
 }
 
 export function listBuilds(): Build[] {
-  return findAllBuilds();
+  return findAllBuilds().map(withBudgetSummary);
 }
 
 export function getBuild(id: string): Build | undefined {
-  return findBuildById(id);
+  const build = findBuildById(id);
+  return build ? withBudgetSummary(build) : undefined;
 }
 
 export function addBuildItem(buildId: string, input: unknown): Build {
@@ -64,7 +70,7 @@ export function addBuildItem(buildId: string, input: unknown): Build {
   setBuildStatus(buildId, "needs_confirmation", now());
   const updated = findBuildById(buildId);
   if (!updated) throw new Error("BUILD_NOT_FOUND");
-  return updated;
+  return withBudgetSummary(updated);
 }
 
 export function checkBuild(buildId: string): { build: Build; findings: Finding[] } {
@@ -75,7 +81,7 @@ export function checkBuild(buildId: string): { build: Build; findings: Finding[]
   setBuildStatus(buildId, "reviewed", now());
   const updated = findBuildById(buildId);
   if (!updated) throw new Error("BUILD_NOT_FOUND");
-  return { build: updated, findings };
+  return { build: withBudgetSummary(updated), findings };
 }
 
 export type LatestCheck = { createdAt: string; stale: boolean; findings: Finding[] };
