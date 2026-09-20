@@ -11,7 +11,7 @@ import {
 } from "@/ui/category-form";
 import { FindingCard } from "@/ui/components/finding-card";
 import { StatusChip } from "@/ui/components/status-chip";
-import type { Finding, FindingStatus } from "@/domain/build/types";
+import type { BudgetSummary, Finding, FindingStatus } from "@/domain/build/types";
 
 type Category = keyof typeof CATEGORY_META;
 
@@ -20,6 +20,7 @@ type Item = {
   category: Category;
   label: string;
   spec: ItemSpec;
+  priceCents?: number;
 };
 
 type Build = {
@@ -28,12 +29,14 @@ type Build = {
   useCase: string | null;
   status: string;
   updatedAt: string;
+  budgetCents: number | null;
+  budgetSummary?: BudgetSummary;
   items: Item[];
 };
 
-type CategoryDraft = { label: string; fields: Record<string, string> };
+type CategoryDraft = { label: string; price: string; fields: Record<string, string> };
 
-const EMPTY_DRAFT: CategoryDraft = { label: "", fields: {} };
+const EMPTY_DRAFT: CategoryDraft = { label: "", price: "", fields: {} };
 
 function latestFirst(builds: Build[]): Build[] {
   return [...builds].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -48,11 +51,79 @@ function formatTime(iso: string): string {
   });
 }
 
+function formatYuan(cents: number): string {
+  return `¥${(cents / 100).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
+}
+
+/** 预算余量计（业务规格 §10.1 + 设计稿 §6.3）：PSU 余量表语言——预算=额定，已计价=当前功耗，未计价=幽灵区间 */
+function BudgetMeter({ summary, itemCount }: { summary: BudgetSummary; itemCount: number }) {
+  const hasBudget = summary.budgetCents !== null && summary.budgetCents > 0;
+  const budget = summary.budgetCents ?? 0;
+  const ratio = hasBudget ? Math.min(summary.pricedTotalCents / budget, 1) : 0;
+  const over = hasBudget && summary.pricedTotalCents > budget;
+  const difference = summary.differenceCents;
+
+  return (
+    <section className="panel meter-panel" aria-label="预算余量计">
+      <div className="panel-heading">
+        <div><span className="step-label">预算余量计 / BUDGET</span><h3>整机价格余量</h3></div>
+        <span className="meter-index" aria-hidden>⚡</span>
+      </div>
+      <div className="meter-readout">
+        <div className="readout">
+          <span className="readout-label">预算水平线</span>
+          <span className={`readout-num ${hasBudget ? "" : "muted"}`}>{hasBudget ? formatYuan(budget) : "未设置"}</span>
+          <span className="readout-sub">创建项目时填写</span>
+        </div>
+        <div className="readout">
+          <span className="readout-label">已计价</span>
+          <span className="readout-num accent">{formatYuan(summary.pricedTotalCents)}</span>
+          <span className="readout-sub">{summary.pricedCount} / {itemCount} 件</span>
+        </div>
+        <div className="readout">
+          <span className="readout-label">未计价</span>
+          <span className="readout-num">{summary.unpricedCount} 件</span>
+          <span className="readout-sub">不按零元计入</span>
+        </div>
+        <div className="readout">
+          <span className="readout-label">{over ? "超支" : "余量"}</span>
+          <span className={`readout-num ${over ? "over" : ""} ${difference === null ? "muted" : ""}`}>
+            {difference === null ? "—" : `${difference < 0 ? "−" : ""}${formatYuan(Math.abs(difference))}`}
+          </span>
+          <span className="readout-sub">{hasBudget ? "仅基于已计价部分" : "需要预算数据"}</span>
+        </div>
+      </div>
+      {hasBudget ? (
+        <>
+          <div className="meter-bar" role="img" aria-label={`预算 ${formatYuan(budget)}，已计价 ${formatYuan(summary.pricedTotalCents)}`}>
+            <div className="meter-ghost-zone" aria-hidden />
+            <div className={`meter-fill ${over ? "over" : ""}`} style={{ width: `${ratio * 100}%` }} />
+            <div className="meter-ticks" aria-hidden />
+          </div>
+          <div className="meter-scale" aria-hidden>
+            <span>0</span><span>25%</span><span>50%</span><span>75%</span><span>{formatYuan(budget)}</span>
+          </div>
+          {summary.unpricedCount > 0 && (
+            <p className="meter-ghost-note">
+              斜纹区间 = 未计价 {summary.unpricedCount} 件（{summary.unpricedLabels.join("、")}），不按零元计入，差额会随补价变化。
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="meter-hint">
+          该项目创建时未设置预算。新建项目时填写「预算（元）」，这里会显示预算水平线与已计价占比；未计价件永远不按零元计入。
+        </p>
+      )}
+    </section>
+  );
+}
+
 export default function Home() {
   const [build, setBuild] = useState<Build | null>(null);
   const [projects, setProjects] = useState<Build[]>([]);
   const [name, setName] = useState("我的第一台 DIY 主机");
   const [useCase, setUseCase] = useState("2K 游戏");
+  const [budgetYuan, setBudgetYuan] = useState("");
   const [itemCategory, setItemCategory] = useState<Category>("cpu");
   const [drafts, setDrafts] = useState<Record<string, CategoryDraft>>({});
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -170,13 +241,23 @@ export default function Home() {
   }
 
   async function createProject() {
+    const budgetRaw = budgetYuan.trim();
+    let budgetCents: number | undefined;
+    if (budgetRaw) {
+      const yuan = Number(budgetRaw);
+      if (!Number.isFinite(yuan) || yuan <= 0) {
+        setMessage("预算需要是大于 0 的数字（单位：元）。");
+        return;
+      }
+      budgetCents = Math.round(yuan * 100);
+    }
     setBusy(true);
     setMessage("");
     try {
       const response = await fetch("/api/builds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, useCase }),
+        body: JSON.stringify({ name, useCase, budgetCents }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "创建失败");
@@ -201,13 +282,23 @@ export default function Home() {
       setMessage(error);
       return;
     }
+    const priceRaw = draft.price.trim();
+    let priceCents: number | undefined;
+    if (priceRaw) {
+      const yuan = Number(priceRaw);
+      if (!Number.isFinite(yuan) || yuan <= 0) {
+        setMessage("价格需要是大于 0 的数字（单位：元）。");
+        return;
+      }
+      priceCents = Math.round(yuan * 100);
+    }
     setBusy(true);
     setMessage("");
     try {
       const response = await fetch(`/api/builds/${build.id}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: itemCategory, label: draft.label, spec }),
+        body: JSON.stringify({ category: itemCategory, label: draft.label, spec, priceCents }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "添加失败");
@@ -258,6 +349,7 @@ export default function Home() {
         ...prev,
         [itemCategory]: {
           label: prev[itemCategory]?.label ?? "",
+          price: prev[itemCategory]?.price ?? "",
           fields: { ...(prev[itemCategory]?.fields ?? {}), [field.key]: next },
         },
       }));
@@ -328,6 +420,7 @@ export default function Home() {
             )}
             <label>新项目名称<input value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：我的第一台 DIY 主机" disabled={busy} /></label>
             <label>主要用途<input value={useCase} onChange={(event) => setUseCase(event.target.value)} placeholder="例如：2K 游戏 / 开发" disabled={busy} /></label>
+            <label>预算（元）· 可选，用于余量计<input value={budgetYuan} onChange={(event) => setBudgetYuan(event.target.value)} placeholder="例如：8000" inputMode="numeric" disabled={busy} /></label>
             <button className="button primary" onClick={createProject} disabled={busy || !name.trim()}>{busy ? "处理中…" : "新建项目"}<span>→</span></button>
             {build && <div className="project-created"><span className="check-icon">✓</span><div><strong>{build.name}</strong><small>{build.useCase ?? "未设置用途"} · {build.items.length} 个配件 · 数据已保存到 SQLite</small></div></div>}
             {build && (
@@ -354,15 +447,19 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <label>型号或商品名称<input value={draft.label} onChange={(event) => setDrafts((prev) => ({ ...prev, [itemCategory]: { label: event.target.value, fields: prev[itemCategory]?.fields ?? {} } }))} placeholder={`${meta.label}型号`} disabled={busy} /></label>
+            <label>型号或商品名称<input value={draft.label} onChange={(event) => setDrafts((prev) => ({ ...prev, [itemCategory]: { label: event.target.value, price: prev[itemCategory]?.price ?? "", fields: prev[itemCategory]?.fields ?? {} } }))} placeholder={`${meta.label}型号`} disabled={busy} /></label>
+            <label>价格（元）· 可选<input value={draft.price} onChange={(event) => setDrafts((prev) => ({ ...prev, [itemCategory]: { label: prev[itemCategory]?.label ?? "", price: event.target.value, fields: prev[itemCategory]?.fields ?? {} } }))} placeholder="例如：2899" inputMode="decimal" disabled={busy} /></label>
             {meta.fields.map(renderField)}
             <button className="button secondary" onClick={addItem} disabled={!build || !draft.label.trim() || busy}>加入清单 <span>＋</span></button>
             {!build && <p className="helper">请先创建或选择一个项目。</p>}
           </section>
         </div>
 
-        {/* 中栏：当前清单 */}
+        {/* 中栏：预算余量计 + 当前清单 */}
         <div className="col col-mid">
+          {build?.budgetSummary && (
+            <BudgetMeter summary={build.budgetSummary} itemCount={build.items.length} />
+          )}
           <section className="panel">
             <div className="panel-heading list-heading">
               <div><span className="step-label">03 / 当前清单</span><h3>{build ? build.name : "还没有活动项目"}</h3></div>
@@ -377,6 +474,9 @@ export default function Home() {
                       <strong>{item.label}</strong>
                       <span>{CATEGORY_META[item.category].label} · {CATEGORY_META[item.category].summary(item.spec ?? {})}</span>
                     </div>
+                    {typeof item.priceCents === "number" && (
+                      <span className="item-price">{formatYuan(item.priceCents)}</span>
+                    )}
                     <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
                       {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
                     </span>

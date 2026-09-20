@@ -1,33 +1,37 @@
 /*
- * RigMate F1 设计 tokens —— 依据 docs/PC_DIY_装机助手_前端UI设计_v1.md §8
+ * RigMate 设计 tokens ——「仪器白」主题
  *
- * - --rm- 前缀命名空间，不与现有浅色主题变量（--ink/--paper/--teal 等）冲突；
- * - 本文件只定义变量、不写组件样式：现有页面视觉零影响，接线时由新组件消费；
- * - 语义色是全站唯一语义色系（装机台画布 / 诊断卡 / 行情新鲜度共用）：
- *   pass 绿 · block 红 · warn 琥珀 · unknown 青灰（虚线幽灵）· not_applicable 极淡灰。
+ * 用户定向（2026-09-20）：亮色、克制、去大众化——不做黑底发光的通用 AI 面板。
+ * 方向：精密测量仪器 / 工程规格书（Teenage Engineering 式工业语言）：
+ * 暖白面板 + 发丝线 + 墨黑数字 + 仪器橙单一强调色 + 刻度与等宽数字。
+ *
+ * - --rm- 前缀命名空间；语义色是全站唯一语义色系（诊断卡 / 计数章 / 预算余量计共用）：
+ *   pass 绿 · block 红 · warn 琥珀 · unknown 灰（虚线幽灵）· not_applicable 淡灰。
+ * - 本文件只定义变量；组件样式在 globals.css，组件内联色全部引用这里的变量。
  */
 :root {
-  /* 深色硬件终端基底（三栏改造接线后启用） */
-  --rm-bg: #101413;
-  --rm-surface: #171d1b;
-  --rm-surface-raised: #1d2422;
-  --rm-line: #2a332f;
-  --rm-ink: #e8ece9;
-  --rm-ink-muted: #9aa5a0;
-  --rm-ink-faint: #6b7570;
-  --rm-accent: #35c9a3;
+  /* 仪器白基底 */
+  --rm-bg: #e8e6df;
+  --rm-surface: #f7f6f1;
+  --rm-surface-raised: #fffefb;
+  --rm-line: #d6d3c8;
+  --rm-line-strong: #b9b5a7;
+  --rm-ink: #191b19;
+  --rm-ink-muted: #5c615b;
+  --rm-ink-faint: #979c93;
+  --rm-accent: #f4581c; /* 仪器橙：全站唯一强调色 */
 
   /* 语义色（实色 + 柔和底） */
-  --rm-pass: #3ecf8e;
-  --rm-pass-soft: rgba(62, 207, 142, 0.12);
-  --rm-block: #ff5c5c;
-  --rm-block-soft: rgba(255, 92, 92, 0.12);
-  --rm-warn: #ffb454;
-  --rm-warn-soft: rgba(255, 180, 84, 0.12);
-  --rm-unknown: #8496a1;
-  --rm-unknown-soft: rgba(132, 150, 161, 0.12);
-  --rm-na: #55605b;
-  --rm-na-soft: rgba(85, 96, 91, 0.16);
+  --rm-pass: #2b8a3e;
+  --rm-pass-soft: rgba(43, 138, 62, 0.1);
+  --rm-block: #d64545;
+  --rm-block-soft: rgba(214, 69, 69, 0.09);
+  --rm-warn: #c77700;
+  --rm-warn-soft: rgba(199, 119, 0, 0.1);
+  --rm-unknown: #7c8288;
+  --rm-unknown-soft: rgba(124, 130, 136, 0.1);
+  --rm-na: #a6a89f;
+  --rm-na-soft: rgba(166, 168, 159, 0.14);
 
   /* 动效时长：日常克制，仪式动画单独定义；消费方须响应 prefers-reduced-motion */
   --rm-fast: 150ms;

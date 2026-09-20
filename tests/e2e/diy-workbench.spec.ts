@@ -158,3 +158,30 @@ test("刷新后恢复检查结果，配件变化后提示过期，可删除项�
     .count();
   expect(reloadedCount).toBe(afterCount);
 });
+
+test("预算余量计：价格录入、未计价件与差额显示", async ({ page }) => {
+  await page.goto("/");
+  await waitUntilLoaded(page);
+  await page.getByRole("textbox", { name: "预算（元）· 可选，用于余量计" }).fill("8000");
+  await page.getByRole("button", { name: "新建项目 →" }).click();
+
+  await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 9800X3D");
+  await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
+  await page.getByRole("textbox", { name: "价格（元）· 可选" }).fill("2899");
+  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await expect(page.getByText("1 / 8 类")).toBeVisible();
+
+  await page.getByRole("tablist", { name: "配件类别" }).getByRole("button", { name: "机箱" }).click();
+  await page.getByRole("textbox", { name: "型号或商品名称" }).fill("先马 平头哥 M2");
+  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await expect(page.getByText("2 / 8 类")).toBeVisible();
+
+  await expect(page.getByText("¥2,899").first()).toBeVisible();
+  await expect(page.getByText(/未计价 1 件/)).toBeVisible();
+  await expect(page.getByText("¥5,101")).toBeVisible();
+
+  await page.reload();
+  await waitUntilLoaded(page);
+  await expect(page.getByText(/未计价 1 件/)).toBeVisible();
+  await expect(page.getByText("¥5,101")).toBeVisible();
+});
