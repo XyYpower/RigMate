@@ -157,9 +157,34 @@ npm run test:e2e    # Playwright，6 条端到端（自动拉起 dev server）
 - 提交身份已配置：XyYpower / lilizhi134@gmail.com；远程认证走 gh CLI（keyring）。
 - git 在 Windows 会提示 LF→CRLF 转换警告，无害，忽略即可。
 
+## 11. 前端重写协同交接（2026-09-20 生效，重写落地前有效）
+
+用户决定按 `docs/PC_DIY_装机助手_前端UI设计_v1.md` **重写前端**（另一 AI 窗口负责，已在 `src/ui/canvas/`、`tests/ui/canvas-layout.test.ts` 开工）。
+
+### 文件冻结（本窗口严格遵守）
+- 冻结：`src/app/page.tsx`、`src/app/globals.css`、`src/app/layout.tsx`、`src/ui/**`（theme.css / category-form.ts / finding-model.ts / components/ / canvas/）。
+- 重写窗口可自由重组上述文件；但 `src/domain/`、`src/application/`、`src/infra/`、`src/app/api/**` 是功能契约，改前先在本文档登记。
+
+### 重写必须保留的功能契约（对应 6 条 E2E 与用户已验证的流程）
+1. 创建项目（名称 + 用途）→ 自动保存并出现在历史下拉；
+2. 八类配件录入：类别切换 + 每类动态规格字段 + 型号名；提交体 `{ category, label, spec }`；
+3. 表单草稿按类别隔离（切换不清空；成功加入后仅清空该类别）；
+4. 当前清单展示与"已录入/待补充"状态、"N / 8 类"计数语义；
+5. 运行检查 → 按 阻断/待补充/警告/通过 计数与排序展示（六要素：conclusion/evidence/missingFields/suggestedAction/ruleId）；
+6. 刷新后自动恢复最近项目 + 历史项目切换下拉 + 最近检查结果恢复 + 过期横幅；
+7. 删除当前项目：两步确认，确认文案带项目名。
+
+### E2E 依赖提示
+`tests/e2e/diy-workbench.spec.ts` 用 accessible name（可见文字）定位元素，并断言特定文案（"X / 8 类"、finding 结论原文、过期横幅、删除确认等）。重写后优先保留语义名称；若设计必须改文案，**同步更新 E2E**，完成后 `npm run test:e2e` 全绿才算交付；视觉验收按 UI 设计文档执行。
+
+### 窗口分工现状
+- **前端重写窗口**：按设计文档重构 UI；
+- **本窗口**：冻结前端文件；可承接的非冲突工作 = 预算字段的领域层/数据库/API（不碰 page.tsx），或等重写落地后接手预算 UI 接线。
+
 ---
 
 **版本记录**
+- 2026-09-20 v1.3：前端重写启动——文件冻结与功能契约交接（§11）；本窗口暂停前端文件。
 - 2026-09-20 v1.2：新增 M8（删除体验修复 + 历史可辨识 + 测试数据清理）；§6 测试数更正为 58。
 - 2026-09-20 v1.1：M7 UI F1 铺底（语义 tokens + 六要素诊断卡，未接线）；代码地图与下一步同步。
 - 2026-09-20 v1：首份协同报告，覆盖 Phase 0 → M6 全部里程碑（AI 记录）。
