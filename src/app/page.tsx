@@ -56,68 +56,6 @@ function formatYuan(cents: number): string {
   return `¥${(cents / 100).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
 }
 
-/**
- * 预算仪表条（业务规格 §10.1 + 设计稿 §6.3）：整机余量读数 + 刻度尺。
- * 语义：预算=额定水平线，已计价=当前占位，未计价=斜纹幽灵区间（永不按零元计入）。
- */
-function BudgetStrip({ summary, itemCount }: { summary: BudgetSummary; itemCount: number }) {
-  const hasBudget = summary.budgetCents !== null && summary.budgetCents > 0;
-  const budget = summary.budgetCents ?? 0;
-  const ratio = hasBudget ? Math.min(summary.pricedTotalCents / budget, 1) : 0;
-  const over = hasBudget && summary.pricedTotalCents > budget;
-  const difference = summary.differenceCents;
-
-  return (
-    <section className="budget-strip" aria-label="预算余量计">
-      <div className="budget-stat">
-        <span className="bstat-label">预算水平线</span>
-        <span className={`bstat-value ${hasBudget ? "" : "muted"}`}>
-          {hasBudget ? formatYuan(budget) : "未设置"}
-        </span>
-        <span className="bstat-sub">新建项目时填写</span>
-      </div>
-      <div className="budget-stat">
-        <span className="bstat-label">已计价</span>
-        <span className="bstat-value accent">{formatYuan(summary.pricedTotalCents)}</span>
-        <span className="bstat-sub">{summary.pricedCount} / {itemCount} 件</span>
-      </div>
-      <div className="budget-stat">
-        <span className="bstat-label">未计价</span>
-        <span className="bstat-value">{summary.unpricedCount} 件</span>
-        <span className="bstat-sub">不按零元计入</span>
-      </div>
-      <div className="budget-stat">
-        <span className="bstat-label">{over ? "超支" : "余量"}</span>
-        <span className={`bstat-value ${over ? "over" : ""} ${difference === null ? "muted" : ""}`}>
-          {difference === null ? "—" : `${difference < 0 ? "−" : ""}${formatYuan(Math.abs(difference))}`}
-        </span>
-        <span className="bstat-sub">{hasBudget ? "仅基于已计价部分" : "需要预算数据"}</span>
-      </div>
-      {hasBudget ? (
-        <div className="budget-meter">
-          <div className="meter-bar" role="img" aria-label={`预算 ${formatYuan(budget)}，已计价 ${formatYuan(summary.pricedTotalCents)}`}>
-            {summary.unpricedCount > 0 && <div className="meter-ghost-zone" aria-hidden />}
-            <div className={`meter-fill ${over ? "over" : ""}`} style={{ width: `${ratio * 100}%` }} />
-            <div className="meter-ticks" aria-hidden />
-          </div>
-          <div className="meter-scale" aria-hidden>
-            <span>0</span><span>25%</span><span>50%</span><span>75%</span><span>{formatYuan(budget)}</span>
-          </div>
-        </div>
-      ) : (
-        <p className="budget-hint">
-          该项目未设置预算。填写「预算（元）」后可显示余量尺；未计价件永远不按零元计入。
-        </p>
-      )}
-      {hasBudget && summary.unpricedCount > 0 && (
-        <p className="budget-note ghost">
-          斜纹区间 = 未计价 {summary.unpricedCount} 件（{summary.unpricedLabels.join("、")}），补价后差额会变化。
-        </p>
-      )}
-    </section>
-  );
-}
-
 export default function Home() {
   const [build, setBuild] = useState<Build | null>(null);
   const [projects, setProjects] = useState<Build[]>([]);
@@ -152,7 +90,7 @@ export default function Home() {
         if (latest) {
           setBuild(latest);
           setMessage(
-            `已恢复最近的项目「${latest.name}」，共 ${latest.items.length} 个配件。历史项目可在顶部切换。`,
+            `已恢复最近的项目「${latest.name}」，共 ${latest.items.length} 个配件。历史项目可在上方切换。`,
           );
           const checkResponse = await fetch(`/api/builds/${latest.id}/check`);
           if (cancelled) return;
@@ -487,28 +425,31 @@ export default function Home() {
     );
   }
 
+  const summary = build?.budgetSummary;
+  const hasBudget = Boolean(summary && summary.budgetCents !== null && summary.budgetCents > 0);
+  const budget = summary?.budgetCents ?? 0;
+  const ratio = hasBudget ? Math.min((summary?.pricedTotalCents ?? 0) / budget, 1) : 0;
+  const over = hasBudget && (summary?.pricedTotalCents ?? 0) > budget;
+  const difference = summary?.differenceCents ?? null;
+
   return (
     <main className="shell">
-      <header className="topbar">
-        <div className="brand-lockup">
-          <div className="brand-mark">R</div>
-          <div className="brand-text">
-            <h1 className="brand-title">装机清单工作台</h1>
-            <p className="brand-sub">先确认能装，再决定买什么。</p>
-          </div>
+      <header className="masthead">
+        <div className="masthead-brand">
+          <span className="brand-mark">R</span>
+          <span className="masthead-title">装机清单工作台</span>
+          <span className="masthead-sub">先确认能装，再决定买什么。</span>
         </div>
-        <div className="topbar-side">
-          <div className="topbar-status"><span className="status-dot" /> 规则引擎在线 · 12 条规则</div>
-          <button className="button check-button" onClick={runCheck} disabled={!build || build.items.length === 0 || busy}>
-            运行兼容性检查 <span>↗</span>
-          </button>
+        <div className="masthead-meta">
+          <span><span className="live-dot" />规则引擎在线 · 12 条规则</span>
+          {build && <span>清单 {build.items.length} 件</span>}
         </div>
       </header>
 
-      <section className="projectbar">
+      <section className="projbar">
         {projects.length > 0 && (
           <label className="field">
-            <span className="field-label">历史项目 <span className="field-hint">切换后自动加载清单</span></span>
+            <span className="field-label">历史项目 <span className="field-hint">切换后自动加载</span></span>
             <select value={build?.id ?? ""} onChange={(event) => switchProject(event.target.value)} disabled={busy}>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
@@ -530,7 +471,7 @@ export default function Home() {
           <span className="field-label">预算（元）· 可选，用于余量计</span>
           <input value={budgetYuan} onChange={(event) => setBudgetYuan(event.target.value)} placeholder="例如：8000" inputMode="numeric" disabled={busy} />
         </label>
-        <div className="projectbar-actions">
+        <div className="projbar-actions">
           <button className="button primary" onClick={createProject} disabled={busy || !name.trim()}>
             {busy ? "处理中…" : "新建项目"}<span>→</span>
           </button>
@@ -542,188 +483,224 @@ export default function Home() {
         </div>
       </section>
 
-      {build?.budgetSummary && (
-        <BudgetStrip summary={build.budgetSummary} itemCount={build.items.length} />
+      <section className="titleline">
+        <div className="titleline-main">
+          <h2>{build ? build.name : "还没有活动项目"}</h2>
+          <p className="titleline-sub">
+            {build
+              ? `用途 ${build.useCase ?? "未设置"} · 更新于 ${formatTime(build.updatedAt)}`
+              : "在上方填写项目名称并新建，数据会实时保存到 SQLite"}
+          </p>
+        </div>
+        <div className="titleline-actions">
+          <button
+            className="button check-button"
+            onClick={runCheck}
+            disabled={!build || build.items.length === 0 || busy}
+          >
+            运行兼容性检查 <span>↗</span>
+          </button>
+        </div>
+      </section>
+
+      {summary && (
+        <>
+          <section className="dataline">
+            <span className="stat">
+              <span className="stat-label">预算</span>
+              <span className={`stat-value ${hasBudget ? "" : "muted"}`}>{hasBudget ? formatYuan(budget) : "未设置"}</span>
+            </span>
+            <span className="stat">
+              <span className="stat-label">已计价</span>
+              <span className="stat-value accent">{formatYuan(summary.pricedTotalCents)}</span>
+              <span className="stat-sub">{summary.pricedCount} / {build?.items.length ?? 0} 件</span>
+            </span>
+            <span className="stat">
+              <span className="stat-label">未计价</span>
+              <span className="stat-value">{summary.unpricedCount} 件</span>
+              <span className="stat-sub">不按零元计入</span>
+            </span>
+            <span className="stat">
+              <span className="stat-label">{over ? "超支" : "余量"}</span>
+              <span className={`stat-value ${over ? "over" : ""} ${difference === null ? "muted" : ""}`}>
+                {difference === null ? "—" : `${difference < 0 ? "−" : ""}${formatYuan(Math.abs(difference))}`}
+              </span>
+            </span>
+          </section>
+          {hasBudget ? (
+            <section className="ruler">
+              <div className="ruler-bar" role="img" aria-label={`预算 ${formatYuan(budget)}，已计价 ${formatYuan(summary.pricedTotalCents)}`}>
+                {summary.unpricedCount > 0 && <div className="ruler-ghost" aria-hidden />}
+                <div className={`ruler-fill ${over ? "over" : ""}`} style={{ width: `${ratio * 100}%` }} />
+              </div>
+              <div className="ruler-scale" aria-hidden>
+                <span>0</span><span>25%</span><span>50%</span><span>75%</span><span>{formatYuan(budget)}</span>
+              </div>
+            </section>
+          ) : (
+            <p className="note-line">该项目未设置预算：新建项目时填写「预算（元）」即可显示余量尺；未计价件永远不按零元计入。</p>
+          )}
+          {hasBudget && summary.unpricedCount > 0 && (
+            <p className="note-line ghost">
+              斜纹区间 = 未计价 {summary.unpricedCount} 件（{summary.unpricedLabels.join("、")}），补价后差额会变化。
+            </p>
+          )}
+        </>
       )}
 
-      <div className="main">
-        <div className="col">
-          {/* 当前清单：规格表 */}
-          <section className="panel">
-            <div className="panel-head">
-              <div>
-                <span className="panel-eyebrow">BUILD SHEET / 装机单</span>
-                <h3 className="panel-title">{build ? build.name : "还没有活动项目"}</h3>
-              </div>
+      <div className="sheet">
+        <div>
+          {/* 规格表 */}
+          <section className="sec">
+            <div className="sec-head">
+              <h3 className="sec-title">清单</h3>
               <span className="count-badge">{build?.items.length ?? 0} / 8 类</span>
             </div>
-            <div className="panel-body">
-              {build?.items.length ? (
-                <>
-                  <div className="colhead" aria-hidden>
-                    <span>类型</span>
-                    <span>型号 / 关键规格</span>
-                    <span className="col-price">价格</span>
-                    <span className="col-state">状态</span>
-                    <span />
-                  </div>
-                  {build.items.map((item) => (
-                    <div className={`item-row ${editingItemId === item.id ? "editing" : ""}`} key={item.id}>
-                      <div className="part-icon">{CATEGORY_META[item.category].badge}</div>
-                      <div className="item-main">
-                        <strong>{item.label}</strong>
-                        <span>{CATEGORY_META[item.category].label} · {CATEGORY_META[item.category].summary(item.spec ?? {})}</span>
-                      </div>
-                      <span className={`item-price ${typeof item.priceCents === "number" ? "" : "empty"}`}>
-                        {typeof item.priceCents === "number" ? formatYuan(item.priceCents) : "—"}
-                      </span>
-                      <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
-                        {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
-                      </span>
-                      <div className="item-actions">
-                        <button className={`item-action ${editingItemId === item.id ? "active" : ""}`} onClick={() => startEdit(item)} disabled={busy}>改</button>
-                        <button
-                          className={`item-action danger ${confirmItemId === item.id ? "active" : ""}`}
-                          onClick={() => removeItem(item.id)}
-                          disabled={busy}
-                        >
-                          {confirmItemId === item.id ? "确认删" : "删"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <div className="empty-state">
-                  <div className="empty-mark">＋</div>
-                  <p>添加配件后，这里会显示你的当前清单，数据实时保存。</p>
+            {build?.items.length ? (
+              <div className="table">
+                <div className="thead" aria-hidden>
+                  <span>类型</span>
+                  <span>型号 / 关键规格</span>
+                  <span className="col-price">价格</span>
+                  <span className="col-state">状态</span>
+                  <span />
                 </div>
-              )}
-            </div>
-            <div className="panel-foot">
-              <span className="panel-note">数据由你确认 · 不自动猜测具体型号</span>
-            </div>
+                {build.items.map((item) => (
+                  <div className={`item-row ${editingItemId === item.id ? "editing" : ""}`} key={item.id}>
+                    <span className="cat-label">{CATEGORY_META[item.category].badge}</span>
+                    <div className="item-main">
+                      <strong>{item.label}</strong>
+                      <span>{CATEGORY_META[item.category].summary(item.spec ?? {})}</span>
+                    </div>
+                    <span className={`item-price ${typeof item.priceCents === "number" ? "" : "empty"}`}>
+                      {typeof item.priceCents === "number" ? formatYuan(item.priceCents) : "—"}
+                    </span>
+                    <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
+                      {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
+                    </span>
+                    <div className="item-actions">
+                      <button className={`item-action ${editingItemId === item.id ? "active" : ""}`} onClick={() => startEdit(item)} disabled={busy}>改</button>
+                      <button
+                        className={`item-action danger ${confirmItemId === item.id ? "active" : ""}`}
+                        onClick={() => removeItem(item.id)}
+                        disabled={busy}
+                      >
+                        {confirmItemId === item.id ? "确认删" : "删"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="empty-line">清单为空。在下方选择类别、填写型号即可加入，数据实时保存。</p>
+            )}
           </section>
 
           {/* 配件录入 */}
-          <section className="panel">
-            <div className="panel-head">
-              <div>
-                <span className="panel-eyebrow">PART ENTRY / 配件录入</span>
-                <h3 className="panel-title">{editingItemId ? "编辑配件" : "添加配件"}</h3>
-              </div>
+          <section className="sec">
+            <div className="sec-head">
+              <h3 className="sec-title">{editingItemId ? "编辑配件" : "配件录入"}</h3>
+              <span className="sec-meta">数据由你确认，不自动猜测型号</span>
             </div>
-            <div className="panel-body">
-              {editingItemId && (
-                <p className="edit-note">正在编辑清单中的配件：类别保持不变，改完点「保存修改」。</p>
+            <div className="tabs" role="tablist" aria-label="配件类别">
+              {CATEGORY_ORDER.map((category) => (
+                <button
+                  key={category}
+                  className={`tab ${itemCategory === category ? "active" : ""}`}
+                  onClick={() => {
+                    if (editingItemId) {
+                      setEditingItemId(null);
+                      setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
+                      setMessage("已退出编辑（切换了类别）。");
+                    }
+                    setItemCategory(category);
+                  }}
+                  disabled={busy}
+                >
+                  {CATEGORY_META[category].label}
+                </button>
+              ))}
+            </div>
+            {editingItemId && (
+              <p className="edit-note">正在编辑清单中的配件：类别保持不变，改完点「保存修改」。</p>
+            )}
+            <div className="addgrid">
+              <label className="field wide">
+                <span className="field-label">型号或商品名称</span>
+                <input
+                  value={draft.label}
+                  onChange={(event) =>
+                    setDrafts((prev) => ({
+                      ...prev,
+                      [itemCategory]: { label: event.target.value, price: prev[itemCategory]?.price ?? "", fields: prev[itemCategory]?.fields ?? {} },
+                    }))
+                  }
+                  placeholder={`${meta.label}型号`}
+                  disabled={busy}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">价格（元）· 可选</span>
+                <input
+                  value={draft.price}
+                  onChange={(event) =>
+                    setDrafts((prev) => ({
+                      ...prev,
+                      [itemCategory]: { label: prev[itemCategory]?.label ?? "", price: event.target.value, fields: prev[itemCategory]?.fields ?? {} },
+                    }))
+                  }
+                  placeholder="例如：2899"
+                  inputMode="decimal"
+                  disabled={busy}
+                />
+              </label>
+              {meta.fields.map(renderField)}
+            </div>
+            <div className="form-actions">
+              {editingItemId ? (
+                <>
+                  <button className="button ghost" onClick={cancelEdit} disabled={busy}>取消编辑</button>
+                  <button className="button secondary" onClick={saveItem} disabled={!draft.label.trim() || busy}>
+                    保存修改 <span>✓</span>
+                  </button>
+                </>
+              ) : (
+                <button className="button secondary" onClick={addItem} disabled={!build || !draft.label.trim() || busy}>
+                  加入清单 <span>＋</span>
+                </button>
               )}
-              <div className="chip-row" role="tablist" aria-label="配件类别">
-                {CATEGORY_ORDER.map((category) => (
-                  <button
-                    key={category}
-                    className={`chip ${itemCategory === category ? "selected" : ""}`}
-                    onClick={() => {
-                      if (editingItemId) {
-                        setEditingItemId(null);
-                        setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
-                        setMessage("已退出编辑（切换了类别）。");
-                      }
-                      setItemCategory(category);
-                    }}
-                    disabled={busy}
-                  >
-                    {CATEGORY_META[category].label}
-                  </button>
-                ))}
-              </div>
-              <div className="fieldgrid">
-                <label className="field wide">
-                  <span className="field-label">型号或商品名称</span>
-                  <input
-                    value={draft.label}
-                    onChange={(event) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [itemCategory]: { label: event.target.value, price: prev[itemCategory]?.price ?? "", fields: prev[itemCategory]?.fields ?? {} },
-                      }))
-                    }
-                    placeholder={`${meta.label}型号`}
-                    disabled={busy}
-                  />
-                </label>
-                <label className="field">
-                  <span className="field-label">价格（元）· 可选</span>
-                  <input
-                    value={draft.price}
-                    onChange={(event) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [itemCategory]: { label: prev[itemCategory]?.label ?? "", price: event.target.value, fields: prev[itemCategory]?.fields ?? {} },
-                      }))
-                    }
-                    placeholder="例如：2899"
-                    inputMode="decimal"
-                    disabled={busy}
-                  />
-                </label>
-                {meta.fields.map(renderField)}
-              </div>
-              <div className="form-actions">
-                {editingItemId ? (
-                  <>
-                    <button className="button ghost" onClick={cancelEdit} disabled={busy}>取消编辑</button>
-                    <button className="button secondary" onClick={saveItem} disabled={!draft.label.trim() || busy}>
-                      保存修改 <span>✓</span>
-                    </button>
-                  </>
-                ) : (
-                  <button className="button secondary" onClick={addItem} disabled={!build || !draft.label.trim() || busy}>
-                    加入清单 <span>＋</span>
-                  </button>
-                )}
-              </div>
-              {!build && <p className="helper">请先创建或选择一个项目。</p>}
             </div>
+            {!build && <p className="helper">请先创建或选择一个项目。</p>}
           </section>
         </div>
 
-        {/* 诊断流 */}
-        <div className="col">
-          <section className="panel">
-            <div className="panel-head">
-              <div>
-                <span className="panel-eyebrow">DIAGNOSTICS / 诊断</span>
-                <h3 className="panel-title">兼容性诊断</h3>
-              </div>
+        {/* 诊断 */}
+        <div>
+          <section className="sec">
+            <div className="results-head">
+              <h3 className="sec-title">兼容性诊断</h3>
               {findings.length > 0 && resultMeta && <span className="result-time">结果时间：{resultMeta.time}</span>}
             </div>
-            <div className="panel-body">
-              {resultMeta?.stale && (
-                <div className="stale-banner">清单在这次检查之后发生过变化，以下结论基于旧清单，请重新运行检查。</div>
-              )}
-              <div className="count-row">
-                <StatusChip status="block" count={counts.block} />
-                <StatusChip status="unknown" count={counts.unknown} />
-                <StatusChip status="warn" count={counts.warn} />
-                <StatusChip status="pass" count={counts.pass} />
+            {resultMeta?.stale && (
+              <div className="stale-banner">清单在这次检查之后发生过变化，以下结论基于旧清单，请重新运行检查。</div>
+            )}
+            <div className="tally">
+              <StatusChip status="block" count={counts.block} />
+              <StatusChip status="unknown" count={counts.unknown} />
+              <StatusChip status="warn" count={counts.warn} />
+              <StatusChip status="pass" count={counts.pass} />
+            </div>
+            {findings.length ? (
+              <div className="findings">
+                {findings.map((finding) => (
+                  <FindingCard key={finding.ruleId} finding={finding} />
+                ))}
               </div>
-              {findings.length ? (
-                <div className="findings">
-                  {findings.map((finding) => (
-                    <FindingCard key={finding.ruleId} finding={finding} />
-                  ))}
-                </div>
-              ) : (
-                <div className="results-empty">
-                  <div className="empty-mark">◎</div>
-                  <strong>检查结果会显示在这里</strong>
-                  <p>完成配件录入后运行检查，结论按阻断、待补充、警告、通过的顺序展示。</p>
-                </div>
-              )}
-            </div>
-            <div className="panel-foot">
-              <span className="panel-note">每条结论可追溯到规则与字段</span>
-            </div>
+            ) : (
+              <p className="empty-line">
+                尚无检查结果。录入配件后点右上角「运行兼容性检查 ↗」，结论会按阻断、待补充、警告、通过排列。
+              </p>
+            )}
           </section>
         </div>
       </div>

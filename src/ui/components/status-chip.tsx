@@ -18,7 +18,7 @@ export function StatusChip({ status, count, showIcon = false, className }: Statu
       {showIcon ? (
         <span aria-hidden>{visual.icon}</span>
       ) : (
-        <span className="count-chip-dot" aria-hidden style={{ background: visual.color }} />
+        <span className="tally-mark" aria-hidden style={{ background: visual.color }} />
       )}
       {visual.label}
       {typeof count === "number" ? ` ${count}` : ""}

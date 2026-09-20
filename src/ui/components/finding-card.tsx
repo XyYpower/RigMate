@@ -6,30 +6,29 @@ import { EvidenceStamp } from "@/ui/components/evidence-stamp";
 
 type FindingCardProps = {
   finding: Finding;
-  /** 画布联动预留：目录阶段画布复活后，点击卡片聚焦涉事部件（设计文档 §5.3） */
+  /** 画布联动预留：目录阶段画布复活后，点击条款聚焦涉事部件（设计文档 §5.3） */
   onFocusItems?: (itemIds: string[]) => void;
 };
 
 /**
- * 六要素诊断卡（业务规格 §12.3）：结论 / 证据 / 数据日期 / 置信度 / 假设条件 / 建议动作。
- * 版式：左侧状态色条 + 结论行（右对齐规则编号）+ 证据与元信息，仪器台密度。
+ * 诊断条款（业务规格 §12.3 六要素）：结论 / 证据 / 数据日期 / 置信度 / 假设条件 / 建议动作。
+ * 版式 v3：报告式条款——左侧状态词（页边批注），右侧正文，无卡片边框，靠发丝线分隔。
  */
 export function FindingCard({ finding, onFocusItems }: FindingCardProps) {
   const model = toFindingCardModel(finding);
   return (
     <article
-      className={`finding ${finding.status}`}
+      className="finding"
       onClick={onFocusItems ? () => onFocusItems(finding.itemIds) : undefined}
     >
-      <div className="finding-accent" aria-hidden />
+      <div className={`finding-status ${finding.status}`}>{model.statusLabel}</div>
       <div className="finding-body">
         <div className="finding-top">
           <strong className="finding-conclusion">{model.conclusion}</strong>
-          <code className="finding-rule">{model.ruleId}</code>
+          <code className="rule">{model.ruleId}</code>
         </div>
 
         <div className="finding-meta">
-          <span className="stamp" style={{ color: model.accentColor }}>{model.statusLabel}</span>
           <EvidenceStamp
             date={model.dataDate ? `数据日期 ${model.dataDate}` : "数据日期未记录"}
             level={`置信度 ${model.confidenceLabel}`}
