@@ -3,7 +3,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-20 ｜ 当前阶段：V1-A（DIY 清单检查闭环）已完成约 70%
+> 最后更新：2026-09-20 ｜ 当前阶段：V1-A（DIY 清单检查闭环）已完成约 70% ｜ UI F1 铺底已完成（见 M7）
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
 ---
@@ -35,6 +35,7 @@
 | 12 条确定性兼容性规则 + 阻断→待补充→警告→通过优先级报告 | ✅ 完成 |
 | 检查结果落库 + 刷新后恢复 + 过期标记（清单指纹对比） | ✅ 完成 |
 | 历史项目切换 / 删除（两步确认）/ 表单草稿按类别隔离 | ✅ 完成 |
+| UI F1 铺底：语义状态 tokens + 六要素诊断卡组件（纯增量，未接线 page.tsx） | ✅ 完成 |
 | 预算字段与价格手动录入 | ⬜ **下一步** |
 | 标准型号目录（种子数据 + 点选替代手填 + 型号候选确认） | ⬜ |
 | 配件条目编辑 / 删除（当前只能追加） | ⬜ |
@@ -64,6 +65,15 @@
 ### M6（2026-09-20）Git 基线
 全部代码推送到 GitHub（39 文件，main 分支）。远程为本机 `origin`，gh CLI 以 XyYpower 登录。
 
+### M7（2026-09-20）UI F1 铺底（前端 UI 窗口）
+按 `docs/PC_DIY_装机助手_前端UI设计_v1.md` §8/§5.3 落地第一批**纯增量** UI 基建：
+- `src/ui/theme.css`：`--rm-*` 设计 tokens（五种语义色 + 深色基底），`globals.css` 已引入，零视觉影响；
+- `src/ui/finding-model.ts`：状态语义映射（含 unknown=虚线幽灵）+ 六要素视图模型纯函数；
+- `src/ui/components/`：`StatusChip` / `EvidenceStamp`（证据三件套）/ `FindingCard`（六要素诊断卡，预留画布联动 onFocusItems）；
+- 新增 `tests/ui/finding-model.test.ts` 7 个用例，全量 58 通过；lint / typecheck / build 通过。
+
+**未修改 page.tsx / category-form.ts**——避免与"预算字段录入"开发冲突；组件接线在三栏改造时进行。注意：现 page.tsx 本地 Finding 类型丢失了领域层的 dataDate/confidence/assumptions 字段，接线时用组件替换内联渲染即可补齐六要素。
+
 ## 5. 代码地图
 
 ```text
@@ -78,9 +88,13 @@ src/
 │  └─ rules/                   # engine.ts(注册表+排序) + helpers + 按领域的规则文件
 ├─ application/builds/service.ts  # 用例编排：createBuild/addBuildItem/checkBuild/getLatestCheck/deleteBuild
 ├─ infra/db/                   # client.ts(懒初始化单例) + migrate.ts(幂等迁移) + repositories/
-├─ ui/category-form.ts         # 八类表单元数据（字段定义/摘要/提交解析）
-└─ contracts/ ui/              # contracts 目前为空占位
-tests/                         # domain(41) + application(10) 单元测试；e2e/(6 条 Playwright)
+├─ ui/
+│  ├─ category-form.ts         # 八类表单元数据（字段定义/摘要/提交解析）
+│  ├─ theme.css                # F1 设计 tokens（--rm-* 语义色/深色基底，globals.css 已引入）
+│  ├─ finding-model.ts         # 结论状态映射 + 六要素视图模型（纯函数）
+│  └─ components/              # StatusChip / EvidenceStamp / FindingCard（F1，未接线）
+└─ contracts/                   # contracts 目前为空占位
+tests/                          # domain(41) + application(10) + ui(7) 单元测试；e2e/(6 条 Playwright)
 docs/                          # 业务规格 / 架构 ADR / UI 设计 / 本文档
 scripts/migrate-db.ts          # 手动建表（一般不需要，服务首次访问自动建）
 ```
@@ -116,6 +130,7 @@ npm run test:e2e    # Playwright，6 条端到端（自动拉起 dev server）
 4. **迁移版本检测**：`schema_version` 表 + 迁移函数数组按版本执行 + 启动日志。
 5. **BuildCores 导入器**：离线导入 + 记录上游 commit + ODC-By 署名展示（架构 ADR §8.1）。
 6. **业务侧并行**：收集 20 份脱敏真实清单 + 访谈（决定首批目录收录与 V1-B 优先级）。
+7. **UI F1 接线（三栏改造 + 语义色切换）**：tokens 与诊断卡组件已就绪（见 M7）；因"预算字段录入"（第 1 项）与 UI 接线都会修改 `page.tsx`，两个开发窗口需协调先后，避免同文件并行改动。接线顺带补齐六要素渲染（现页面丢字段，见 M7 说明）。
 
 ## 9. 协同开发约定（与用户的约定，必须遵守）
 
@@ -136,4 +151,5 @@ npm run test:e2e    # Playwright，6 条端到端（自动拉起 dev server）
 ---
 
 **版本记录**
+- 2026-09-20 v1.1：M7 UI F1 铺底（语义 tokens + 六要素诊断卡，未接线）；代码地图与下一步同步。
 - 2026-09-20 v1：首份协同报告，覆盖 Phase 0 → M6 全部里程碑（AI 记录）。
