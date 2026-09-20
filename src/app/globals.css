@@ -108,6 +108,19 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .item-state { padding: 4px 8px; font-size: 10px; font-weight: 800; }
 .item-state.confirmed { background: var(--rm-pass-soft); color: var(--rm-pass); }
 .item-state.pending { background: var(--rm-warn-soft); color: var(--rm-warn); }
+
+/* ---------- 清单行操作（M14：编辑 / 删除） ---------- */
+.item-row.editing { background: rgba(244, 88, 28, 0.05); box-shadow: inset 3px 0 0 var(--rm-accent); }
+.item-actions { display: flex; gap: 6px; margin-left: 2px; }
+.item-action { border: 1px solid var(--rm-line-strong); background: var(--rm-surface-raised); color: var(--rm-ink-muted); font-size: 11px; font-weight: 800; padding: 5px 9px; transition: border-color var(--rm-fast), color var(--rm-fast), background var(--rm-fast); }
+.item-action:hover:not(:disabled) { border-color: var(--rm-accent); color: var(--rm-accent); }
+.item-action.active { border-color: var(--rm-accent); background: rgba(244, 88, 28, 0.08); color: var(--rm-accent); }
+.item-action.danger:hover:not(:disabled) { border-color: var(--rm-block); color: var(--rm-block); }
+.item-action.danger.active { border-color: var(--rm-block); background: var(--rm-block-soft); color: var(--rm-block); }
+.edit-note { margin: 0 0 13px; padding: 8px 10px; border: 1px solid var(--rm-accent); background: rgba(244, 88, 28, 0.06); color: var(--rm-accent); font-size: 11px; font-weight: 700; }
+.edit-actions { display: grid; gap: 8px; }
+.button.ghost { width: 100%; border: 1px solid var(--rm-line-strong); background: transparent; color: var(--rm-ink-muted); justify-content: center; }
+.button.ghost:hover:not(:disabled) { border-color: var(--rm-ink); color: var(--rm-ink); }
 .empty-state { display: grid; place-items: center; min-height: 110px; border-top: 1px solid var(--rm-line-strong); color: var(--rm-ink-faint); text-align: center; }
 .empty-state p { margin: 8px 0 0; font-size: 12px; }
 .empty-symbol { color: var(--rm-line-strong); font-size: 24px; }

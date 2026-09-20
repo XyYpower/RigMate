@@ -185,3 +185,47 @@ test("预算余量计：价格录入、未计价件与差额显示", async ({ pa
   await expect(page.getByText(/未计价 1 件/)).toBeVisible();
   await expect(page.getByText("¥5,101")).toBeVisible();
 });
+
+test("配件可编辑与删除，修改后旧结论标记过期", async ({ page }) => {
+  await page.goto("/");
+  await waitUntilLoaded(page);
+  await page.getByRole("button", { name: "新建项目 →" }).click();
+
+  await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
+  await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
+  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await expect(page.getByText("1 / 8 类")).toBeVisible();
+
+  await page.getByRole("tablist", { name: "配件类别" }).getByRole("button", { name: "主板" }).click();
+  await page.getByRole("textbox", { name: "型号或商品名称" }).fill("MSI B650M MORTAR WIFI");
+  await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("LGA1700");
+  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await expect(page.getByText("2 / 8 类")).toBeVisible();
+
+  await page.getByRole("button", { name: "运行兼容性检查 ↗" }).click();
+  await expect(page.getByText("阻断 1", { exact: true })).toBeVisible();
+
+  // 编辑主板：LGA1700 → AM5
+  const motherboardRow = page.locator(".item-row", { hasText: "MSI B650M MORTAR WIFI" });
+  await motherboardRow.getByRole("button", { name: "改", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "编辑配件" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "插槽 用于第一项规则" })).toHaveValue("LGA1700");
+  await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
+  await page.getByRole("button", { name: "保存修改 ✓" }).click();
+  await expect(page.getByText(/清单在这次检查之后发生过变化/)).toBeVisible();
+
+  await page.getByRole("button", { name: "运行兼容性检查 ↗" }).click();
+  await expect(page.getByText("通过 1", { exact: true })).toBeVisible();
+
+  // 删除 CPU 配件（两步确认）
+  const cpuRow = page.locator(".item-row", { hasText: "AMD Ryzen 7 7800X3D" });
+  await cpuRow.getByRole("button", { name: "删", exact: true }).click();
+  await cpuRow.getByRole("button", { name: "确认删", exact: true }).click();
+  await expect(page.getByText("1 / 8 类")).toBeVisible();
+  await expect(page.getByText(/清单在这次检查之后发生过变化/)).toBeVisible();
+
+  await page.reload();
+  await waitUntilLoaded(page);
+  await expect(page.getByText("1 / 8 类")).toBeVisible();
+  await expect(page.getByText("MSI B650M MORTAR WIFI", { exact: true })).toBeVisible();
+});

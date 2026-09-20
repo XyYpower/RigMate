@@ -165,4 +165,68 @@ describe("装机项目服务（SQLite 持久化）", () => {
     const reloaded = service.getBuild(build.id);
     expect(reloaded?.items[0]?.priceCents).toBe(75_00);
   });
+
+  it("修改配件后旧检查结果标记过期", () => {
+    const build = service.createBuild({ name: "编辑主机" });
+    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5" } });
+    const withMb = service.addBuildItem(build.id, {
+      category: "motherboard",
+      label: "MB",
+      spec: { socket: "AM5" },
+    });
+    service.checkBuild(build.id);
+    expect(service.getLatestCheck(build.id)?.stale).toBe(false);
+
+    const motherboard = withMb.items.find((item) => item.category === "motherboard");
+    if (!motherboard) throw new Error("motherboard missing");
+    const updated = service.updateBuildItem(build.id, motherboard.id, {
+      label: "MB-替换",
+      spec: { socket: "LGA1700" },
+    });
+
+    const row = updated.items.find((item) => item.id === motherboard.id);
+    expect(row?.label).toBe("MB-替换");
+    expect(row?.spec).toEqual({ socket: "LGA1700" });
+    expect(service.getLatestCheck(build.id)?.stale).toBe(true);
+  });
+
+  it("修改配件时类别保持不变，不接受类别漂移", () => {
+    const build = service.createBuild({ name: "类别固定" });
+    const withItem = service.addBuildItem(build.id, {
+      category: "cpu",
+      label: "CPU",
+      spec: { socket: "AM5" },
+    });
+    const cpu = withItem.items[0];
+    if (!cpu) throw new Error("cpu missing");
+
+    const updated = service.updateBuildItem(build.id, cpu.id, {
+      category: "gpu",
+      label: "改错类别",
+      spec: { socket: "AM5" },
+    });
+    expect(updated.items[0]?.category).toBe("cpu");
+  });
+
+  it("删除配件后清单与预算同步更新", () => {
+    const build = service.createBuild({ name: "删除配件主机", budgetCents: 800_00 });
+    service.addBuildItem(build.id, { category: "cpu", label: "CPU", priceCents: 300_00 });
+    const withGpu = service.addBuildItem(build.id, { category: "gpu", label: "显卡", priceCents: 200_00 });
+    const cpu = withGpu.items.find((item) => item.category === "cpu");
+    if (!cpu) throw new Error("cpu missing");
+
+    const updated = service.deleteBuildItem(build.id, cpu.id);
+    expect(updated.items).toHaveLength(1);
+    expect(updated.budgetSummary?.pricedTotalCents).toBe(200_00);
+  });
+
+  it("配件不存在时报 ITEM_NOT_FOUND", () => {
+    const build = service.createBuild({ name: "缺失配件" });
+    expect(() =>
+      service.deleteBuildItem(build.id, "00000000-0000-4000-8000-000000000000"),
+    ).toThrow("ITEM_NOT_FOUND");
+    expect(() =>
+      service.updateBuildItem(build.id, "00000000-0000-4000-8000-000000000000", { label: "x", spec: {} }),
+    ).toThrow("ITEM_NOT_FOUND");
+  });
 });

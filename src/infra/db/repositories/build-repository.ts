@@ -93,6 +93,23 @@ export function setBuildStatus(id: string, status: BuildStatus, updatedAt: strin
     .run();
 }
 
+export function updateBuildItemRow(item: BuildItem): void {
+  ensureDatabase()
+    .update(buildItems)
+    .set({
+      label: item.label,
+      spec: JSON.stringify(item.spec),
+      priceCents: item.priceCents ?? null,
+      source: item.source ?? null,
+    })
+    .where(eq(buildItems.id, item.id))
+    .run();
+}
+
+export function deleteBuildItemRow(id: string): void {
+  ensureDatabase().delete(buildItems).where(eq(buildItems.id, id)).run();
+}
+
 export function saveCheckRun(input: {
   buildId: string;
   itemsSnapshot: string;

@@ -6,6 +6,7 @@ import {
   CATEGORY_META,
   CATEGORY_ORDER,
   hasAnySpec,
+  specToFormValues,
   type FieldDef,
   type ItemSpec,
 } from "@/ui/category-form";
@@ -129,6 +130,8 @@ export default function Home() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [resultMeta, setResultMeta] = useState<{ time: string; stale: boolean } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [confirmItemId, setConfirmItemId] = useState<string | null>(null);
   const [message, setMessage] = useState("正在加载你的历史项目…");
   const [busy, setBusy] = useState(false);
 
@@ -195,6 +198,8 @@ export default function Home() {
     setFindings([]);
     setResultMeta(null);
     setConfirmDelete(false);
+    setEditingItemId(null);
+    setConfirmItemId(null);
     setMessage(`已切换到项目「${target.name}」，共 ${target.items.length} 个配件。`);
     void (async () => {
       const response = await fetch(`/api/builds/${target.id}/check`);
@@ -228,6 +233,8 @@ export default function Home() {
       setFindings([]);
       setResultMeta(null);
       setConfirmDelete(false);
+      setEditingItemId(null);
+      setConfirmItemId(null);
       setMessage(
         remaining[0]
           ? `项目已删除。已切换到「${remaining[0].name}」。`
@@ -267,6 +274,8 @@ export default function Home() {
       setFindings([]);
       setResultMeta(null);
       setConfirmDelete(false);
+      setEditingItemId(null);
+      setConfirmItemId(null);
       setMessage(`新项目「${created.name}」已创建并保存。旧项目仍在历史列表里，随时可以切回。`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "创建失败");
@@ -282,15 +291,10 @@ export default function Home() {
       setMessage(error);
       return;
     }
-    const priceRaw = draft.price.trim();
-    let priceCents: number | undefined;
-    if (priceRaw) {
-      const yuan = Number(priceRaw);
-      if (!Number.isFinite(yuan) || yuan <= 0) {
-        setMessage("价格需要是大于 0 的数字（单位：元）。");
-        return;
-      }
-      priceCents = Math.round(yuan * 100);
+    const price = parsePriceInput();
+    if (price.error) {
+      setMessage(price.error);
+      return;
     }
     setBusy(true);
     setMessage("");
@@ -298,7 +302,7 @@ export default function Home() {
       const response = await fetch(`/api/builds/${build.id}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: itemCategory, label: draft.label, spec, priceCents }),
+        body: JSON.stringify({ category: itemCategory, label: draft.label, spec, priceCents: price.priceCents }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "添加失败");
@@ -312,6 +316,108 @@ export default function Home() {
       setMessage(`${meta.label} 已加入清单并保存。`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "添加失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEdit(item: Item) {
+    setItemCategory(item.category);
+    setDrafts((prev) => ({
+      ...prev,
+      [item.category]: {
+        label: item.label,
+        price: typeof item.priceCents === "number" ? String(item.priceCents / 100) : "",
+        fields: specToFormValues(CATEGORY_META[item.category], item.spec ?? {}),
+      },
+    }));
+    setEditingItemId(item.id);
+    setConfirmItemId(null);
+    setMessage(`正在编辑「${item.label}」：改完点「保存修改」，或点「取消编辑」。`);
+  }
+
+  function cancelEdit() {
+    if (!editingItemId) return;
+    setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
+    setEditingItemId(null);
+    setMessage("已取消编辑。");
+  }
+
+  function parsePriceInput(): { priceCents: number | undefined; error: string | null } {
+    const raw = draft.price.trim();
+    if (!raw) return { priceCents: undefined, error: null };
+    const yuan = Number(raw);
+    if (!Number.isFinite(yuan) || yuan <= 0) {
+      return { priceCents: undefined, error: "价格需要是大于 0 的数字（单位：元）。" };
+    }
+    return { priceCents: Math.round(yuan * 100), error: null };
+  }
+
+  async function saveItem() {
+    if (!build || !editingItemId) return;
+    const { spec, error } = buildSpecPayload(meta, draft.fields);
+    if (error) {
+      setMessage(error);
+      return;
+    }
+    const price = parsePriceInput();
+    if (price.error) {
+      setMessage(price.error);
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/builds/${build.id}/items/${editingItemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: draft.label, spec, priceCents: price.priceCents }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "保存失败");
+      const updated: Build = data.build;
+      setBuild(updated);
+      setProjects((prev) => prev.map((project) => (project.id === updated.id ? updated : project)));
+      setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
+      setEditingItemId(null);
+      if (findings.length > 0) {
+        setResultMeta((prev) => (prev ? { ...prev, stale: true } : prev));
+      }
+      setMessage(`「${draft.label}」的修改已保存。`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "保存失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeItem(itemId: string) {
+    if (!build) return;
+    if (confirmItemId !== itemId) {
+      setConfirmItemId(itemId);
+      setMessage("再点一次「确认删」会删除这个配件（项目保留）。");
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/builds/${build.id}/items/${itemId}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "删除失败");
+      const updated: Build = data.build;
+      setBuild(updated);
+      setProjects((prev) => prev.map((project) => (project.id === updated.id ? updated : project)));
+      setConfirmItemId(null);
+      if (editingItemId === itemId) {
+        setEditingItemId(null);
+        setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
+      }
+      if (findings.length > 0) {
+        setResultMeta((prev) => (prev ? { ...prev, stale: true } : prev));
+      }
+      setMessage("配件已删除，项目保留。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "删除失败");
     } finally {
       setBusy(false);
     }
@@ -432,7 +538,7 @@ export default function Home() {
 
           <section className="panel">
             <div className="panel-heading">
-              <div><span className="step-label">02 / 配件</span><h3>添加配件</h3></div>
+              <div><span className="step-label">02 / 配件</span><h3>{editingItemId ? "编辑配件" : "添加配件"}</h3></div>
               <span className="panel-index">B</span>
             </div>
             <div className="chip-row" role="tablist" aria-label="配件类别">
@@ -440,17 +546,34 @@ export default function Home() {
                 <button
                   key={category}
                   className={`chip ${itemCategory === category ? "selected" : ""}`}
-                  onClick={() => setItemCategory(category)}
+                  onClick={() => {
+                    if (editingItemId) {
+                      setEditingItemId(null);
+                      setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
+                      setMessage("已退出编辑（切换了类别）。");
+                    }
+                    setItemCategory(category);
+                  }}
                   disabled={busy}
                 >
                   {CATEGORY_META[category].label}
                 </button>
               ))}
             </div>
+            {editingItemId && (
+              <p className="edit-note">正在编辑清单中的配件：类别保持不变，改完点「保存修改」。</p>
+            )}
             <label>型号或商品名称<input value={draft.label} onChange={(event) => setDrafts((prev) => ({ ...prev, [itemCategory]: { label: event.target.value, price: prev[itemCategory]?.price ?? "", fields: prev[itemCategory]?.fields ?? {} } }))} placeholder={`${meta.label}型号`} disabled={busy} /></label>
             <label>价格（元）· 可选<input value={draft.price} onChange={(event) => setDrafts((prev) => ({ ...prev, [itemCategory]: { label: prev[itemCategory]?.label ?? "", price: event.target.value, fields: prev[itemCategory]?.fields ?? {} } }))} placeholder="例如：2899" inputMode="decimal" disabled={busy} /></label>
             {meta.fields.map(renderField)}
-            <button className="button secondary" onClick={addItem} disabled={!build || !draft.label.trim() || busy}>加入清单 <span>＋</span></button>
+            {editingItemId ? (
+              <div className="edit-actions">
+                <button className="button secondary" onClick={saveItem} disabled={!draft.label.trim() || busy}>保存修改 <span>✓</span></button>
+                <button className="button ghost" onClick={cancelEdit} disabled={busy}>取消编辑</button>
+              </div>
+            ) : (
+              <button className="button secondary" onClick={addItem} disabled={!build || !draft.label.trim() || busy}>加入清单 <span>＋</span></button>
+            )}
             {!build && <p className="helper">请先创建或选择一个项目。</p>}
           </section>
         </div>
@@ -468,7 +591,7 @@ export default function Home() {
             {build?.items.length ? (
               <div className="item-list">
                 {build.items.map((item) => (
-                  <div className="item-row" key={item.id}>
+                  <div className={`item-row ${editingItemId === item.id ? "editing" : ""}`} key={item.id}>
                     <div className={`part-icon part-${item.category}`}>{CATEGORY_META[item.category].badge}</div>
                     <div className="item-main">
                       <strong>{item.label}</strong>
@@ -480,6 +603,16 @@ export default function Home() {
                     <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
                       {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
                     </span>
+                    <div className="item-actions">
+                      <button className={`item-action ${editingItemId === item.id ? "active" : ""}`} onClick={() => startEdit(item)} disabled={busy}>改</button>
+                      <button
+                        className={`item-action danger ${confirmItemId === item.id ? "active" : ""}`}
+                        onClick={() => removeItem(item.id)}
+                        disabled={busy}
+                      >
+                        {confirmItemId === item.id ? "确认删" : "删"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -19,6 +19,8 @@ type CategoryMeta = {
   summary: (spec: ItemSpec) => string;
 };
 
+export type { CategoryMeta };
+
 function joinParts(parts: (string | undefined)[]): string {
   const defined = parts.filter((part): part is string => Boolean(part));
   return defined.length > 0 ? defined.join(" · ") : "规格待补充";
@@ -220,4 +222,15 @@ export function buildSpecPayload(
 
 export function hasAnySpec(spec: ItemSpec): boolean {
   return Object.values(spec).some((value) => value !== undefined);
+}
+
+/** 反向映射：领域规格 → 表单字段字符串（编辑回填用；与 buildSpecPayload 互为逆操作） */
+export function specToFormValues(meta: CategoryMeta, spec: ItemSpec): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const field of meta.fields) {
+    const raw = spec[field.key];
+    if (raw === undefined) continue;
+    values[field.key] = Array.isArray(raw) ? raw.join(", ") : String(raw);
+  }
+  return values;
 }

@@ -12,6 +12,7 @@ import { itemsFingerprint } from "@/domain/build/fingerprint";
 import { computeBudgetSummary } from "@/domain/build/budget";
 import { runBuildChecks, sortFindings } from "@/domain/rules/engine";
 import {
+  deleteBuildItemRow,
   deleteBuildRow,
   findBuildById,
   findAllBuilds,
@@ -20,6 +21,7 @@ import {
   saveBuildItem,
   saveCheckRun,
   setBuildStatus,
+  updateBuildItemRow,
 } from "@/infra/db/repositories/build-repository";
 
 function now(): string {
@@ -67,6 +69,37 @@ export function addBuildItem(buildId: string, input: unknown): Build {
     createdAt: now(),
   };
   saveBuildItem(item);
+  setBuildStatus(buildId, "needs_confirmation", now());
+  const updated = findBuildById(buildId);
+  if (!updated) throw new Error("BUILD_NOT_FOUND");
+  return withBudgetSummary(updated);
+}
+
+export function updateBuildItem(buildId: string, itemId: string, input: unknown): Build {
+  const build = findBuildById(buildId);
+  if (!build) throw new Error("BUILD_NOT_FOUND");
+  const existing = build.items.find((item) => item.id === itemId);
+  if (!existing) throw new Error("ITEM_NOT_FOUND");
+  // 类别固定：编辑不允许漂移类别（判别联合的 spec 结构依赖 category）
+  const data = buildItemInputSchema.parse({ ...(input as Record<string, unknown>), category: existing.category });
+  updateBuildItemRow({
+    ...existing,
+    ...data,
+    id: existing.id,
+    buildId,
+    createdAt: existing.createdAt,
+  });
+  setBuildStatus(buildId, "needs_confirmation", now());
+  const updated = findBuildById(buildId);
+  if (!updated) throw new Error("BUILD_NOT_FOUND");
+  return withBudgetSummary(updated);
+}
+
+export function deleteBuildItem(buildId: string, itemId: string): Build {
+  const build = findBuildById(buildId);
+  if (!build) throw new Error("BUILD_NOT_FOUND");
+  if (!build.items.some((item) => item.id === itemId)) throw new Error("ITEM_NOT_FOUND");
+  deleteBuildItemRow(itemId);
   setBuildStatus(buildId, "needs_confirmation", now());
   const updated = findBuildById(buildId);
   if (!updated) throw new Error("BUILD_NOT_FOUND");
