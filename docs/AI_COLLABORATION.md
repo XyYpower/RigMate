@@ -92,6 +92,25 @@
 - 诊断流接入 `FindingCard`（补齐数据日期/置信度/假设条件三要素，此前 page.tsx 本地类型丢失）与 `StatusChip`（计数章）；接入领域层 `Finding` 类型，删除页内降级类型；
 - 测试：新增 `tests/ui/canvas-layout.test.ts` 8 用例；E2E 一处选择器改精确匹配（画布悬浮提示与清单行文案相同导致 strict mode 冲突）；**E2E 6/6 全绿**，lint/typecheck/build 通过，并经真实浏览器截图视觉验收。
 
+### M10（2026-09-20）预算后端契约（前端无碰撞）
+预算 UI 属于设计稿 F2「行情台」，本窗口只实现领域/数据库/服务契约，**没有修改前端重写冻结区文件**：
+- `src/domain/build/budget.ts`：纯函数 `computeBudgetSummary`，按业务规格 §10.1 区分已计价/未计价；未知金额不按零元计入；返回 `pricedTotalCents`、`pricedCount`、`unpricedCount`、`unpricedLabels`、`differenceCents`；
+- `build_items.price_cents`：SQLite 可选整数列，幂等迁移；仓储读写映射已补齐；
+- `BuildItemInput` 接受可选 `priceCents`；`Build` 响应附带非持久化 `budgetSummary`，不破坏现有 API 消费者；
+- `createBuild` 已有 `budgetCents`，现在服务响应会随项目返回预算汇总；
+- 测试覆盖五种业务情况（全计价、部分未计价、无预算、超预算、空清单）+ 价格重启持久化；全量 **73 个单元测试**通过。
+
+**前端接线契约（给 UI 重写窗口）**：项目响应里的 `budgetSummary` 直接可渲染 F2 §6.3：预算水平线=`budgetCents`、已计价金额=`pricedTotalCents`、未计价件数/标签=`unpricedCount/unpricedLabels`；未知件永远不能按 0 元画入估值曲线。录入价格时提交条目体 `{ category, label, spec, priceCents }`，金额单位为分，整数正数。
+
+
+
+### M11（2026-09-20）WebGL 氛围背景 + 画布降级为尺寸核对示意（前端窗口）
+与用户对齐后澄清：用户要的"3D 感"是**页面氛围背景**，不是 3D 画图功能（M9 的机器画布系方向误解产物）。本轮：
+- `src/ui/ambient-background.tsx`：零依赖原生 WebGL 片元着色器背景——流动微光雾 + 游走辉光 + 蓝图网格 + 鼠标视差；DPR 上限 1.25、low-power、标签页隐藏暂停、`prefers-reduced-motion` 渲染静态单帧、WebGL 不可用回退 body 静态网格；挂在 `layout.tsx` 全局生效；
+- 机器画布按用户选择降级：改名"尺寸核对示意图"移至清单下方，明示"规则示意图、非渲染图、不代表配件真实外观"；
+- 门禁：lint/typecheck 通过，E2E 6/6 全绿，真实浏览器截图视觉验收；
+- 接到 M10 的预算接线契约：下一步在右栏加预算汇总卡（budgetSummary / priceCents，单位分）。
+
 ## 5. 代码地图
 
 ```text
@@ -194,6 +213,7 @@ npm run test:e2e    # Playwright，6 条端到端（自动拉起 dev server）
 ---
 
 **版本记录**
+- 2026-09-20 v1.5：M11 WebGL 氛围背景（用户原意的"3D 感"）+ 机器画布降级为尺寸核对示意；补回 §5 标题。
 - 2026-09-20 v1.4：M9 前端重写落地（三栏装机台/深色主题/机器画布，§11 契约全保留，E2E 全绿）。
 - 2026-09-20 v1.3：前端重写启动——文件冻结与功能契约交接（§11）；本窗口暂停前端文件。
 - 2026-09-20 v1.2：新增 M8（删除体验修复 + 历史可辨识 + 测试数据清理）；§6 测试数更正为 58。

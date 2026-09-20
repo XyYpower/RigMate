@@ -362,25 +362,11 @@ export default function Home() {
           </section>
         </div>
 
-        {/* 中栏：机器画布 + 当前清单 */}
+        {/* 中栏：当前清单 + 尺寸核对示意 */}
         <div className="col col-mid">
           <section className="panel">
-            <div className="panel-heading">
-              <div><span className="step-label">03 / 机器视图</span><h3>这台机器现在长这样</h3></div>
-              <span className="panel-index">C</span>
-            </div>
-            <BuildCanvas
-              items={(build?.items ?? []).map((item) => ({
-                category: item.category,
-                label: item.label,
-                spec: item.spec ?? {},
-              }))}
-            />
-          </section>
-
-          <section className="panel">
             <div className="panel-heading list-heading">
-              <div><span className="step-label">04 / 当前清单</span><h3>{build ? build.name : "还没有活动项目"}</h3></div>
+              <div><span className="step-label">03 / 当前清单</span><h3>{build ? build.name : "还没有活动项目"}</h3></div>
               <span className="count-badge">{build?.items.length ?? 0} / 8 类</span>
             </div>
             {build?.items.length ? (
@@ -407,6 +393,23 @@ export default function Home() {
             <div className="list-actions">
               <span className="data-note">数据由你确认 · 不自动猜测具体型号</span>
             </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div><span className="step-label">04 / 尺寸核对</span><h3>尺寸核对示意图</h3></div>
+              <span className="panel-index">D</span>
+            </div>
+            <p className="panel-note">
+              按已录入的规格数字绘制的规则示意图，仅表达显卡长度、散热器高度与机箱限值的比较关系——不是渲染图，不代表配件真实外观。规格未知时显示虚线幽灵件。
+            </p>
+            <BuildCanvas
+              items={(build?.items ?? []).map((item) => ({
+                category: item.category,
+                label: item.label,
+                spec: item.spec ?? {},
+              }))}
+            />
           </section>
         </div>
 
