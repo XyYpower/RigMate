@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RigMate
 
-## Getting Started
+RigMate 是一个面向 DIY 装机和升级场景的 PC 配件清单检查工具。当前处于 V1-A 第一阶段：八类核心配件录入 + 全部确定性兼容性规则，价格证据和型号目录在后续阶段扩展。
 
-First, run the development server:
+## 当前范围
+
+已实现：
+
+- 创建装机项目，数据持久化到 SQLite（`data/rigmate.db`，WAL 模式），重启后保留；
+- 八类配件录入：CPU、主板、显卡、内存、SSD/HDD、电源、散热器、机箱，每类有独立的规格字段（spec JSON + Zod 校验）；
+- 12 条确定性兼容性规则：CPU/主板插槽、主板 PCIe x16、内存代际、内存条数与插槽、主板板型与机箱、显卡长度与机箱限长、整机功耗估算、显卡供电接口、散热器插槽、散热器高度与机箱限高、存储接口、存储数量与接口总数；
+- 缺少关键字段时输出“待补充”并列出缺失项，不猜默认值；
+- 检查结果（每次运行 + 每条结论）落库，报告按阻断 → 待补充 → 警告 → 通过排序；
+- 已知限制：BIOS/CPU 支持列表（R-CPU-MB-002）暂无数据来源，未实现。
+
+## 本地启动
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 <http://localhost:3000>。数据库表会在服务首次访问时自动创建。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 验证命令
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run db:migrate
+```
 
-## Learn More
+## 文档
 
-To learn more about Next.js, take a look at the following resources:
+- [业务逻辑规格](./docs/PC_DIY_装机助手_业务逻辑规格_v1.md)
+- [技术架构决策](./docs/PC_DIY_装机助手_技术架构决策_v1.md)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+后续需求先更新业务规格和架构决策，再修改代码。V1 不使用电商爬虫、多 Agent、自动下单、价格预测或未经授权的价格数据集。
