@@ -11,7 +11,6 @@ import {
 } from "@/ui/category-form";
 import { FindingCard } from "@/ui/components/finding-card";
 import { StatusChip } from "@/ui/components/status-chip";
-import { BuildCanvas } from "@/ui/canvas/build-canvas";
 import type { Finding, FindingStatus } from "@/domain/build/types";
 
 type Category = keyof typeof CATEGORY_META;
@@ -362,7 +361,7 @@ export default function Home() {
           </section>
         </div>
 
-        {/* 中栏：当前清单 + 尺寸核对示意 */}
+        {/* 中栏：当前清单 */}
         <div className="col col-mid">
           <section className="panel">
             <div className="panel-heading list-heading">
@@ -394,30 +393,13 @@ export default function Home() {
               <span className="data-note">数据由你确认 · 不自动猜测具体型号</span>
             </div>
           </section>
-
-          <section className="panel">
-            <div className="panel-heading">
-              <div><span className="step-label">04 / 尺寸核对</span><h3>尺寸核对示意图</h3></div>
-              <span className="panel-index">D</span>
-            </div>
-            <p className="panel-note">
-              按已录入的规格数字绘制的规则示意图，仅表达显卡长度、散热器高度与机箱限值的比较关系——不是渲染图，不代表配件真实外观。规格未知时显示虚线幽灵件。
-            </p>
-            <BuildCanvas
-              items={(build?.items ?? []).map((item) => ({
-                category: item.category,
-                label: item.label,
-                spec: item.spec ?? {},
-              }))}
-            />
-          </section>
         </div>
 
         {/* 右栏：诊断流 */}
         <div className="col col-right">
           <section className="panel">
             <div className="results-heading">
-              <div><span className="step-label">05 / 检查结果</span><h3>兼容性诊断</h3></div>
+              <div><span className="step-label">04 / 检查结果</span><h3>兼容性诊断</h3></div>
               {findings.length > 0 && resultMeta && <span className="result-time">结果时间：{resultMeta.time}</span>}
             </div>
             {resultMeta?.stale && (
