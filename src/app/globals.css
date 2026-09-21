@@ -75,8 +75,7 @@ button:disabled { cursor: not-allowed; opacity: 0.4; }
 }
 .field-label .field-hint { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; letter-spacing: 0; }
 
-/* 目录署名行（ODC-By 要求署名随数据展示）：发丝线之下的安静小字 */
-.catalog-provenance {
+/* 目录署名行（ODC-By 要求署名随数据展示）：发丝线之下的安静小字 */.catalog-provenance {
   margin: 2px 0 0; padding: 5px 0 0;
   border-top: 1px solid var(--rm-line);
   color: var(--rm-ink-faint); font-size: 11px; letter-spacing: 0;
@@ -223,6 +222,13 @@ select {
 .addgrid .field.wide { grid-column: 1 / -1; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 16px; }
 .helper { margin: 10px 0 0; color: var(--rm-ink-faint); font-size: 11px; }
+/* 表单操作反馈（成功/校验错误）：必须出现在按钮正下方，footer 用户看不见 */
+.form-feedback {
+  margin: 9px 0 0; padding-top: 7px;
+  border-top: 1px solid var(--rm-line);
+  color: var(--rm-ink-muted); font-size: 12px;
+}
+.form-feedback:first-letter { color: var(--rm-accent); }
 
 /* ---------- 诊断：报告式条款 ---------- */
 .results-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-bottom: 7px; border-bottom: 1px solid var(--rm-ink); }

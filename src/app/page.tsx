@@ -810,6 +810,8 @@ export default function Home() {
                 </button>
               )}
             </div>
+            {/* 操作反馈必须离按钮近：footer 在页面最底端，校验错误看不见会被当成"点了没反应" */}
+            {message && <p className="form-feedback">{message}</p>}
             {!build && <p className="helper">请先创建或选择一个项目。</p>}
           </section>
         </div>
@@ -847,7 +849,7 @@ export default function Home() {
 
       <footer className="footer">
         <span className="footer-brand">RIGMATE / 业务规则优先</span>
-        <span>{message}</span>
+        {/* 操作反馈移至表单按钮旁（form-feedback）：footer 在页面底端，用户看不见 */}
       </footer>
     </main>
   );
