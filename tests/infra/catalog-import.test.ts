@@ -75,15 +75,25 @@ describe("BuildCores → 目录字段映射", () => {
     });
     expect(outcome.status).toBe("ok");
     if (outcome.status !== "ok") return;
+    // m2Slots 不从上游数组带出（该数组按支持尺寸展开，非物理槽数）
     expect(outcome.entry.spec).toEqual({
       socket: "LGA1700",
       formFactor: "mATX",
       ramType: "DDR5",
       ramSlots: 4,
-      m2Slots: 2,
       sataPorts: 4,
       pcieX16Slots: 1,
     });
+  });
+
+  it("主板：上游 SATA 全零视为未填写，不断言'没有 SATA'", () => {
+    const outcome = mapMotherboardRecord({
+      opendb_id: "uuid-mb-zero",
+      socket: "LGA 1700",
+      storage_devices: { sata_6_gb_s: 0, sata_3_gb_s: 0 },
+      metadata: { name: "某 Z790 主板" },
+    });
+    expect(outcome.status === "ok" && outcome.entry.spec.sataPorts).toBe(undefined);
   });
 
   it("显卡：长度/TDP/供电接口直映，12V-2x6 并入 16pin 计数", () => {

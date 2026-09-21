@@ -122,14 +122,15 @@ export function mapMotherboardRecord(record: unknown): MappedOutcome {
   if (ramType === "DDR4" || ramType === "DDR5") spec.ramType = ramType;
   const ramSlots = positiveInt(parsed.memory?.slots);
   if (ramSlots !== undefined) spec.ramSlots = ramSlots;
-  if (parsed.m2_slots) spec.m2Slots = parsed.m2_slots.length;
+  // 上游 m2_slots 数组按"支持的尺寸"展开（一个槽可占两行），条数 ≠ 物理槽数——
+  // 推不出可靠值就不带出（缺着比错着好）
   const storage = parsed.storage_devices;
   if (storage) {
     const sata6 = storage.sata_6_gb_s ?? 0;
     const sata3 = storage.sata_3_gb_s ?? 0;
-    if (Number.isFinite(sata6) && Number.isFinite(sata3)) {
-      spec.sataPorts = Math.round(sata6 + sata3);
-    }
+    const sataSum = sata6 + sata3;
+    // 全零大概率是上游占位（多数 ATX 板有 SATA），不为它断言"没有 SATA"
+    if (sataSum > 0) spec.sataPorts = Math.round(sataSum);
   }
   const pcieSlots = parsed.pcie_slots;
   if (pcieSlots) {
