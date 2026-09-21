@@ -57,6 +57,7 @@
 | 标准型号目录（种子数据 + 点选自动带出规格 + 来源标记） | ✅ 完成（M17）；候选模糊匹配与目录运营为后续增强 |
 | 配件条目编辑 / 删除（PATCH/DELETE + 编辑态表单 + 两步确认） | ✅ 完成（M14） |
 | 数据库迁移版本检测（schema_version + 版本化迁移 + 启动日志 + 降级拒绝） | ✅ 完成（M18） |
+| 目录批量录入工具（CSV 模板 + 导入命令 + 审计，M20 方案 A） | ✅ 完成（M20，预填 49 条已入库） |
 | BuildCores 目录导入器（离线导入 + commit 固定 + ODC-By 署名 + 审计表） | ✅ 完成（M19，已导入 26,121 条） |
 | 业务验证：20 份真实清单样本（已 11 份，目标配比 整机10+自购10）+ 5-10 名用户访谈 | 🔶 进行中（用户收集） |
 | V1-B：价格证据链 / 替代方案 / 报告导出 | ⬜ |
@@ -204,6 +205,15 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - **修复表单校验 bug**：计数类字段（8pin/12VHPWR/M.2/SATA/x16 槽）此前按"正整数"校验，导入数据里"仅 12VHPWR 供电的显卡 8pin=0"是事实——`FieldDef` 新增 `count` 类型（非负整数），7 个字段改用，补 4 个单测（含 0 值往返）。
 
 
+### M20（2026-09-21）目录批量录入工具·方案A：CSV 模板 + 导入命令（本窗口）
+解决"国内型号无法不写代码就进目录"的录入瓶颈（用户明确反馈）：
+- **模板生成**：`npm run catalog-template` → `data/catalog/人工目录模板.csv`（带 BOM，Excel 双击不乱码），**预填 49 行**来自 samples/目录收录候选.md 的型号清单——型号/类别/别名/确定字段直接填，没把握的字段留空（空 = 不带出，绝不猜）；
+- **导入命令**：`npm run import-manual`——中文表头宽松解析（值写人话：mATX/AM5/NVMe 自动归一化）、逐行校验、**任何一行有问题整包拒绝并逐行报错**（数据用户可修，不放坏行）；同类别同名原地更新保留 id（可重复导入）；
+- **产物与加载**：`data/catalog/manual.json`（本地数据层，gitignore）；运行时三层合并 **种子 → 人工 → BuildCores**（无关键词下拉里越靠前越相关）；加载即校验，坏条目抛错；
+- **审计**：复用 catalog_import_runs（upstream_commit = "manual"）；
+- 实测：49 条导入成功，检索「速虎」「无界」均命中人工条目，BuildCores 署名不受影响；
+- 方案 B（网页目录管理页）留作后续"随手加"入口，数据通道已由 A 打通。
+
 ## 5. 代码地图
 
 ```text
@@ -219,7 +229,7 @@ src/
 │  └─ rules/                   # engine.ts(注册表+排序) + helpers + 按领域的规则文件
 ├─ application/builds/service.ts  # 用例编排：createBuild/addBuildItem/checkBuild/getLatestCheck/deleteBuild
 ├─ infra/
-│  ├─ catalog-import/          # BuildCores 导入器：source-schemas + map(纯映射) + load(运行时加载) + run(管线)
+│  ├─ catalog-import/          # 目录导入：BuildCores(source-schemas/map/load/run) + 人工CSV(manual-csv + 模板/导入脚本)
 │  └─ db/                      # client.ts(懒初始化单例) + migrate.ts(版本化迁移 M18) + repositories/
 ├─ ui/
 │  ├─ category-form.ts         # 八类表单元数据（字段定义/摘要/提交解析）
@@ -253,6 +263,14 @@ npm run test:e2e    # Playwright，9 条端到端（独立端口 3100 + 每次�
 git clone --depth 1 https://github.com/buildcores/buildcores-open-db.git data/buildcores-open-db
 npm run import-catalog -- --source data/buildcores-open-db
 # 产物 data/catalog/buildcores.json（gitignore），审计写入 catalog_import_runs 表；重启 dev server 后生效
+```
+
+**人工目录批量录入（M20）**：
+```bash
+npm run catalog-template   # 生成预填模板 data/catalog/人工目录模板.csv（49 行候选）
+# 用 Excel 核对/补空（不确定留空），另存为「CSV UTF-8」
+npm run import-manual      # 逐行校验，整包通过才写入；产物 data/catalog/manual.json
+# 重启 dev server 后生效；目录三层合并：种子 → 人工 → BuildCores
 ```
 
 ## 7. 已知问题与技术债
@@ -318,6 +336,7 @@ npm run import-catalog -- --source data/buildcores-open-db
 ---
 
 **版本记录**
+- 2026-09-21 v2.9：M20 目录批量录入工具方案A（CSV 中文表头模板预填 49 条 + import-manual 命令，宽松归一化/逐行校验整包拒绝/三层合并 种子→人工→BuildCores；116 单测 + 9 E2E）。
 - 2026-09-21 v2.8：样本 8→11 份；采纳用户对样本偏差的判断（整机单回避一线配置），收录候选名单增加偏差警示与"整机10+自购10"采集配比，README 同步；新增型号：技嘉 B840M FORCE（首个 B840 入门芯片组样本）、RX 9070 GRE 魔鹰（首个 A 卡样本）、瓦尔基里 GLA360/VK03-M、骨伽 VTE X2 铜牌（缩水典型）等。
 - 2026-09-21 v2.7：样本收集 2→8 份（用户收集的 6 张主流电商配置单转录入库，全部录入系统跑检查）；产出国内目录第一批收录候选名单（samples/目录收录候选.md，≈35 条，按样本频次排序）；实证两条录入纪律：候选假阳性（P750GS→Phanteks）必须人工整名确认、无显卡配置的诚实处理（R-PSU-001 报"未添加显卡"）。
 - 2026-09-21 v2.6：导入映射修正（真实配置单检验发现：上游 m2_slots 按尺寸展开不可映射、SATA 全零视为未填写）+ 首批 2 份真实配置单样本（samples/，已录入跑通第一轮检查：直播单 6通过/6待补充，抖音整机单 5通过/7待补充）。

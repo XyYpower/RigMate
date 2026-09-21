@@ -12,6 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "import-catalog": "tsx scripts/import-buildcores.ts",
+    "catalog-template": "tsx scripts/catalog-template.ts",
+    "import-manual": "tsx scripts/import-manual.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate-db.ts"
   },

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { specSchemaByCategory } from "@/domain/build/specs";
 import { buildItemCategorySchema } from "@/domain/build/types";
 import type { CatalogEntry } from "@/domain/catalog/seed";
+import { manualCatalogFileSchema } from "./manual-csv";
 
 /**
  * 运行时加载 BuildCores 导入产物（data/catalog/buildcores.json，gitignore——
@@ -78,12 +79,50 @@ export function loadBuildcoresCatalog(): BuildcoresCatalog | null {
   return cache;
 }
 
-/** 合并人工种子与导入条目（种子在前，保证搜索上限截断时种子优先可见） */
+export type ManualCatalog = {
+  provenance: { source: string; importedAt: string; entryCount: number; note?: string };
+  entries: CatalogEntry[];
+};
+
+let manualCache: ManualCatalog | null | undefined;
+
+function resolveManualCatalogFilePath(): string {
+  return process.env.RIGMATE_MANUAL_CATALOG_PATH
+    ? resolve(process.env.RIGMATE_MANUAL_CATALOG_PATH)
+    : join(process.cwd(), "data", "catalog", "manual.json");
+}
+
+/** 读取人工目录（M20 批量导入产物）；从未导入过返回 null */
+export function loadManualCatalog(): ManualCatalog | null {
+  if (manualCache !== undefined) return manualCache;
+  const manualPath = resolveManualCatalogFilePath();
+  if (!existsSync(manualPath)) {
+    manualCache = null;
+    return manualCache;
+  }
+  const raw = JSON.parse(readFileSync(manualPath, "utf8")) as unknown;
+  const file = manualCatalogFileSchema.parse(raw);
+  const entries: CatalogEntry[] = file.entries.map((entry) => ({
+    ...entry,
+    spec: specSchemaByCategory[entry.category].parse(entry.spec),
+  }));
+  if (entries.length !== file.provenance.entryCount) {
+    throw new Error(
+      `人工目录文件自相矛盾：实际 ${entries.length} 条，provenance 记录 ${file.provenance.entryCount} 条`,
+    );
+  }
+  manualCache = { provenance: file.provenance, entries };
+  return manualCache;
+}
+
+/** 合并三层目录：人工种子 → 人工批量导入 → BuildCores（无关键词下拉里越靠前越相关） */
 export function mergedCatalogEntries(seed: CatalogEntry[]): CatalogEntry[] {
   const imported = loadBuildcoresCatalog();
-  return imported ? [...seed, ...imported.entries] : seed;
+  const manual = loadManualCatalog();
+  return [...seed, ...(manual?.entries ?? []), ...(imported?.entries ?? [])];
 }
 
 export function resetBuildcoresCatalogCacheForTests(): void {
   cache = undefined;
+  manualCache = undefined;
 }
