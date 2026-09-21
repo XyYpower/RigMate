@@ -22,6 +22,7 @@ type Item = {
   label: string;
   spec: ItemSpec;
   priceCents?: number;
+  source?: string;
 };
 
 type Build = {
@@ -35,7 +36,15 @@ type Build = {
   items: Item[];
 };
 
-type CategoryDraft = { label: string; price: string; fields: Record<string, string> };
+type CategoryDraft = { label: string; price: string; catalogId?: string; fields: Record<string, string> };
+
+type CatalogEntry = {
+  id: string;
+  category: string;
+  name: string;
+  aliases: string[];
+  spec: ItemSpec;
+};
 
 const EMPTY_DRAFT: CategoryDraft = { label: "", price: "", fields: {} };
 
@@ -69,6 +78,7 @@ export default function Home() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [confirmItemId, setConfirmItemId] = useState<string | null>(null);
+  const [catalogByCategory, setCatalogByCategory] = useState<Record<string, CatalogEntry[]>>({});
   const [message, setMessage] = useState("正在加载你的历史项目…");
   const [busy, setBusy] = useState(false);
 
@@ -115,6 +125,26 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (catalogByCategory[itemCategory]) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/catalog?category=${itemCategory}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) {
+          setCatalogByCategory((prev) => ({ ...prev, [itemCategory]: data.entries ?? [] }));
+        }
+      } catch {
+        /* 目录加载失败不阻塞手填 */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [itemCategory, catalogByCategory]);
 
   const counts = useMemo(() => {
     const result: Record<FindingStatus, number> = {
@@ -249,7 +279,13 @@ export default function Home() {
       const response = await fetch(`/api/builds/${build.id}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: itemCategory, label: draft.label, spec, priceCents: price.priceCents }),
+        body: JSON.stringify({
+          category: itemCategory,
+          label: draft.label,
+          spec,
+          priceCents: price.priceCents,
+          source: draft.catalogId ? `catalog:${draft.catalogId}` : undefined,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "添加失败");
@@ -275,6 +311,7 @@ export default function Home() {
       [item.category]: {
         label: item.label,
         price: typeof item.priceCents === "number" ? String(item.priceCents / 100) : "",
+        catalogId: item.source?.startsWith("catalog:") ? item.source.slice("catalog:".length) : undefined,
         fields: specToFormValues(CATEGORY_META[item.category], item.spec ?? {}),
       },
     }));
@@ -393,6 +430,7 @@ export default function Home() {
         [itemCategory]: {
           label: prev[itemCategory]?.label ?? "",
           price: prev[itemCategory]?.price ?? "",
+          catalogId: prev[itemCategory]?.catalogId,
           fields: { ...(prev[itemCategory]?.fields ?? {}), [field.key]: next },
         },
       }));
@@ -570,7 +608,10 @@ export default function Home() {
                     <span className="cat-label">{CATEGORY_META[item.category].badge}</span>
                     <div className="item-main">
                       <strong>{item.label}</strong>
-                      <span>{CATEGORY_META[item.category].summary(item.spec ?? {})}</span>
+                      <span>
+                        {CATEGORY_META[item.category].label} · {CATEGORY_META[item.category].summary(item.spec ?? {})}
+                        {item.source?.startsWith("catalog:") ? " · 目录型号" : ""}
+                      </span>
                     </div>
                     <span className={`item-price ${typeof item.priceCents === "number" ? "" : "empty"}`}>
                       {typeof item.priceCents === "number" ? formatYuan(item.priceCents) : "—"}
@@ -624,15 +665,44 @@ export default function Home() {
             {editingItemId && (
               <p className="edit-note">正在编辑清单中的配件：类别保持不变，改完点「保存修改」。</p>
             )}
-            <div className="addgrid">
-              <label className="field wide">
-                <span className="field-label">型号或商品名称</span>
+              <div className="addgrid">
+                <label className="field wide">
+                  <span className="field-label">从目录选择型号 <span className="field-hint">自动带出已核规格</span></span>
+                  <select
+                    value={draft.catalogId ?? ""}
+                    onChange={(event) => {
+                      const entryId = event.target.value || undefined;
+                      const entry = entryId
+                        ? (catalogByCategory[itemCategory] ?? []).find((e) => e.id === entryId)
+                        : undefined;
+                      setDrafts((prev) => ({
+                        ...prev,
+                        [itemCategory]: {
+                          label: entry ? entry.name : prev[itemCategory]?.label ?? "",
+                          price: prev[itemCategory]?.price ?? "",
+                          catalogId: entry?.id,
+                          fields: entry ? specToFormValues(meta, entry.spec) : prev[itemCategory]?.fields ?? {},
+                        },
+                      }));
+                    }}
+                    disabled={busy}
+                  >
+                    <option value="">手动填写（不使用目录）</option>
+                    {(catalogByCategory[itemCategory] ?? []).map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field wide">
+                  <span className="field-label">型号或商品名称</span>
                 <input
                   value={draft.label}
                   onChange={(event) =>
                     setDrafts((prev) => ({
                       ...prev,
-                      [itemCategory]: { label: event.target.value, price: prev[itemCategory]?.price ?? "", fields: prev[itemCategory]?.fields ?? {} },
+                      [itemCategory]: { label: event.target.value, price: prev[itemCategory]?.price ?? "", catalogId: prev[itemCategory]?.catalogId, fields: prev[itemCategory]?.fields ?? {} },
                     }))
                   }
                   placeholder={`${meta.label}型号`}
@@ -646,7 +716,7 @@ export default function Home() {
                   onChange={(event) =>
                     setDrafts((prev) => ({
                       ...prev,
-                      [itemCategory]: { label: prev[itemCategory]?.label ?? "", price: event.target.value, fields: prev[itemCategory]?.fields ?? {} },
+                      [itemCategory]: { label: prev[itemCategory]?.label ?? "", price: event.target.value, catalogId: prev[itemCategory]?.catalogId, fields: prev[itemCategory]?.fields ?? {} },
                     }))
                   }
                   placeholder="例如：2899"

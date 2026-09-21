@@ -65,8 +65,10 @@ test("刷新页面后项目与配件自动恢复", async ({ page }) => {
   await waitUntilLoaded(page);
 
   await expect(page.getByText("1 / 8 类")).toBeVisible();
-  // 机器画布的悬浮提示会包含同文案，用精确匹配锁定清单行内的型号
-  await expect(page.getByText("AMD Ryzen 7 7800X3D", { exact: true })).toBeVisible();
+  // 目录下拉里存在同名选项，用清单行内的型号元素精确锁定
+  await expect(
+    page.locator(".item-main strong").filter({ hasText: "AMD Ryzen 7 7800X3D" }),
+  ).toBeVisible();
   await expect(page.getByText("已恢复最近的项目")).toBeVisible();
 });
 
@@ -228,4 +230,24 @@ test("配件可编辑与删除，修改后旧结论标记过期", async ({ page 
   await waitUntilLoaded(page);
   await expect(page.getByText("1 / 8 类")).toBeVisible();
   await expect(page.getByText("MSI B650M MORTAR WIFI", { exact: true })).toBeVisible();
+});
+
+test("从目录选择型号自动带出规格并标记来源", async ({ page }) => {
+  await page.goto("/");
+  await waitUntilLoaded(page);
+  await page.getByRole("button", { name: "新建项目 →" }).click();
+
+  await page
+    .getByLabel("从目录选择型号 自动带出已核规格")
+    .selectOption({ label: "AMD Ryzen 7 9800X3D" });
+
+  await expect(page.getByRole("textbox", { name: "型号或商品名称" })).toHaveValue(
+    "AMD Ryzen 7 9800X3D",
+  );
+  await expect(page.getByRole("textbox", { name: "插槽 用于第一项规则" })).toHaveValue("AM5");
+  await expect(page.getByRole("textbox", { name: "TDP 功耗（W）" })).toHaveValue("120");
+
+  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await expect(page.getByText("1 / 8 类")).toBeVisible();
+  await expect(page.getByText("· 目录型号")).toBeVisible();
 });

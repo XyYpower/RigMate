@@ -38,7 +38,7 @@
 | UI F1 铺底：语义状态 tokens + 六要素诊断卡组件 | ✅ 完成 |
 | 前端版式 v3：技术规格单（去卡片化 / 等宽数据 / 报告式诊断条款） | ✅ 完成（M16） |
 | 预算字段与价格手动录入 | ✅ 完成（M10 后端契约 + M13 预算余量计与价格/预算录入） |
-| 标准型号目录（种子数据 + 点选替代手填 + 型号候选确认） | ⬜ |
+| 标准型号目录（种子数据 + 点选自动带出规格 + 来源标记） | ✅ 完成（M17）；候选模糊匹配与目录运营为后续增强 |
 | 配件条目编辑 / 删除（PATCH/DELETE + 编辑态表单 + 两步确认） | ✅ 完成（M14） |
 | 数据库迁移版本检测（当前改表结构需重启 dev server） | ⬜ |
 | BuildCores 目录导入器（可审计、ODC-By 署名） | ⬜ V1-A 末 |
@@ -157,6 +157,14 @@
 CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `status-chip` / `evidence-stamp` 同步改为版式 v3 类名。
 验证：77 单元测试 + 8 条 E2E 全绿（修正一处文案锚点：结果时间冒号回归）；浏览器多状态视觉验收（无预算 / 有预算 / 超支 / 诊断条款 / 用户真实项目）。
 
+### M17（2026-09-20）标准型号目录 v1（本窗口）
+- **种子目录**：`src/domain/catalog/seed.ts`——8 类 34 条高频型号。数据纪律：每条目只带公开资料可靠的高置信字段；GPU 只带官方 TDP/供电接口不带板卡长度，物理尺寸拿不准的故意缺省（遵循"绝不猜"）；加载即按类别 schema 校验，坏种子直接抛错；
+- **检索**：`searchCatalog`（类别过滤 + 名称/别名大小写不敏感模糊匹配 + 条数上限）；`GET /api/catalog?category=cpu&q=9800`；
+- **录入集成**：配件表单新增「从目录选择型号」下拉——点选自动带出型号与已核规格（`specToFormValues` 反向回填），来源记入条目 `source=catalog:{id}`，清单行显示「目录型号」标记；未选即手填，规格 §8.3 三档的最小实现；
+- **测试**：目录 schema 全量校验 + 检索 6 用例；E2E +1（点选 → 字段回填 → 加入清单 → 来源标记）；全量 83 单元测试 + 9 条 E2E 全绿；
+- **E2E 确定性加固**：新增 `scripts/reset-e2e-db.mjs`，Playwright 启动服务前重置 `data/e2e.db`，消除跨运行残留导致的恢复断言漂移；
+- 浏览器实测：点选 9800X3D 后插槽 AM5 / TDP 120 自动带出。
+
 ## 5. 代码地图
 
 ```text
@@ -168,6 +176,7 @@ src/
 │  ├─ build/types.ts           # 领域类型 + 输入 schema（判别联合，按类别校验 spec）
 │  ├─ build/specs.ts           # 八类配件规格 Zod schema
 │  ├─ build/fingerprint.ts     # 清单指纹（过期判断用）
+│  ├─ catalog/                 # 标准型号目录：seed.ts（34 条）+ search.ts（M17）
 │  └─ rules/                   # engine.ts(注册表+排序) + helpers + 按领域的规则文件
 ├─ application/builds/service.ts  # 用例编排：createBuild/addBuildItem/checkBuild/getLatestCheck/deleteBuild
 ├─ infra/db/                   # client.ts(懒初始化单例) + migrate.ts(幂等迁移) + repositories/
@@ -188,9 +197,9 @@ scripts/migrate-db.ts          # 手动建表（一般不需要，服务首次�
 ```bash
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit（strict）
-npm test            # Vitest，77 个单元测试（domain 46 + application 16 + ui 15）
+npm test            # Vitest，83 个单元测试（domain 52 + application 16 + ui 15）
 npm run build       # Next.js 生产构建（含类型检查）
-npm run test:e2e    # Playwright，8 条端到端（独立端口 3100 + 独立库 data/e2e.db + 独立构建目录 .next-e2e）
+npm run test:e2e    # Playwright，9 条端到端（独立端口 3100 + 每次运行前重置 data/e2e.db + 独立构建目录 .next-e2e）
 ```
 
 全部通过才算完成。**Windows 环境注意**：Playwright 无头壳下载在本机超时过，E2E 用环境变量指定浏览器：`RIGMATE_E2E_EXECUTABLE_PATH='C:/Users/25128/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'`（未设置时走 Playwright 默认浏览器，其他机器无需此变量）。
@@ -260,7 +269,8 @@ npm run test:e2e    # Playwright，8 条端到端（独立端口 3100 + 独立�
 ---
 
 **版本记录**
-- 2026-09-20 v2.1：M16 版式 v3「技术规格单」去 AI 味重构（去卡片/去英文小标签/等宽数字/报告式诊断条款）。
+- 2026-09-20 v2.2：M17 标准型号目录 v1（34 条种子 + 检索 API + 点选带出 + 来源标记；83 单测 + 9 E2E）+ E2E 运行前重置隔离库。
+- 2026-09-20 v2.1：M16 版式 v3「技术规格单」「技术规格单」去 AI 味重构（去卡片/去英文小标签/等宽数字/报告式诊断条款）。
 - 2026-09-20 v2.0：M15 版式 v2「仪器台」重做 + E2E 隔离（独立端口/库/构建目录）；开发库测试数据已清理。
 - 2026-09-20 v1.9：M14 配件编辑/删除（PATCH/DELETE + 编辑态表单 + 两步确认；77 单测 + 8 E2E）。
 - 2026-09-20 v1.8：M13 仪器白主题 + 预算余量计 + 价格/预算录入（E2E 7/7）；§11 冻结解除，前端所有权移交本窗口。
