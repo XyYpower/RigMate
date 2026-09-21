@@ -42,6 +42,20 @@ export const findings = sqliteTable("findings", {
   payload: text("payload").notNull(),
 });
 
+export const catalogImportRuns = sqliteTable("catalog_import_runs", {
+  id: text("id").primaryKey(),
+  upstreamCommit: text("upstream_commit").notNull(),
+  upstreamUrl: text("upstream_url"),
+  license: text("license").notNull(),
+  sourcePath: text("source_path").notNull(),
+  importedAt: text("imported_at").notNull(),
+  filesRead: integer("files_read").notNull(),
+  importedCount: integer("imported_count").notNull(),
+  skippedCount: integer("skipped_count").notNull(),
+  errorCount: integer("error_count").notNull(),
+  errors: text("errors").notNull().default("[]"),
+});
+
 export type RigmateDatabase = BetterSQLite3Database<Record<string, never>>;
 
 type DatabaseStore = {

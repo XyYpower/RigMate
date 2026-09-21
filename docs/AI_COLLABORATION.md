@@ -3,25 +3,26 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-20 ｜ 当前阶段：V1-A 约完成 90%（M17 目录上线）；剩余 = 迁移版本检测 + BuildCores 导入器 + 业务验证（见 §0/§8）
+> 最后更新：2026-09-21 ｜ 当前阶段：V1-A 代码侧完成（M18 迁移版本检测 + M19 BuildCores 导入器上线）；剩余 = 业务验证 20 份真实清单（用户执行，见 §0/§8）
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
 ---
 
-## 0. 交接快照（2026-09-20 换窗口前状态沉淀，新窗口先读这节）
+## 0. 交接快照（2026-09-21 M18/M19 上线后状态，新窗口先读这节）
 
-- **Git**：工作树干净，本地与远程完全同步（main = `74cba83`，M17）；无进行中 WIP，可以随时安全接手。
-- **测试基线**：83 个单元测试 + 9 条 E2E 全绿；lint / typecheck / build 通过。
+- **Git**：以本文件更新后的提交为准（此前窗口交接快照 db73e08 因网络闪断曾滞留本地，已随本次一并推送）。
+- **测试基线**：107 个单元测试 + 9 条 E2E 全绿；lint / typecheck / build 通过；M19 已在真实浏览器完成全链路操作验证（检索→点选→回填→加清单→跑检查→预算联动）。
 - **本机注意事项**：
-  - E2E 需要环境变量 `RIGMATE_E2E_EXECUTABLE_PATH`（无头壳下载超时，见 §6），已在验证时验证可用；
-  - E2E 运行在独立端口 3100 + `data/e2e.db`（每次运行自动重置），**不会污染开发库** `data/rigmate.db`；
-  - 开发库中现存用户真实项目 1 个（配件 98x3D / 微型X874，预算 ¥10,000）——**不要删除**；
-  - dev server（3000 端口）可能仍在后台运行，接手时 `npm run dev` 前先检查端口；
-  - GitHub 推送偶发闪断（连接重置），重试即可；改表结构后 dev server 需重启（§6）。
-- **功能现状**：创建/切换/删除项目（两步确认）、八类配件录入（含价格）、配件编辑/删除（旧结论自动过期）、12 条兼容性规则 + 优先级报告、检查结果持久化恢复、标准型号目录点选（34 条种子，自动带出规格）、预算余量计。
-- **下一项工作**（按 §8 顺序）：1) 数据库迁移版本检测（小）；2) BuildCores 目录导入器（中）；3) 业务侧验证 20 份真实清单（用户执行）。
-- **前端所有权**：归 AI 窗口（M9 起由前端窗口完成 M9-M12，M13-M17 由本窗口完成）；版式 v3「技术规格单」刚落地，如需再改视觉先看 M15/M16 的方向记录。
+  - E2E 需要环境变量 `RIGMATE_E2E_EXECUTABLE_PATH`（见 §6）；
+  - E2E 独立端口 3100 + `data/e2e.db`（每次运行前自动重置），**不污染开发库**；
+  - 开发库中现存用户真实项目 1 个（配件 98x3D / 微型X874，预算 ¥10,000，已录入 3 件含导入的 4070 SUPER）——**不要删除**；
+  - dev server 可能仍在后台运行，接手时先查 3000 端口；
+  - GitHub 推送偶发闪断（连接重置），重试即可。
+- **功能现状**：V1-A 全部功能 + 数据库迁移版本检测（schema_version 表，版本化迁移，启动日志，降级拒绝）+ BuildCores 目录导入器（离线导入 26,121 条、上游 commit 固定、ODC-By 署名展示、catalog_import_runs 审计）+ 目录关键词检索（万级条目可用性）。
+- **数据现状**：`data/catalog/buildcores.json`（5.6MB，gitignore，本地数据层）= BuildCores OpenDB @ `4bbac3cd57a5` 导入产物；`data/buildcores-open-db/` 为上游克隆（--depth 1）。两者都可随时删除并用 `npm run import-catalog` 重建。
+- **下一项工作**（按 §8 顺序）：1) 业务侧验证 20 份真实清单（用户执行）；2) V1-B 规划（价格证据链 / 替代方案 / 报告导出）。
+- **前端所有权**：归 AI 窗口（全栈）。
 
 ## 1. 一分钟了解项目
 
@@ -55,8 +56,8 @@
 | 预算字段与价格手动录入 | ✅ 完成（M10 后端契约 + M13 预算余量计与价格/预算录入） |
 | 标准型号目录（种子数据 + 点选自动带出规格 + 来源标记） | ✅ 完成（M17）；候选模糊匹配与目录运营为后续增强 |
 | 配件条目编辑 / 删除（PATCH/DELETE + 编辑态表单 + 两步确认） | ✅ 完成（M14） |
-| 数据库迁移版本检测（当前改表结构需重启 dev server） | ⬜ |
-| BuildCores 目录导入器（可审计、ODC-By 署名） | ⬜ V1-A 末 |
+| 数据库迁移版本检测（schema_version + 版本化迁移 + 启动日志 + 降级拒绝） | ✅ 完成（M18） |
+| BuildCores 目录导入器（离线导入 + commit 固定 + ODC-By 署名 + 审计表） | ✅ 完成（M19，已导入 26,121 条） |
 | 业务验证：20 份真实清单样本 + 5-10 名用户访谈 | ⬜ 业务侧，不阻塞开发 |
 | V1-B：价格证据链 / 替代方案 / 报告导出 | ⬜ |
 | V1-C：联盟 API / OCR 报价单入口 / PostgreSQL | ⬜ |
@@ -180,6 +181,29 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - **E2E 确定性加固**：新增 `scripts/reset-e2e-db.mjs`，Playwright 启动服务前重置 `data/e2e.db`，消除跨运行残留导致的恢复断言漂移；
 - 浏览器实测：点选 9800X3D 后插槽 AM5 / TDP 120 自动带出。
 
+### M18（2026-09-21）数据库迁移版本检测（本窗口）
+`migrate.ts` 从"一大段幂等函数"重构为**版本化迁移**：
+- `schema_version` 单行表（id=1, version, applied_at）；`MIGRATIONS` 数组按版本升序（v1 核心表 / v2 build_items 规格列 / v3 items_snapshot / v4 catalog_import_runs）；
+- 只执行 `版本 > 当前` 的迁移；每步 `up()` 成功后才推进版本号——中途崩溃下次启动重跑同一步，因此**每个 up 必须保持幂等**（纪律写进文件头注释）；
+- **降级拒绝**：数据库版本高于代码（回滚过代码）时拒绝迁移并不动 schema，console.warn 提示，避免旧代码写坏新库；
+- 启动日志：每步迁移与最终版本均输出 `[rigmate-db]` 前缀日志（`npm run dev` 终端可见）；
+- 无版本表的历史库自动从 v1 全量幂等跑一遍对齐（真实开发库已验证：用户数据无损，版本落 v4）；
+- 测试 5 用例（全新库 / 幂等重跑 / 历史库升级含旧 socket 数据并入 / 只跑缺失步骤 / 降级拒绝）。
+
+### M19（2026-09-21）BuildCores 目录导入器（本窗口）
+按 ADR §8.1 六道工序实现（schema 校验→字段映射→缺字段缺省→来源与许可证记录→版本固定；大陆 SKU 适配留给人工种子）：
+- **数据调研**：逐类读取上游 `schemas/*.schema.json` + 真实样本（socket 是 `LGA 1700` 带空格、主板板型 `Micro ATX`、PSU 连接器键小写 `pcie_12vhpwr`、CPU tdp/ppt 并存、PSU 只有 6+2pin 字段等差异全部按真实 schema 处理）；
+- **导入器**（`src/infra/catalog-import/` + `scripts/import-buildcores.ts`）：离线读取本地克隆（不联网）；**上游 commit 是硬要求**（非 git 克隆必须 `--commit` 指定，否则拒绝导入）；`npm run import-catalog -- --source data/buildcores-open-db`；
+- **产物 = 本地数据层**：`data/catalog/buildcores.json`（provenance + 26,121 条，gitignore 与 DB 同等对待——几万条生成数据不进 src/仓库）；运行时按需加载 + 进程内缓存 + 加载即校验（坏条目抛错）；
+- **审计**：v4 迁移新增 `catalog_import_runs` 表（commit/许可证/计数/错误样本），每次导入一行；
+- **字段映射**（`map.ts`，纯函数）：socket 剥空格大写（LGA 1700→LGA1700）、板型四档映射、M.2 PCIe→m2_nvme、6+2pin 计 8pin、12V-2x6 并入 16pin 计数、CPU tdp 优先 ppt 兜底、**水冷不带高度**（限高规则语义针对风冷）；缺字段一律故意缺省，绝不猜；
+- **导入结果**：26,206 文件 → 26,121 条导入 / 85 跳过（无可映射规格，多为存储接口识别不了）/ **0 错误**；
+- **UI 两处**（真实浏览器验证时发现的必要补充）：
+  1. 目录署名行（ODC-By 要求随数据展示）：目录下拉下方安静小字「目录含 BuildCores OpenDB 导入 26121 条 · commit 4bbac3c · ODC-By 1.0（须保留署名）」；
+  2. **目录关键词检索框**：导入万级条目后下拉前 30 条根本翻不到具体型号——新增检索输入（防抖 250ms 走 `q` 参数），空关键词回落种子+前 30；
+- **修复表单校验 bug**：计数类字段（8pin/12VHPWR/M.2/SATA/x16 槽）此前按"正整数"校验，导入数据里"仅 12VHPWR 供电的显卡 8pin=0"是事实——`FieldDef` 新增 `count` 类型（非负整数），7 个字段改用，补 4 个单测（含 0 值往返）。
+
+
 ## 5. 代码地图
 
 ```text
@@ -191,10 +215,12 @@ src/
 │  ├─ build/types.ts           # 领域类型 + 输入 schema（判别联合，按类别校验 spec）
 │  ├─ build/specs.ts           # 八类配件规格 Zod schema
 │  ├─ build/fingerprint.ts     # 清单指纹（过期判断用）
-│  ├─ catalog/                 # 标准型号目录：seed.ts（34 条）+ search.ts（M17）
+│  ├─ catalog/                 # 标准型号目录：seed.ts（34 条人工种子）+ search.ts（M17）；BuildCores 产物在 data/catalog/（本地数据层）
 │  └─ rules/                   # engine.ts(注册表+排序) + helpers + 按领域的规则文件
 ├─ application/builds/service.ts  # 用例编排：createBuild/addBuildItem/checkBuild/getLatestCheck/deleteBuild
-├─ infra/db/                   # client.ts(懒初始化单例) + migrate.ts(幂等迁移) + repositories/
+├─ infra/
+│  ├─ catalog-import/          # BuildCores 导入器：source-schemas + map(纯映射) + load(运行时加载) + run(管线)
+│  └─ db/                      # client.ts(懒初始化单例) + migrate.ts(版本化迁移 M18) + repositories/
 ├─ ui/
 │  ├─ category-form.ts         # 八类表单元数据（字段定义/摘要/提交解析）
 │  ├─ theme.css                # F1 设计 tokens（--rm-* 语义色/深色基底，globals.css 已引入）
@@ -205,6 +231,7 @@ src/
 tests/                          # domain(46) + application(12) + ui(15) 单元测试；e2e/(6 条 Playwright)
 docs/                          # 业务规格 / 架构 ADR / UI 设计 / 本文档
 scripts/migrate-db.ts          # 手动建表（一般不需要，服务首次访问自动建）
+scripts/import-buildcores.ts   # BuildCores 导入 CLI（npm run import-catalog）
 ```
 
 ## 6. 如何验证
@@ -212,14 +239,21 @@ scripts/migrate-db.ts          # 手动建表（一般不需要，服务首次�
 ```bash
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit（strict）
-npm test            # Vitest，83 个单元测试（domain 52 + application 16 + ui 15）
+npm test            # Vitest，107 个单元测试
 npm run build       # Next.js 生产构建（含类型检查）
 npm run test:e2e    # Playwright，9 条端到端（独立端口 3100 + 每次运行前重置 data/e2e.db + 独立构建目录 .next-e2e）
 ```
 
 全部通过才算完成。**Windows 环境注意**：Playwright 无头壳下载在本机超时过，E2E 用环境变量指定浏览器：`RIGMATE_E2E_EXECUTABLE_PATH='C:/Users/25128/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'`（未设置时走 Playwright 默认浏览器，其他机器无需此变量）。
 
-**数据库**：`data/rigmate.db`（已 gitignore）。表结构由 `migrateSchema` 幂等迁移自动创建。⚠️ 当前限制：dev server 运行中修改 `migrate.ts` 后，需重启 dev server 才会执行新迁移（迁移每进程只跑一次）。
+**数据库**：`data/rigmate.db`（已 gitignore）。表结构由 `migrateSchema` 版本化迁移自动创建（M18：schema_version 表，启动日志打印版本与每步迁移；数据库比代码新时拒绝迁移）。⚠️ 当前限制：dev server 运行中修改 `migrate.ts` 后，需重启 dev server 才会执行新迁移（迁移每进程只跑一次）。
+
+**BuildCores 目录导入**（M19）：
+```bash
+git clone --depth 1 https://github.com/buildcores/buildcores-open-db.git data/buildcores-open-db
+npm run import-catalog -- --source data/buildcores-open-db
+# 产物 data/catalog/buildcores.json（gitignore），审计写入 catalog_import_runs 表；重启 dev server 后生效
+```
 
 ## 7. 已知问题与技术债
 
@@ -236,8 +270,8 @@ npm run test:e2e    # Playwright，9 条端到端（独立端口 3100 + 每次�
 1. **预算 UI 增强**：✅ 接线与编辑/删除均已完成（M13/M14）。后续增强 = F2 估值曲线（需价格快照历史）。
 2. **标准型号目录 + 候选确认**：种子目录（人工维护高频型号）→ 录入时点选标准型号自动带出规格 → 模糊输入给候选列表由用户确认（规格 §8.3 三档：已确认/候选待确认/无法匹配）。
 3. **配件编辑/删除**：✅ 已完成（M14）。
-4. **迁移版本检测**：`schema_version` 表 + 迁移函数数组按版本执行 + 启动日志。
-5. **BuildCores 导入器**：离线导入 + 记录上游 commit + ODC-By 署名展示（架构 ADR §8.1）。
+4. **迁移版本检测**：✅ 已完成（M18）。
+5. **BuildCores 导入器**：✅ 已完成（M19）。后续增强候选：目录条目审核/下架（`catalog_import_runs` 已就位）、大陆 SKU 人工目录扩充（导入覆盖以国际 SKU 为主，PA120/平头哥等国产型号仍靠人工种子）、候选模糊确认（规格 §8.3 三档完整版）。
 6. **业务侧并行**：收集 20 份脱敏真实清单 + 访谈（决定首批目录收录与 V1-B 优先级）。
 7. **UI F1 接线（三栏改造 + 语义色切换）**：tokens 与诊断卡组件已就绪（见 M7）；因"预算字段录入"（第 1 项）与 UI 接线都会修改 `page.tsx`，两个开发窗口需协调先后，避免同文件并行改动。接线顺带补齐六要素渲染（现页面丢字段，见 M7 说明）。
 
@@ -284,6 +318,8 @@ npm run test:e2e    # Playwright，9 条端到端（独立端口 3100 + 每次�
 ---
 
 **版本记录**
+- 2026-09-21 v2.5：M19 BuildCores 目录导入器（26,121 条离线导入 + commit 固定 + ODC-By 署名展示 + 审计表 + 目录检索框 + 表单 count 校验修复；107 单测 + 9 E2E）。
+- 2026-09-21 v2.4：M18 数据库迁移版本检测（schema_version + 版本化迁移 + 启动日志 + 降级拒绝）。
 - 2026-09-20 v2.3：换窗口交接快照（§0）——状态沉淀与接手指引；头部阶段更新为 90%。
 - 2026-09-20 v2.2：M17 标准型号目录 v1（34 条种子 + 检索 API + 点选带出 + 来源标记；83 单测 + 9 E2E）+ E2E 运行前重置隔离库。
 - 2026-09-20 v2.1：M16 版式 v3「技术规格单」「技术规格单」去 AI 味重构（去卡片/去英文小标签/等宽数字/报告式诊断条款）。

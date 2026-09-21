@@ -23,10 +23,8 @@
 # production
 /build
 
-# local runtime data
-/data/*.db
-/data/*.db-shm
-/data/*.db-wal
+# local runtime data（数据库 / 目录导入产物 / 上游数据克隆等本地数据层）
+/data/
 
 # misc
 .DS_Store

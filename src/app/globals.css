@@ -75,6 +75,17 @@ button:disabled { cursor: not-allowed; opacity: 0.4; }
 }
 .field-label .field-hint { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; letter-spacing: 0; }
 
+/* 目录署名行（ODC-By 要求署名随数据展示）：发丝线之下的安静小字 */
+.catalog-provenance {
+  margin: 2px 0 0; padding: 5px 0 0;
+  border-top: 1px solid var(--rm-line);
+  color: var(--rm-ink-faint); font-size: 11px; letter-spacing: 0;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.catalog-provenance a { color: var(--rm-ink); text-decoration: underline; text-underline-offset: 2px; }
+.catalog-provenance a:hover { color: var(--rm-accent); }
+
 input, select {
   width: 100%; padding: 4px 0 5px;
   border: 0; border-bottom: 1px solid var(--rm-line-strong);

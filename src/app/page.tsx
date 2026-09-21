@@ -46,6 +46,15 @@ type CatalogEntry = {
   spec: ItemSpec;
 };
 
+type CatalogProvenance = {
+  upstreamCommit: string;
+  upstreamUrl: string;
+  license: string;
+  licenseUrl: string;
+  importedAt: string;
+  entryCount: number;
+};
+
 const EMPTY_DRAFT: CategoryDraft = { label: "", price: "", fields: {} };
 
 function latestFirst(builds: Build[]): Build[] {
@@ -79,6 +88,7 @@ export default function Home() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [confirmItemId, setConfirmItemId] = useState<string | null>(null);
   const [catalogByCategory, setCatalogByCategory] = useState<Record<string, CatalogEntry[]>>({});
+  const [catalogProvenance, setCatalogProvenance] = useState<CatalogProvenance | null>(null);
   const [message, setMessage] = useState("正在加载你的历史项目…");
   const [busy, setBusy] = useState(false);
 
@@ -136,6 +146,7 @@ export default function Home() {
         const data = await response.json();
         if (!cancelled) {
           setCatalogByCategory((prev) => ({ ...prev, [itemCategory]: data.entries ?? [] }));
+          if (data.provenance) setCatalogProvenance(data.provenance);
         }
       } catch {
         /* 目录加载失败不阻塞手填 */
@@ -145,6 +156,39 @@ export default function Home() {
       cancelled = true;
     };
   }, [itemCategory, catalogByCategory]);
+
+  // 目录规模 = 人工种子 + BuildCores 导入（万级）：下拉默认只给前 30 条，
+  // 输入关键词改走 q 检索，否则具体型号无法触达
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogSearchResults, setCatalogSearchResults] = useState<CatalogEntry[]>([]);
+  useEffect(() => {
+    const query = catalogSearch.trim();
+    // 空关键词不请求：catalogOptions 直接回落到类别缓存（种子 + 未检索的前 30 条）
+    if (!query) return;
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await fetch(
+            `/api/catalog?category=${itemCategory}&q=${encodeURIComponent(query)}`,
+          );
+          if (!response.ok) return;
+          const data = await response.json();
+          if (!cancelled) {
+            setCatalogSearchResults(data.entries ?? []);
+            if (data.provenance) setCatalogProvenance(data.provenance);
+          }
+        } catch {
+          /* 检索失败保持上次结果 */
+        }
+      })();
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [itemCategory, catalogSearch]);
+  const catalogOptions = catalogSearch.trim() ? catalogSearchResults : catalogByCategory[itemCategory] ?? [];
 
   const counts = useMemo(() => {
     const result: Record<FindingStatus, number> = {
@@ -456,7 +500,7 @@ export default function Home() {
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder={field.placeholder}
-          inputMode={field.type === "number" ? "numeric" : undefined}
+          inputMode={field.type === "number" || field.type === "count" ? "numeric" : undefined}
           disabled={busy}
         />
       </label>
@@ -667,13 +711,24 @@ export default function Home() {
             )}
               <div className="addgrid">
                 <label className="field wide">
+                  <span className="field-label">
+                    检索目录（输入型号关键词） <span className="field-hint">种子 + BuildCores 导入共万级条目</span>
+                  </span>
+                  <input
+                    value={catalogSearch}
+                    onChange={(event) => setCatalogSearch(event.target.value)}
+                    placeholder="例如：9800X3D / 4070 SUPER / B650M"
+                    disabled={busy}
+                  />
+                </label>
+                <label className="field wide">
                   <span className="field-label">从目录选择型号 <span className="field-hint">自动带出已核规格</span></span>
                   <select
                     value={draft.catalogId ?? ""}
                     onChange={(event) => {
                       const entryId = event.target.value || undefined;
                       const entry = entryId
-                        ? (catalogByCategory[itemCategory] ?? []).find((e) => e.id === entryId)
+                        ? catalogOptions.find((e) => e.id === entryId)
                         : undefined;
                       setDrafts((prev) => ({
                         ...prev,
@@ -688,13 +743,28 @@ export default function Home() {
                     disabled={busy}
                   >
                     <option value="">手动填写（不使用目录）</option>
-                    {(catalogByCategory[itemCategory] ?? []).map((entry) => (
+                    {catalogOptions.map((entry) => (
                       <option key={entry.id} value={entry.id}>
                         {entry.name}
                       </option>
                     ))}
                   </select>
                 </label>
+                {catalogProvenance && (
+                  <p className="catalog-provenance field wide">
+                    目录含{" "}
+                    <a
+                      href={catalogProvenance.upstreamUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      BuildCores OpenDB
+                    </a>{" "}
+                    导入 {catalogProvenance.entryCount} 条 · commit{" "}
+                    {catalogProvenance.upstreamCommit.slice(0, 7)} ·{" "}
+                    {catalogProvenance.license}（须保留署名）
+                  </p>
+                )}
                 <label className="field wide">
                   <span className="field-label">型号或商品名称</span>
                 <input

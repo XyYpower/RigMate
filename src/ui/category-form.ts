@@ -3,6 +3,7 @@ import type { BuildItemCategory } from "@/domain/build/types";
 export type FieldDef =
   | { key: string; label: string; type: "text"; placeholder: string }
   | { key: string; label: string; type: "number"; placeholder: string }
+  | { key: string; label: string; type: "count"; placeholder: string }
   | {
       key: string;
       label: string;
@@ -65,9 +66,9 @@ export const CATEGORY_META: Record<BuildItemCategory, CategoryMeta> = {
       { key: "ramType", label: "内存代际", type: "select", options: RAM_TYPE_OPTIONS },
       { key: "formFactor", label: "板型", type: "select", options: FORM_FACTOR_OPTIONS },
       { key: "ramSlots", label: "内存插槽数", type: "number", placeholder: "例如：4" },
-      { key: "m2Slots", label: "M.2 插槽数", type: "number", placeholder: "例如：2" },
-      { key: "sataPorts", label: "SATA 接口数", type: "number", placeholder: "例如：4" },
-      { key: "pcieX16Slots", label: "PCIe x16 插槽数", type: "number", placeholder: "例如：1" },
+      { key: "m2Slots", label: "M.2 插槽数", type: "count", placeholder: "例如：2" },
+      { key: "sataPorts", label: "SATA 接口数", type: "count", placeholder: "例如：4" },
+      { key: "pcieX16Slots", label: "PCIe x16 插槽数", type: "count", placeholder: "例如：1" },
     ],
     summary: (spec) =>
       joinParts([
@@ -82,8 +83,8 @@ export const CATEGORY_META: Record<BuildItemCategory, CategoryMeta> = {
     fields: [
       { key: "lengthMm", label: "长度（mm）", type: "number", placeholder: "例如：320" },
       { key: "tdpWatts", label: "TDP 功耗（W）", type: "number", placeholder: "例如：220" },
-      { key: "pcie8pin", label: "PCIe 8pin 接口数", type: "number", placeholder: "例如：1" },
-      { key: "twelveVhpwr", label: "12VHPWR 接口数", type: "number", placeholder: "例如：0" },
+      { key: "pcie8pin", label: "PCIe 8pin 接口数", type: "count", placeholder: "例如：1" },
+      { key: "twelveVhpwr", label: "12VHPWR 接口数", type: "count", placeholder: "例如：0" },
     ],
     summary: (spec) =>
       joinParts([
@@ -124,8 +125,8 @@ export const CATEGORY_META: Record<BuildItemCategory, CategoryMeta> = {
     badge: "PSU",
     fields: [
       { key: "ratedWatts", label: "额定功率（W）", type: "number", placeholder: "例如：750" },
-      { key: "pcie8pin", label: "PCIe 8pin 接口数", type: "number", placeholder: "例如：2" },
-      { key: "twelveVhpwr", label: "12VHPWR 接口数", type: "number", placeholder: "例如：0" },
+      { key: "pcie8pin", label: "PCIe 8pin 接口数", type: "count", placeholder: "例如：2" },
+      { key: "twelveVhpwr", label: "12VHPWR 接口数", type: "count", placeholder: "例如：0" },
     ],
     summary: (spec) =>
       joinParts([typeof spec.ratedWatts === "number" ? `${spec.ratedWatts}W` : undefined]),
@@ -200,6 +201,15 @@ export function buildSpecPayload(
       const parsed = Number(raw);
       if (!Number.isInteger(parsed) || parsed <= 0) {
         return { spec: {}, error: `${field.label}需要填写正整数。` };
+      }
+      spec[field.key] = parsed;
+      continue;
+    }
+    if (field.type === "count") {
+      // 计数类规格允许 0（如仅 12VHPWR 供电的显卡 8pin 数就是 0），不允许负数
+      const parsed = Number(raw);
+      if (!Number.isInteger(parsed) || parsed < 0) {
+        return { spec: {}, error: `${field.label}需要填写非负整数。` };
       }
       spec[field.key] = parsed;
       continue;
