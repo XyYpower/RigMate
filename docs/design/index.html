@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>RigMate 视觉母版索引</title>
+<style>
+  body { margin: 0; background: #e8e6df; color: #191b19; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+  header { padding: 22px 40px 14px; border-bottom: 2px solid #191b19; }
+  h1 { margin: 0; font-size: 18px; }
+  p { margin: 4px 0 0; color: #5c615b; font-size: 12px; }
+  main { padding: 24px 40px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  section h2 { margin: 0 0 10px; font-size: 13px; border-bottom: 1px solid #b9b5a7; padding-bottom: 6px; }
+  main section { break-inside: avoid; }
+  a { display: block; padding: 9px 12px; color: #191b19; text-decoration: none; font-size: 13px; border: 1px solid #d6d3c8; background: #f7f6f1; margin-bottom: 6px; }
+  a:hover { border-color: #f4581c; color: #f4581c; }
+  a small { display: block; color: #979c93; font-size: 11px; margin-top: 2px; }
+  .tag { font-size: 10px; color: #f4581c; font-weight: 700; letter-spacing: .08em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>RigMate 视觉母版 · M21</h1>
+  <p>仪器白 / 技术规格单 · 点击查看大图（1440×900） · 开发对照见 docs/design/README.md</p>
+</header>
+<main>
+  <section>
+    <h2><span class="tag">F1</span> 装机台 · 已实现功能的规范板</h2>
+    <a href="boards/f1/01-workbench-empty.svg">01 空项目 / 创建入口</a>
+    <a href="boards/f1/02-workbench-normal.svg">02 正常态 · 清单 + 预算余量 46.8%</a>
+    <a href="boards/f1/03-workbench-block.svg">03 阻断诊断 · 显卡 336 &gt; 机箱 320</a>
+    <a href="boards/f1/04-workbench-unknown.svg">04 待补充主导 · unknown 一等公民</a>
+    <a href="boards/f1/05-budget-states.svg">05 预算三态 · 无预算 / 余量 / 超支</a>
+    <a href="boards/f1/06-stale-edit-delete.svg">06 过期横幅 + 编辑态 + 检查历史</a>
+    <a href="boards/f1/07-report-blueprint.svg">07 报告页 · 图纸风（规划参考）</a>
+    <a href="boards/f1/08-check-ritual.svg">08 POST 检查序列（规划参考）</a>
+  </section>
+  <section>
+    <h2><span class="tag">F2</span> 行情台 · 规划参考（V1-B）</h2>
+    <a href="boards/f2/markets-watchlist.svg">关注列表 · 新鲜度灯</a>
+    <a href="boards/f2/snapshot-timeline.svg">价格快照时间线 · 无预测线</a>
+    <a href="boards/f2/evidence-ledger.svg">证据台账 · 追加式可复核</a>
+  </section>
+  <section>
+    <h2><span class="tag">F3</span> 装机副驾 · 规划参考（V1-C）</h2>
+    <a href="boards/f3/copilot-drawer.svg">副驾事件卡 · 提议需确认 · LLM 降级态</a>
+  </section>
+</main>
+</body>
+</html>
