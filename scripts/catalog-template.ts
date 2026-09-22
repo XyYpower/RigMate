@@ -31,17 +31,17 @@ const AM5_SOCKETS = "AM5;LGA1700;LGA1851";
 
 const PREFILL: Row[] = [
   // ---- 主板（插槽/代际/板型来自型号命名事实；槽数留空待查证）----
-  row("技嘉 B650M K", "主板", "b650m k", { 插槽: "AM5", 板型: "mATX", 内存代际: "DDR5" }),
+  row("技嘉 B650M K", "主板", "b650m k", { 插槽: "AM5", 板型: "mATX", 内存代际: "DDR5", 内存插槽数: 4, "PCIe x16槽数": 1 }),
   row("技嘉 B850 A ELITE WF7 小雕", "主板", "b850 小雕;小雕", { 插槽: "AM5", 板型: "ATX", 内存代际: "DDR5" }),
   row("技嘉 X870 A ELITE WIFI7 ICE 冰雕", "主板", "x870 冰雕;冰雕", { 插槽: "AM5", 板型: "ATX", 内存代际: "DDR5" }),
   row("技嘉 B850M FORCE WIFI6E 战鹰", "主板", "b850m force;战鹰", { 插槽: "AM5", 板型: "mATX", 内存代际: "DDR5" }),
   row("技嘉 B840M FORCE 战鹰 WIFI6E", "主板", "b840m force", { 插槽: "AM5", 板型: "mATX", 内存代际: "DDR5" }),
   row("华硕 PRIME B650EM-A WIFI6", "主板", "b650em-a;prime b650em", { 插槽: "AM5", 板型: "mATX", 内存代际: "DDR5" }),
   // ---- 显卡（芯片级 TDP/供电为官方数字；板长留空待查证）----
-  row("华硕 DUAL RTX 5070 O12G 雪豹", "显卡", "5070 雪豹;雪豹", { "TDP功率W": 250, "12VHPWR口数": 1 }),
+  row("华硕 DUAL RTX 5070 O12G 雪豹", "显卡", "5070 雪豹;雪豹", { "TDP功率W": 250, "12VHPWR口数": 1, "显卡长度mm": 249 }),
   row("技嘉 RTX 5070 EAGLE ICE O12G 冰猎鹰", "显卡", "冰猎鹰;eagle ice", { "TDP功率W": 250, "12VHPWR口数": 1 }),
-  row("技嘉 RTX5070 EAGLE SFF 12G OC 猎鹰", "显卡", "eagle sff;猎鹰", { "TDP功率W": 250, "12VHPWR口数": 1 }),
-  row("技嘉 RTX5060Ti WINDFORCE OC 8G 风魔 MAX", "显卡", "5060ti 风魔;风魔", { "TDP功率W": 180, "12VHPWR口数": 1 }),
+  row("技嘉 RTX5070 EAGLE SFF 12G OC 猎鹰", "显卡", "eagle sff;猎鹰", { "TDP功率W": 250, "12VHPWR口数": 1, "显卡长度mm": 290 }),
+  row("技嘉 RTX5060Ti WINDFORCE OC 8G 风魔 MAX", "显卡", "5060ti 风魔;风魔", { "TDP功率W": 180, "PCIe8pin口数": 1, "显卡长度mm": 208 }),  // 修正：风魔 8G 用 8pin（BuildCores）
   row("七彩虹 iGame RTX 4080 SUPER 火神 OC", "显卡", "4080s 火神;火神", { "TDP功率W": 320, "12VHPWR口数": 1 }),
   row("技嘉 RX9070GRE GAMING OC 12G 魔鹰", "显卡", "9070gre;魔鹰", { "TDP功率W": 220, "12VHPWR口数": 1 }),
   // ---- 电源（额定功率来自型号命名；接口数留空待查证）----
@@ -54,15 +54,15 @@ const PREFILL: Row[] = [
   row("航嘉 WD750Evo炫金战神 750W 金牌 ATX3.1", "电源", "wd750evo", { "额定功率W": 750 }),
   row("骨伽 VTE X2 750W 铜牌 ATX3.1", "电源", "vte x2", { "额定功率W": 750 }),
   // ---- 机箱（支持板型来自产品线事实；限长/限高留空待查证）----
-  row("骨伽 FV160 海景房", "机箱", "fv160", { 板型: "ATX;mATX;ITX" }),
-  row("乔思伯 X400 ATX海景房", "机箱", "x400", { 板型: "ATX;mATX;ITX" }),
-  row("鑫谷 U503 无立柱海景房", "机箱", "u503", { 板型: "ATX;mATX;ITX" }),
-  row("联力 包豪斯O11 Vision Compact", "机箱", "包豪斯;o11 vision compact", { 板型: "ATX;mATX;ITX" }),
-  row("航嘉 S980 龙卷风 全景无立柱", "机箱", "s980", { 板型: "ATX;mATX;ITX" }),
-  row("华硕 海王星EVO 无立柱全视海景房", "机箱", "海王星", { 板型: "ATX;mATX;ITX" }),
-  row("瓦尔基里 VK03-M LCD触摸屏", "机箱", "vk03-m;瓦尔基里vk03", { 板型: "mATX;ITX" }),
-  row("SAHARA 魔蛇MG520 无立柱海景房", "机箱", "魔蛇;mg520", { 板型: "ATX;mATX;ITX" }),
-  row("追风者 XT M3 风道机箱", "机箱", "xtm3;xt m3", { 板型: "mATX;ITX" }),
+  row("骨伽 FV160 海景房", "机箱", "fv160", { 板型: "mATX;ITX", "显卡限长mm(机箱)": 380 }),  // 380 待复核
+  row("乔思伯 X400 ATX海景房", "机箱", "x400", { 板型: "ATX;mATX;ITX", "显卡限长mm(机箱)": 427, "散热限高mm(机箱)": 176 }),
+  row("鑫谷 U503 无立柱海景房", "机箱", "u503", { 板型: "mATX" }),  // 限长限高仅有模糊数据，留空
+  row("联力 包豪斯O11 Vision Compact", "机箱", "包豪斯;o11 vision compact", { 板型: "ATX;mATX;ITX;E-ATX", "显卡限长mm(机箱)": 408, "散热限高mm(机箱)": 167 }),
+  row("航嘉 S980 龙卷风 全景无立柱", "机箱", "s980", { 板型: "ATX;mATX;ITX", "显卡限长mm(机箱)": 400, "散热限高mm(机箱)": 160 }),
+  row("华硕 海王星EVO 无立柱全视海景房", "机箱", "海王星", { 板型: "ATX;mATX;ITX", "显卡限长mm(机箱)": 400 }),  // 400 来自商品页自述；限高待查
+  row("瓦尔基里 VK03-M LCD触摸屏", "机箱", "vk03-m;瓦尔基里vk03", { 板型: "mATX;ITX", "显卡限长mm(机箱)": 410, "散热限高mm(机箱)": 167 }),
+  row("SAHARA 魔蛇MG520 无立柱海景房", "机箱", "魔蛇;mg520", { 板型: "mATX" }),  // 限长限高未查证，留空
+  row("追风者 XT M3 风道机箱", "机箱", "xtm3;xt m3", { 板型: "mATX;ITX", "显卡限长mm(机箱)": 430, "散热限高mm(机箱)": 175 }),
   // ---- 散热（360 水冷高度不适用；风冷高度留空待查证）----
   row("超频三 DX360 双4寸屏显 360水冷", "散热器", "dx360", { "支持插槽(散热器)": AM5_SOCKETS }),
   row("超频三 DA360PRO ARGB 可旋转冷头", "散热器", "da360pro", { "支持插槽(散热器)": AM5_SOCKETS }),
