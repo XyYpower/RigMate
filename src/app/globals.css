@@ -222,6 +222,78 @@ select {
 .addgrid .field.wide { grid-column: 1 / -1; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 16px; }
 .helper { margin: 10px 0 0; color: var(--rm-ink-faint); font-size: 11px; }
+
+/* ---------- 全局导航壳（M22 系统布局） ---------- */
+.nav-shell {
+  display: flex; align-items: baseline; gap: 26px;
+  padding: 9px 40px 8px;
+  border-bottom: 1px solid var(--rm-line-strong);
+  background: var(--rm-panel);
+}
+.nav-brand {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: var(--rm-ink);
+}
+.nav-links { display: flex; gap: 4px; }
+.nav-link {
+  position: relative; padding: 4px 10px 6px;
+  color: var(--rm-ink-muted); font-size: 12.5px; font-weight: 600;
+  text-decoration: none; border-bottom: 2px solid transparent;
+}
+.nav-link:hover { color: var(--rm-ink); }
+.nav-link.active { color: var(--rm-ink); border-bottom-color: var(--rm-accent); }
+.nav-link.planned { color: var(--rm-ink-faint); }
+.nav-planned-mark {
+  margin-left: 6px; font-size: 9px; font-weight: 400;
+  color: var(--rm-ink-faint); border: 1px solid var(--rm-line); padding: 0 3px;
+}
+
+/* ---------- 占位页（方案库 / 证据台账） ---------- */
+.placeholder-page { max-width: 860px; margin: 0 auto; padding: 48px 40px; }
+.placeholder-page h1 { margin: 0 0 10px; font-size: 20px; }
+.placeholder-line { margin: 6px 0; color: var(--rm-ink-muted); font-size: 13px; }
+.placeholder-line code {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px;
+  background: var(--rm-panel); border: 1px solid var(--rm-line); padding: 1px 5px;
+}
+
+/* ---------- 硬件中心（数据运营视图） ---------- */
+.hw-page { max-width: 1100px; margin: 0 auto; padding: 26px 40px 60px; }
+.hw-head h1 { margin: 0 0 4px; font-size: 20px; }
+.hw-sub { margin: 0 0 8px; color: var(--rm-ink-faint); font-size: 12px; }
+.hw-sub a { color: var(--rm-ink); text-decoration: underline; text-underline-offset: 2px; }
+.hw-sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin: 4px 0 8px; }
+.hw-sec-head h2 { margin: 0; font-size: 14px; }
+.hw-total { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 12px; color: var(--rm-ink-muted); }
+.hw-hint { color: var(--rm-ink-faint); font-size: 11px; }
+
+.src-table { border-top: 1px solid var(--rm-ink); }
+.src-row {
+  display: grid; grid-template-columns: 130px 110px 1fr auto;
+  gap: 14px; align-items: baseline; padding: 8px 0;
+  border-bottom: 1px solid var(--rm-line);
+}
+.src-label { font-weight: 700; font-size: 13px; }
+.src-count { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--rm-accent); }
+.src-meta { color: var(--rm-ink-muted); font-size: 12px; }
+.src-attr { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--rm-ink-faint); }
+.src-attr a { color: var(--rm-ink); }
+
+.hw-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.hw-table th {
+  text-align: left; padding: 6px 10px 6px 0;
+  color: var(--rm-ink-faint); font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--rm-ink);
+  font-family: ui-monospace, Consolas, monospace;
+}
+.hw-table td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--rm-line); vertical-align: top; }
+.hw-table .num {
+  text-align: right; font-family: ui-monospace, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.hw-spec { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--rm-ink-muted); word-break: break-all; }
+
+.hw-searchbar { display: grid; grid-template-columns: 140px 1fr auto; gap: 14px; align-items: end; margin-bottom: 12px; }
 /* 表单操作反馈（成功/校验错误）：必须出现在按钮正下方，footer 用户看不见 */
 .form-feedback {
   margin: 9px 0 0; padding-top: 7px;

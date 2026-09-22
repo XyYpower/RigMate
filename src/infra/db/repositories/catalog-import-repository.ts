@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { desc } from "drizzle-orm";
 import { catalogImportRuns, ensureDatabase } from "../client";
 
 /**
@@ -38,4 +39,34 @@ export function recordCatalogImportRun(run: CatalogImportRunInput): string {
     })
     .run();
   return id;
+}
+
+export type CatalogImportRunRecord = {
+  id: string;
+  upstreamCommit: string;
+  license: string;
+  sourcePath: string;
+  importedAt: string;
+  importedCount: number;
+  skippedCount: number;
+  errorCount: number;
+};
+
+/** 硬件中心审计视图：最近的导入运行（新→旧） */
+export function listCatalogImportRuns(limit = 20): CatalogImportRunRecord[] {
+  return ensureDatabase()
+    .select({
+      id: catalogImportRuns.id,
+      upstreamCommit: catalogImportRuns.upstreamCommit,
+      license: catalogImportRuns.license,
+      sourcePath: catalogImportRuns.sourcePath,
+      importedAt: catalogImportRuns.importedAt,
+      importedCount: catalogImportRuns.importedCount,
+      skippedCount: catalogImportRuns.skippedCount,
+      errorCount: catalogImportRuns.errorCount,
+    })
+    .from(catalogImportRuns)
+    .orderBy(desc(catalogImportRuns.importedAt))
+    .limit(limit)
+    .all();
 }

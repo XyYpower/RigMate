@@ -3,25 +3,28 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-21 ｜ 当前阶段：V1-A 代码侧完成（M18 迁移版本检测 + M19 BuildCores 导入器上线）；剩余 = 业务验证 20 份真实清单（用户执行，见 §0/§8）
+> 最后更新：2026-09-22 ｜ 当前阶段：UI 系统化改造启动（M21 视觉母版 + M22 导航壳/硬件中心已上线）；后续按 docs/design/10-系统布局规划.md 推进（见 §0/§8）
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
 ---
 
-## 0. 交接快照（2026-09-21 M18/M19 上线后状态，新窗口先读这节）
+## 0. 交接快照（2026-09-22 M22 上线后状态，新窗口先读这节）
 
-- **Git**：以本文件更新后的提交为准（此前窗口交接快照 db73e08 因网络闪断曾滞留本地，已随本次一并推送）。
-- **测试基线**：107 个单元测试 + 9 条 E2E 全绿；lint / typecheck / build 通过；M19 已在真实浏览器完成全链路操作验证（检索→点选→回填→加清单→跑检查→预算联动）。
+- **Git**：工作树干净，本地与远程同步（main ≥ `cdee98a` + M22 提交）；无 WIP。
+- **测试基线**：118 单测 + 10 E2E（含 navigation.spec 导航冒烟）全绿；lint / typecheck / build 通过。
 - **本机注意事项**：
-  - E2E 需要环境变量 `RIGMATE_E2E_EXECUTABLE_PATH`（见 §6）；
-  - E2E 独立端口 3100 + `data/e2e.db`（每次运行前自动重置），**不污染开发库**；
-  - 开发库中现存用户真实项目 1 个（配件 98x3D / 微型X874，预算 ¥10,000，已录入 3 件含导入的 4070 SUPER）——**不要删除**；
-  - dev server 可能仍在后台运行，接手时先查 3000 端口；
-  - GitHub 推送偶发闪断（连接重置），重试即可。
-- **功能现状**：V1-A 全部功能 + 数据库迁移版本检测（schema_version 表，版本化迁移，启动日志，降级拒绝）+ BuildCores 目录导入器（离线导入 26,121 条、上游 commit 固定、ODC-By 署名展示、catalog_import_runs 审计）+ 目录关键词检索（万级条目可用性）。
-- **样本进度**：§17.1 样本收集已启动——11 份真实配置单入库（samples/，其中 10 份整机单；用户指出整机单偏差后，目标配比调整为整机 10 + 自购 10），全部录入系统跑通检查（全部零阻断；待补充清单=买家该向卖家确认的问题清单）。国内目录第一批收录候选已从样本统计产出（samples/目录收录候选.md，≈35 条）。`data/catalog/buildcores.json`（5.6MB，gitignore，本地数据层）= BuildCores OpenDB @ `4bbac3cd57a5` 导入产物；`data/buildcores-open-db/` 为上游克隆（--depth 1）。两者都可随时删除并用 `npm run import-catalog` 重建。
-- **下一项工作**（按 §8 顺序）：1) 业务侧验证 20 份真实清单（用户执行）；2) V1-B 规划（价格证据链 / 替代方案 / 报告导出）。
+  - E2E 需 `RIGMATE_E2E_EXECUTABLE_PATH`（见 §6）；**E2E 必须在"静默机器"上跑**——若同机还有 dev server/构建在跑，会出现 5 倍耗时与超时雪崩（2026-09-22 实证，两个假失败由此而来，清场重跑即绿）；
+  - E2E webServer 是 `next dev`（3100 端口，`reuseExistingServer: true`），**新路由首次访问有编译延迟**，断言默认 5s 超时；
+  - 开发库现存用户真实项目 2 个（9ca80d6e=98x3D/微型X874 两件；51345d25=用户 09-22 自建测试项目三件）——**都不要删**；
+  - dev server（3000 端口）可能由本窗口遗留进程跑着，接手先查端口；
+  - **Bash 工作目录会漂移**：命令一律先 `cd /d/XyyWork/RigMate`；
+  - GitHub 推送偶发闪断，重试即可。
+- **功能现状**：V1-A 全部 + 迁移版本检测（M18）+ BuildCores 导入器（M19，26,121 条）+ 人工目录批量录入（M20，CSV 模板 49 条已入库）+ **M22 系统布局第一步：全局导航壳 + /hardware 硬件中心 + /projects、/evidence 占位页 + GET /api/catalog/overview**。
+- **UI 规划**：`docs/design/10-系统布局规划.md` 是 UI 结构单一事实源（四区 IA/页面契约/Agent 红线/迁移五步）；视觉层看 M21 母版（boards/）。**改动前先读它。**
+- **数据现状**：目录三层 = 种子 34 + 人工 49（`data/catalog/manual.json`）+ BuildCores 26,121（`data/catalog/buildcores.json`）；上游克隆在 `data/buildcores-open-db/`。规格查证完成第一批（13 项，见模板注释出处）；**剩余字段（A60 高度、EAGLE ICE/火神/魔鹰板长、4 主板槽数、8 电源 16pin、3 机箱限长限高）等搜索配额 2026-09-28 重置后补查，或用户提供商品页截图**。
+- **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
+- **下一项工作**（按 §8 顺序）：1) M22 第二步 = 方案库 `/projects`（项目列表 + 整机复核入口）；2) 报告导出（M21 板 07）；3) 证据台账后端（price_evidence，规格 §8.2）；4) 副驾抽屉（agent 接入，最后）。
 - **前端所有权**：归 AI 窗口（全栈）。
 
 ## 1. 一分钟了解项目
@@ -58,6 +61,8 @@
 | 配件条目编辑 / 删除（PATCH/DELETE + 编辑态表单 + 两步确认） | ✅ 完成（M14） |
 | 数据库迁移版本检测（schema_version + 版本化迁移 + 启动日志 + 降级拒绝） | ✅ 完成（M18） |
 | 目录批量录入工具（CSV 模板 + 导入命令 + 审计，M20 方案 A） | ✅ 完成（M20，预填 49 条已入库） |
+| UI 系统化：视觉母版（12 SVG 画板 + 生成脚本） | ✅ 完成（M21，docs/design/） |
+| UI 系统化：导航壳 + 硬件中心 + 占位页 + 目录总览 API | ✅ 完成（M22，系统布局第一步） |
 | BuildCores 目录导入器（离线导入 + commit 固定 + ODC-By 署名 + 审计表） | ✅ 完成（M19，已导入 26,121 条） |
 | 业务验证：20 份真实清单样本（已 11 份，目标配比 整机10+自购10）+ 5-10 名用户访谈 | 🔶 进行中（用户收集） |
 | V1-B：价格证据链 / 替代方案 / 报告导出 | ⬜ |
@@ -224,13 +229,27 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - 生成脚本 `scripts/generate-visual-masters.py` 可复现；修复了 SVG font-family 属性引号转义导致的 XML 解析错误（12 张全部通过 minidom 校验）；
 - 约定：**先改图再改代码**；后续每个页面的开发以对应母版为验收基线，改版后浏览器截图对照。
 
+### M22（2026-09-22）系统布局第一步：导航壳 + 硬件中心（本窗口）
+按 `docs/design/10-系统布局规划.md` 迁移路径第一步：
+- **导航壳**：`src/ui/components/nav-shell.tsx`（client，usePathname 高亮），挂 `layout.tsx` 全局；四区 = 装机配置/硬件中心/方案库/证据台账，未实现区带"规划中"灰标并指向占位页；
+- **占位页**：`/projects`、`/evidence`（静态，注明规划内容与文档出处）；
+- **目录总览 API**：`GET /api/catalog/overview`——三层来源计数/导入时间/署名（纯组装逻辑在领域层 `domain/catalog/overview.ts`，2 单测）+ `listCatalogImportRuns`（审计表读取，仓储层新增）；
+- **检索带来源标记**：`/api/catalog` entries 附 `source: seed|manual|buildcores`（非破坏性）；
+- **硬件中心页** `/hardware`：来源三行（含 ODC-By 署名链）、类别覆盖矩阵（条目/有规格/按来源分列）、导入审计表、目录检索（与工作台共用 API，显示来源）；
+- **实测发现并修正**：风魔 5060Ti 用 8pin 非 16pin（BuildCores 双条目）；FV160/U503/魔蛇为 mATX 系机箱（板型修正）；
+- **E2E 新增** `tests/e2e/navigation.spec.ts`（导航四区可达 + 硬件中心渲染 + 检索命中人工条目含来源标记）；**118 单测 + 10 E2E 全绿**；浏览器截图验收（导航高亮/矩阵/署名正确）。
+- **教训（重要）**：① E2E 与 dev server/构建同机并行会触发超时雪崩（4.3 分钟 vs 静默 29 秒），两个"假失败"由此而来——跑 E2E 前清场；② IAB（内置浏览器）click 管线在 /hardware 页出现定位超时的环境怪病，curl/E2E 均正常——以 E2E 为准。
+
+
 ## 5. 代码地图
 
 ```text
 src/
 ├─ app/                        # Next.js 页面与 API 路由（薄层，不写业务逻辑）
 │  ├─ page.tsx                 # DIY 工作台（唯一页面，客户端组件）
-│  └─ api/builds/…             # builds CRUD + items + check(GET=最近结果/POST=运行检查)
+│  ├─ api/builds/…             # builds CRUD + items + check(GET=最近结果/POST=运行检查)
+│  ├─ api/catalog/overview     # 硬件中心总览（M22）
+│  ├─ hardware/ projects/ evidence/  # M22 三区页面（后两区占位）
 ├─ domain/                     # 纯业务逻辑，禁止依赖 DB/网络/模型
 │  ├─ build/types.ts           # 领域类型 + 输入 schema（判别联合，按类别校验 spec）
 │  ├─ build/specs.ts           # 八类配件规格 Zod schema
@@ -259,9 +278,9 @@ scripts/import-buildcores.ts   # BuildCores 导入 CLI（npm run import-catalog�
 ```bash
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit（strict）
-npm test            # Vitest，107 个单元测试
+npm test            # Vitest，118 个单元测试
 npm run build       # Next.js 生产构建（含类型检查）
-npm run test:e2e    # Playwright，9 条端到端（独立端口 3100 + 每次运行前重置 data/e2e.db + 独立构建目录 .next-e2e）
+npm run test:e2e    # Playwright，10 条端到端（独立端口 3100 + 每次运行前重置 data/e2e.db + 独立构建目录 .next-e2e；⚠️ 静默机器上跑，见 §0）
 ```
 
 全部通过才算完成。**Windows 环境注意**：Playwright 无头壳下载在本机超时过，E2E 用环境变量指定浏览器：`RIGMATE_E2E_EXECUTABLE_PATH='C:/Users/25128/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'`（未设置时走 Playwright 默认浏览器，其他机器无需此变量）。
