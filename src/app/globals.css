@@ -316,6 +316,15 @@ select {
 .hw-audit[open] summary::before { content: "▾ "; }
 .hw-audit summary:hover { color: var(--rm-ink); }
 .hw-audit table { margin-top: 8px; }
+
+/* ---------- 方案库 ---------- */
+.pj-new {
+  font-size: 12px; font-weight: 700; color: var(--rm-ink);
+  border: 1px solid var(--rm-line-strong); padding: 4px 10px; text-decoration: none;
+}
+.pj-new:hover { border-color: var(--rm-accent); color: var(--rm-accent); }
+.pj-open { color: var(--rm-ink); font-weight: 600; font-size: 12.5px; text-decoration: underline; text-underline-offset: 3px; }
+.pj-open:hover { color: var(--rm-accent); }
 /* 表单操作反馈（成功/校验错误）：必须出现在按钮正下方，footer 用户看不见 */
 .form-feedback {
   margin: 9px 0 0; padding-top: 7px;

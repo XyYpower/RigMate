@@ -20,11 +20,11 @@
   - dev server（3000 端口）可能由本窗口遗留进程跑着，接手先查端口；
   - **Bash 工作目录会漂移**：命令一律先 `cd /d/XyyWork/RigMate`；
   - GitHub 推送偶发闪断，重试即可。
-- **功能现状**：V1-A 全部 + 迁移版本检测（M18）+ BuildCores 导入器（M19，26,121 条）+ 人工目录批量录入（M20，CSV 模板 49 条已入库）+ **M22 系统布局第一步：全局导航壳 + /hardware 硬件中心 + /projects、/evidence 占位页 + GET /api/catalog/overview**。
+- **功能现状**：V1-A 全部 + 迁移版本检测（M18）+ BuildCores 导入器（M19，26,121 条）+ 人工目录批量录入（M20，CSV 模板 49 条已入库）+ M22 系统布局（导航壳 + /hardware 硬件中心 + GET /api/catalog/overview）+ **M23 方案库 /projects（项目列表/打开回工作台 ?project=id 直达/整机复核入口占位）**。
 - **UI 规划**：`docs/design/10-系统布局规划.md` 是 UI 结构单一事实源（四区 IA/页面契约/Agent 红线/迁移五步）；视觉层看 M21 母版（boards/）。**改动前先读它。**
 - **数据现状**：目录三层 = 种子 34 + 人工 49（`data/catalog/manual.json`）+ BuildCores 26,121（`data/catalog/buildcores.json`）；上游克隆在 `data/buildcores-open-db/`。规格查证完成第一批（13 项，见模板注释出处）；**剩余字段（A60 高度、EAGLE ICE/火神/魔鹰板长、4 主板槽数、8 电源 16pin、3 机箱限长限高）等搜索配额 2026-09-28 重置后补查，或用户提供商品页截图**。
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
-- **下一项工作**（按 §8 顺序）：1) M22 第二步 = 方案库 `/projects`（项目列表 + 整机复核入口）；2) 报告导出（M21 板 07）；3) 证据台账后端（price_evidence，规格 §8.2）；4) 副驾抽屉（agent 接入，最后）。
+- **下一项工作**（按 §8 顺序）：1) M24 = 报告导出 `/builds/[id]/report`（M21 板 07，打印友好七类分节）；2) 证据台账后端（price_evidence，规格 §8.2）；3) 方案库的整机复核（粘贴配置单→解析→检查，需要解析器设计）；4) 副驾抽屉（agent 接入，最后）。
 - **前端所有权**：归 AI 窗口（全栈）。
 
 ## 1. 一分钟了解项目
@@ -63,6 +63,7 @@
 | 目录批量录入工具（CSV 模板 + 导入命令 + 审计，M20 方案 A） | ✅ 完成（M20，预填 49 条已入库） |
 | UI 系统化：视觉母版（12 SVG 画板 + 生成脚本） | ✅ 完成（M21，docs/design/） |
 | UI 系统化：导航壳 + 硬件中心 + 占位页 + 目录总览 API | ✅ 完成（M22，系统布局第一步） |
+| UI 系统化：方案库 /projects（项目列表 + ?project 直达 + 复核入口） | ✅ 完成（M23，系统布局第三步） |
 | BuildCores 目录导入器（离线导入 + commit 固定 + ODC-By 署名 + 审计表） | ✅ 完成（M19，已导入 26,121 条） |
 | 业务验证：20 份真实清单样本（已 11 份，目标配比 整机10+自购10）+ 5-10 名用户访谈 | 🔶 进行中（用户收集） |
 | V1-B：价格证据链 / 替代方案 / 报告导出 | ⬜ |
@@ -241,6 +242,15 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - **教训（重要）**：① E2E 与 dev server/构建同机并行会触发超时雪崩（4.3 分钟 vs 静默 29 秒），两个"假失败"由此而来——跑 E2E 前清场；② IAB（内置浏览器）click 管线在 /hardware 页出现定位超时的环境怪病，curl/E2E 均正常——以 E2E 为准。
 
 
+### M23（2026-09-22）系统布局第三步：方案库 /projects（本窗口）
+- **项目列表页**：`/projects`（client）——GET /api/builds（自带 items 与 budgetSummary，零新后端）；列 = 项目/用途/配件/预算/已计价/更新/打开，最近更新在前；空态与加载失败态各自成行；
+- **打开 = 跨页直达**：工作台初始加载支持 `?project=<id>`（URLSearchParams），命中则载入该项目并提示"已从方案库打开"；无参数行为不变（恢复最近项目）；
+- **导航**：方案库 ready（去灰标），证据台账仍占位；工作台 masthead 保持原样；
+- **整机复核**：入口卡占位（V1-B，需自由文本解析器设计）；
+- **E2E**：navigation.spec 更新（证据台账占位断言 + 新增方案库往返用例：工作台建项目加配件 → 列表出现 → 打开 → 工作台载入该项目）；**118 单测 + 11 E2E 全绿**；浏览器截图验收。
+- 教训补记：E2E 自己写错类别未切换（CPU 页填额定功率）——测试失败先看快照里"页面长什么样"再改断言。
+
+
 ## 5. 代码地图
 
 ```text
@@ -249,7 +259,7 @@ src/
 │  ├─ page.tsx                 # DIY 工作台（唯一页面，客户端组件）
 │  ├─ api/builds/…             # builds CRUD + items + check(GET=最近结果/POST=运行检查)
 │  ├─ api/catalog/overview     # 硬件中心总览（M22）
-│  ├─ hardware/ projects/ evidence/  # M22 三区页面（后两区占位）
+│  ├─ hardware/ projects/ evidence/  # M22/M23 三区页面（evidence 占位；projects 含整机复核占位卡）
 ├─ domain/                     # 纯业务逻辑，禁止依赖 DB/网络/模型
 │  ├─ build/types.ts           # 领域类型 + 输入 schema（判别联合，按类别校验 spec）
 │  ├─ build/specs.ts           # 八类配件规格 Zod schema
@@ -280,7 +290,7 @@ npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit（strict）
 npm test            # Vitest，118 个单元测试
 npm run build       # Next.js 生产构建（含类型检查）
-npm run test:e2e    # Playwright，10 条端到端（独立端口 3100 + 每次运行前重置 data/e2e.db + 独立构建目录 .next-e2e；⚠️ 静默机器上跑，见 §0）
+npm run test:e2e    # Playwright，11 条端到端（独立端口 3100 + 每次运行前重置 data/e2e.db + 独立构建目录 .next-e2e；⚠️ 静默机器上跑，见 §0）
 ```
 
 全部通过才算完成。**Windows 环境注意**：Playwright 无头壳下载在本机超时过，E2E 用环境变量指定浏览器：`RIGMATE_E2E_EXECUTABLE_PATH='C:/Users/25128/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'`（未设置时走 Playwright 默认浏览器，其他机器无需此变量）。
@@ -365,6 +375,7 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-09-22 v3.3：M23 方案库 /projects 上线——项目列表（名称/用途/配件/预算/已计价/更新/打开）、工作台 ?project=id 直达、整机复核入口占位；E2E 新增方案库往返用例；118 单测 + 11 E2E。
 - 2026-09-22 v3.2：硬件中心视觉打磨（用户反馈：繁琐/表格不对齐/小字太多）——来源改数字条（34/49/26,121 大号等宽），覆盖表 6 列并 4 列（数字右对齐+表头同向+来源构成紧凑三元"6·0·789"+规格覆盖细条百分比），检索规格列从 JSON 换 CATEGORY_META.summary 人话摘要，导入审计默认折叠，hint 小字全删；E2E 断言"规格列不含 JSON"。设计原则：数据页数字立起来、说明只给一次、结果给人看。
 - 2026-09-22 v3.1：M22 系统布局第一步上线——全局导航壳 + /hardware 硬件中心（三层来源计数/类别覆盖矩阵/导入审计/带来源检索）+ /projects、/evidence 占位页 + GET /api/catalog/overview；新增 navigation E2E；118 单测 + 10 E2E。记录 E2E 静默机器纪律与 IAB click 环境怪病。
 - 2026-09-22 v3.0：UI 总纲落地——用户参考图评价后制定《系统布局规划》（docs/design/10-系统布局规划.md）：四区导航 + 三步主流程 + 画布复活条件 + 副驾抽屉定位与红线 + 增量迁移五步；清理 nul 垃圾文件，M21 index.html 收编。

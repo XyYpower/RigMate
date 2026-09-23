@@ -106,11 +106,16 @@ export default function Home() {
         if (cancelled) return;
         const builds: Build[] = latestFirst(data.builds ?? []);
         setProjects(builds);
-        const latest = builds[0];
+        // 方案库「打开」带 ?project=id 直达指定项目；无参数则恢复最近项目
+        const requestedId = new URLSearchParams(window.location.search).get("project");
+        const requested = requestedId ? builds.find((b) => b.id === requestedId) : undefined;
+        const latest = requested ?? builds[0];
         if (latest) {
           setBuild(latest);
           setMessage(
-            `已恢复最近的项目「${latest.name}」，共 ${latest.items.length} 个配件。历史项目可在上方切换。`,
+            requested
+              ? `已从方案库打开「${latest.name}」，共 ${latest.items.length} 个配件。`
+              : `已恢复最近的项目「${latest.name}」，共 ${latest.items.length} 个配件。历史项目可在上方切换。`,
           );
           const checkResponse = await fetch(`/api/builds/${latest.id}/check`);
           if (cancelled) return;

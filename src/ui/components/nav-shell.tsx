@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { href: "/", label: "装机配置", ready: true },
   { href: "/hardware", label: "硬件中心", ready: true },
-  { href: "/projects", label: "方案库", ready: false },
+  { href: "/projects", label: "方案库", ready: true },
   { href: "/evidence", label: "证据台账", ready: false },
 ] as const;
 
