@@ -5,7 +5,7 @@ async function waitUntilLoaded(page: import("@playwright/test").Page) {
 }
 
 test("DIY 清单可以检查 CPU 与主板插槽冲突", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("button", { name: "新建项目 →" }).click();
 
@@ -28,7 +28,7 @@ test("DIY 清单可以检查 CPU 与主板插槽冲突", async ({ page }) => {
 });
 
 test("DIY 清单可以检查内存代际冲突", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("button", { name: "新建项目 →" }).click();
 
@@ -52,7 +52,7 @@ test("DIY 清单可以检查内存代际冲突", async ({ page }) => {
 });
 
 test("刷新页面后项目与配件自动恢复", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("button", { name: "新建项目 →" }).click();
 
@@ -73,7 +73,7 @@ test("刷新页面后项目与配件自动恢复", async ({ page }) => {
 });
 
 test("切换配件类别时草稿按类别隔离", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("button", { name: "新建项目 →" }).click();
 
@@ -93,7 +93,7 @@ test("切换配件类别时草稿按类别隔离", async ({ page }) => {
 });
 
 test("上一个配件加入后，下一个配件的表单从空白开始", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("button", { name: "新建项目 →" }).click();
 
@@ -109,7 +109,7 @@ test("上一个配件加入后，下一个配件的表单从空白开始", async
 });
 
 test("刷新后恢复检查结果，配件变化后提示过期，可删除项目", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("button", { name: "新建项目 →" }).click();
 
@@ -162,7 +162,7 @@ test("刷新后恢复检查结果，配件变化后提示过期，可删除项�
 });
 
 test("预算余量计：价格录入、未计价件与差额显示", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("textbox", { name: "预算（元）· 可选，用于余量计" }).fill("8000");
   await page.getByRole("button", { name: "新建项目 →" }).click();
@@ -189,7 +189,7 @@ test("预算余量计：价格录入、未计价件与差额显示", async ({ pa
 });
 
 test("配件可编辑与删除，修改后旧结论标记过期", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("button", { name: "新建项目 →" }).click();
 
@@ -233,7 +233,7 @@ test("配件可编辑与删除，修改后旧结论标记过期", async ({ page 
 });
 
 test("从目录选择型号自动带出规格并标记来源", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("button", { name: "新建项目 →" }).click();
 

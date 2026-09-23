@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test("M24 报告：运行检查后报告带图框标题栏、清单与诊断条款", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/diy");
 
   // 建项目：CPU(AM5) + 主板(LGA1700) → 制造一个阻断
   await page.getByRole("textbox", { name: "新项目名称" }).fill("报告测试项目");

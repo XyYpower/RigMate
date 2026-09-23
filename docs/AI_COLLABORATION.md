@@ -3,37 +3,41 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-22 ｜ 当前阶段：UI 系统化改造启动（M21 视觉母版 + M22 导航壳/硬件中心已上线）；后续按 docs/design/10-系统布局规划.md 推进（见 §0/§8）
+> 最后更新：2026-09-23 ｜ 当前阶段：**目标驱动垂直切片已上线（M27+M28）**——首页改为自然语言目标入口，`/design/[id]` 方案审阅工作台跑通"目标 → 规则式生成 → 自动校验 → 接受进入 DIY"；旧逐项工作台保留为 `/diy`。真实 LLM/RAG adapter 是下一步（M30），当前生成器为模型接入前的规则式降级模式（界面已如实标注）。
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
 ---
 
-## 0. 交接快照（2026-09-22 M22 上线后状态，新窗口先读这节）
+## 0. 交接快照（2026-09-23 M28 垂直切片上线后状态，新窗口先读这节）
 
-- **Git**：工作树干净，本地与远程同步（main ≥ `cdee98a` + M22 提交）；无 WIP。
-- **测试基线**：118 单测 + 10 E2E（含 navigation.spec 导航冒烟）全绿；lint / typecheck / build 通过。
+- **Git**：工作树干净（M27+M28 已提交推送）；远程 main 同步。
+- **测试基线**：130 单测 + 17 E2E 全绿；lint / typecheck / build 通过。
 - **本机注意事项**：
   - E2E 需 `RIGMATE_E2E_EXECUTABLE_PATH`（见 §6）；**E2E 必须在"静默机器"上跑**——若同机还有 dev server/构建在跑，会出现 5 倍耗时与超时雪崩（2026-09-22 实证，两个假失败由此而来，清场重跑即绿）；
   - E2E webServer 是 `next dev`（3100 端口，`reuseExistingServer: true`），**新路由首次访问有编译延迟**，断言默认 5s 超时；
   - 开发库现存用户真实项目 2 个（9ca80d6e=98x3D/微型X874 两件；51345d25=用户 09-22 自建测试项目三件）——**都不要删**；
   - dev server（3000 端口）可能由本窗口遗留进程跑着，接手先查端口；
+  - **改 migrate.ts 后必须重启 dev server**（迁移每进程只跑一次；v6 已含 design 五表）；
   - **Bash 工作目录会漂移**：命令一律先 `cd /d/XyyWork/RigMate`；
   - GitHub 推送偶发闪断，重试即可。
-- **功能现状**：V1-A 全部 + 迁移版本检测（M18）+ BuildCores 导入器（M19，26,121 条）+ 人工目录批量录入（M20，CSV 模板 49 条已入库）+ M22 系统布局（导航壳 + /hardware 硬件中心 + GET /api/catalog/overview）+ M23 方案库 /projects + M24 报告导出 /builds/[id]/report + **M25 整机复核（方案库内粘贴配置单 → 解析器逐行识别类别/型号/行尾价格 → 目录候选确认 → 一键建项目跑检查跳报告；解析器 = src/domain/review/parse.ts 纯函数，6 单测用真实样本行回归）** + **M26 证据台账 /evidence（price_evidence 追加式价格快照：类别/型号/价格/口径/渠道/店铺/成色/证据链接/时间；V1 仅手动来源，只增不改；规格 §8.2）**。
-- **UI 规划**：`docs/design/10-系统布局规划.md` 是 UI 结构单一事实源（四区 IA/页面契约/Agent 红线/迁移五步）；视觉层看 M21 母版（boards/）。**改动前先读它。**
-- **数据现状**：目录三层 = 种子 34 + 人工 49（`data/catalog/manual.json`）+ BuildCores 26,121（`data/catalog/buildcores.json`）；上游克隆在 `data/buildcores-open-db/`。规格查证完成第一批（13 项，见模板注释出处）；**剩余字段（A60 高度、EAGLE ICE/火神/魔鹰板长、4 主板槽数、8 电源 16pin、3 机箱限长限高）等搜索配额 2026-09-28 重置后补查，或用户提供商品页截图**。
+- **功能现状**：V1-A 全部（M1-M26，见 §3/§4）+ **M27 产品方向重校准**（业务规格 V2 / 系统布局 v2 / 视觉母版方案工作台版）+ **M28 目标驱动垂直切片**：`/` 自然语言目标入口（FormData 原生提交，预算可从描述识别"2 万/2w/8000"）→ POST /api/design → `src/domain/design/`（意图解析 intent.ts + 预算分档候选 proposal.ts，纯函数）→ `design_requests/design_proposals/proposal_items/agent_runs/agent_events` 五表（v6 迁移）→ `/design/[id]` 审阅页（方案主视觉 + Agent 活动流 + 依据折叠 + 兼容冲突禁接受）→ POST /api/design/[id]/accept（幂等，复用 createBuild/addBuildItem/checkBuild，自动跑检查）→ `/diy?project=` 高级 DIY。旧 869 行工作台整体迁至 `/diy/page.tsx`，功能契约与 E2E 全部保留。
+- **产品方向（M27）**：普通用户从自然语言目标开始，Agent 生成可编辑方案并自动校验；经验用户在同一方案中进入 `/diy` 高级工作台。旧的"副驾最后接入"与"选件→手动检查→导出"不再是 V2 主流程。
+- **诚实边界（重要）**：当前方案生成 = **本地目录规则式分档选择**（预算 <1.4万 → 9600X/4060/650W；1.4-2.3万 → 9800X3D/4070S/850W；≥2.3万 → 4090 档），价格区间为按型号的经验估算（界面标注"经验估算，非实时成交价"），**尚未接入 LLM/RAG**。Agent 活动流文案如实写"本地目录就绪…按预算档位挑选候选"。禁止把规则式生成说成"AI 智能搭配"。
+- **设计单一事实源**：`docs/design/10-系统布局规划.md` v2；视觉层 `docs/design/README.md` 与 `00-visual-system.md`。
+- **可信边界**：现有 `Build`/`BuildItem` 继续表示用户接受后的正式方案；Agent 生成中的候选存为 DesignProposal；兼容冲突的草稿服务端拒绝直接接受（409），"自己调整配置"以 allowConflicts 显式进入 DIY 但检查结果照实保留冲突。
+- **数据现状**：目录三层 = 种子 34 + 人工 49（`data/catalog/manual.json`）+ BuildCores 26,121（`data/catalog/buildcores.json`）；上游克隆在 `data/buildcores-open-db/`。规格查证剩余字段等搜索配额 2026-09-28 重置后补查。
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
-- **下一项工作**（按 §8 顺序）：1) 副驾抽屉（agent 接入，最后一块）——"抽取配置单"与 M25 解析器共享领域逻辑，"解释结论"消费报告页数据；2) 工作台价格字段接线 price_evidence（录入即存证据，V1-B 估值曲线的地基）；3) V1-B 估值曲线/替代方案。
+- **下一项工作（M30）**：`src/infra/llm/` OpenAI-compatible adapter（结构化输出 + Zod 校验 + 超时 + 无 key 降级到当前规则式生成），`src/application/design/` 编排接入意图解析与候选解释；之后 M31 自然语言修订、M32 DIY 信息渐进披露。
 - **前端所有权**：归 AI 窗口（全栈）。
 
 ## 1. 一分钟了解项目
 
-- **产品定位**：面向中国大陆 DIY 装机/升级用户的配件清单检查工具。核心是"先确认能装，再决定买什么"。
-- **核心理念**：确定性规则 + 可追溯证据；缺数据时诚实输出"待补充/未知"，**绝不猜默认值**。
-- **明确不做**（红线，见业务规格 §3.2）：全网实时比价、电商爬虫、自动下单、价格预测、多 Agent 宣传、未经授权的数据集。
+- **产品定位**：面向 PC 装机与升级决策的 Agent 工作台——用户说目标（如"2 万预算白色海景房剪辑+游戏"），系统生成可编辑方案并自动校验；经验用户走 `/diy` 逐项精调。
+- **核心理念**：目标驱动 + 确定性规则 + 可追溯证据；缺数据时诚实输出"待补充/未知"，**绝不猜默认值**；方案价格一律标注经验估算，模型接入前如实写"规则式生成"。
+- **明确不做**（红线，见业务规格 V2 §12）：全网实时比价、电商爬虫、自动下单、价格预测、多 Agent 宣传、未经授权的数据集、把模型经验冒充精确事实。
 - **技术形态**：Next.js 16 + React 19 + TypeScript 模块化单体；SQLite（WAL 模式）+ Drizzle ORM；Vitest + Playwright。
-- **当前状态**：V1-A 核心闭环已跑通并全部验证通过，处于本地可用工具阶段，尚未部署公网、无用户验证数据。
+- **当前状态**：V2 目标驱动垂直切片已跑通（规则式生成），本地可用，尚未部署公网、未接入真实 LLM。
 
 ## 2. 必读文档（按顺序）
 
@@ -67,9 +71,13 @@
 | 报告导出 /builds/[id]/report（图框标题栏 + 按状态分组条款 + 打印/PDF） | ✅ 完成（M24，系统布局第四步·三步流闭环） |
 | 整机复核：粘贴配置单 → 解析 → 候选确认 → 一键建项目检查 | ✅ 完成（M25，方案库内） |
 | 证据台账 /evidence（price_evidence 追加式快照 + 手动录入 + 过滤） | ✅ 完成（M26，v5 迁移） |
+| 产品方向重校准：业务规格 V2 + 系统布局 v2 + 视觉母版方案工作台版 | ✅ 完成（M27，只改文档） |
+| 目标驱动垂直切片：/ 目标入口 + /design/[id] 审阅 + 接受进 DIY（v6 迁移五表） | ✅ 完成（M28，规则式生成，LLM 未接） |
 | BuildCores 目录导入器（离线导入 + commit 固定 + ODC-By 署名 + 审计表） | ✅ 完成（M19，已导入 26,121 条） |
 | 业务验证：20 份真实清单样本（已 11 份，目标配比 整机10+自购10）+ 5-10 名用户访谈 | 🔶 进行中（用户收集） |
 | V1-B：替代方案 / 估值曲线（价格证据链已由 M26 台账承担录入侧） | ⬜ |
+| M30：可插拔 LLM/RAG adapter（结构化输出 + 降级） | ⬜（下一项） |
+| M31：自然语言修订方案 / M32：DIY 渐进披露 / M33：产品化收口 | ⬜ |
 | V1-C：联盟 API / OCR 报价单入口 / PostgreSQL | ⬜ |
 
 ## 4. 已完成里程碑
@@ -271,37 +279,52 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - **页面**：/evidence 替换占位——录入表单（类别/型号/价格/口径/渠道/店铺/成色/证据链接）+ 台账表（时间/类别/型号/价格/口径·渠道·店铺/成色/证据链接）+ 类别过滤按钮组；
 - **E2E** evidence.spec 2 条（录入→台账可见→类别过滤；非法价格拒绝且不写库）；**126 单测 + 16 E2E 全绿**；浏览器验收（注意：改 migrate.ts 后 dev server 必须重启，否则新表不存在、页面报加载失败——本次实际踩到）。
 
+### M27+M28（2026-09-23）产品方向重校准 + 目标驱动垂直切片（本窗口）
+用户定向："产品应偏向 agent 系统——用户说'2 万白色海景房剪辑+游戏'就能自动搭配，兼容检查应自动进行而非让用户逐项填写"。执行分两步：
+
+**M27 文档重校准（只改文档，不动代码）**：
+- 业务规格升级 V2（产品定义/三种入口/DesignRequest-Proposal-Build 对象模型/Agent 事实边界/来源等级 verified_catalog·user_input·price_evidence·model_experience·unknown/最小追问原则/RAG 策略/验收主链路）；
+- ADR §1/§6 重写（目标驱动入口、agent/tools/skills 目录规划、垂直切片先行、RAG 边界）；系统布局规划 v2（开始配置/我的方案/方案工作台/硬件资料/价格证据/高级 DIY 六区）；视觉母版改为"仪器白 / 方案工作台"（结果优先、渐进披露）；README 重写。
+
+**M28 垂直切片（不依赖真实模型）**：
+- **领域层**：`src/domain/design/intent.ts`（正则意图解析：预算"2 万/2w/8000"、用途 剪辑/游戏/开发/办公、外观 白色/海景房/静音/RGB、已有件、约束；信息不足返回 needs_input）+ `proposal.ts`（预算分档候选：<1.4万 9600X/4060/650W，1.4-2.3万 9800X3D/4070S/850W，≥2.3万 4090 档；按型号经验估算价格区间；预算位置写进取舍说明；runBuildChecks 自动校验）；
+- **契约层**：`src/contracts/design.ts`（DesignRequest/StructuredIntent/DesignProposal/ProposalItem/AgentRun/AgentEvent 全 Zod，sourceLevel 五级，compatibilitySummary 四态 ok/attention/conflict/unknown）；
+- **数据层**：v6 迁移五表（design_requests/design_proposals(含 accepted_build_id)/proposal_items/agent_runs/agent_events），design-repository 追加式保存运行与事件；
+- **应用层**：`application/design/service.ts`——createDesignRequest（信息不足→追问态，不硬凑方案；正常→理解/检索/组合/校验/完成五段事件流）、acceptDesignProposal（幂等：重复接受返回同一 build；兼容冲突 409 拒绝，allowConflicts 仅供"自己调整配置"显式进入 DIY；接受后 createBuild+addBuildItem+checkBuild 自动跑检查+追加 accepted 事件）；
+- **页面**：`/` 新首页（大输入框 FormData 原生提交——规避受控输入事件同步问题，预算可选，最近方案列表）；`/design/[id]` 审阅页（方案主视觉：预算区间/兼容四态/分项依据/需要确认项，Agent 活动流侧栏，依据折叠）；869 行旧工作台迁至 `/diy`，`?project=` 直达保留；导航壳改五区（开始配置/我的方案/高级 DIY/硬件资料/价格证据）；
+- **E2E**：design.spec 2 条（主链路：输入→方案→接受→/diy 载入；信息不足→追问态）；diy-workbench/report/navigation 全部迁移到 /diy 或重写为新导航契约；**130 单测 + 17 E2E 全绿**；
+- **踩坑**：① IAB（内置浏览器）对受控 textarea 的 fill/type 不触发 React 状态同步（DOM 有值但 state 不更新，按钮禁用）——E2E 真浏览器正常；改为 FormData 原生提交 + name 属性兜底，按钮仅 busy 时禁用；② IAB screenshot 命令超时 30s——以 E2E 为准（M22 已有同类记录）。
+
 ## 5. 代码地图
 
 ```text
 src/
 ├─ app/                        # Next.js 页面与 API 路由（薄层，不写业务逻辑）
-│  ├─ page.tsx                 # DIY 工作台（唯一页面，客户端组件）
+│  ├─ page.tsx                 # 目标入口首页（M28：自然语言输入 + 最近方案）
+│  ├─ diy/page.tsx             # 高级 DIY 工作台（原逐项录入工作台整体迁移）
+│  ├─ design/[id]/page.tsx     # 方案审阅工作台（M28：方案主视觉 + Agent 活动流）
+│  ├─ api/design/…             # POST 创建目标 + GET 结果 + POST accept（幂等）
 │  ├─ api/builds/…             # builds CRUD + items + check(GET=最近结果/POST=运行检查)
 │  ├─ api/catalog/overview     # 硬件中心总览（M22）
-│  ├─ hardware/ projects/ evidence/  # M22/M23/M25 三区页面（evidence 占位；projects 含整机复核流程）
-│  └─ review/                   # M25 配置单解析器（parse.ts 纯函数）
+│  ├─ hardware/ projects/ evidence/  # 资料区 + 方案库（含整机复核）+ 证据台账
+├─ contracts/design.ts         # M28 共享 Zod 契约（请求/草稿/条目/运行/事件/兼容摘要）
 ├─ domain/                     # 纯业务逻辑，禁止依赖 DB/网络/模型
-│  ├─ build/types.ts           # 领域类型 + 输入 schema（判别联合，按类别校验 spec）
-│  ├─ build/specs.ts           # 八类配件规格 Zod schema
-│  ├─ build/fingerprint.ts     # 清单指纹（过期判断用）
-│  ├─ catalog/                 # 标准型号目录：seed.ts（34 条人工种子）+ search.ts（M17）；BuildCores 产物在 data/catalog/（本地数据层）
-│  └─ rules/                   # engine.ts(注册表+排序) + helpers + 按领域的规则文件
-├─ application/builds/service.ts  # 用例编排：createBuild/addBuildItem/checkBuild/getLatestCheck/deleteBuild
+│  ├─ design/                  # M28：intent.ts（意图解析）+ proposal.ts（预算分档生成+自动校验）
+│  ├─ build/                   # types/specs/fingerprint/budget（正式方案域，不变）
+│  ├─ catalog/ + rules/        # 目录检索 + 12 条规则（作为 Agent 的后台工具复用）
+│  └─ review/ price/           # M25 解析器 + 价格证据 schema
+├─ application/
+│  ├─ builds/service.ts        # 正式方案用例（接受草稿时复用）
+│  └─ design/service.ts        # M28：目标→生成→审阅→接受 编排 + Agent 事件流
 ├─ infra/
-│  ├─ catalog-import/          # 目录导入：BuildCores(source-schemas/map/load/run) + 人工CSV(manual-csv + 模板/导入脚本)
-│  └─ db/                      # client.ts(懒初始化单例) + migrate.ts(版本化迁移 M18) + repositories/
+│  ├─ catalog-import/          # 目录导入（BuildCores + 人工 CSV）
+│  └─ db/                      # client + migrate(v6 五张 design 表) + repositories/(builds + design)
 ├─ ui/
-│  ├─ category-form.ts         # 八类表单元数据（字段定义/摘要/提交解析）
-│  ├─ theme.css                # F1 设计 tokens（--rm-* 语义色/深色基底，globals.css 已引入）
-│  ├─ finding-model.ts         # 结论状态映射 + 六要素视图模型（纯函数）
-│  ├─ components/              # StatusChip / EvidenceStamp / FindingCard（M9 已接线）
-│  └─ canvas/                  # layout.ts（布局引擎纯函数）+ build-canvas.tsx（SVG 机器画布）
-└─ contracts/                   # contracts 目前为空占位
-tests/                          # domain(46) + application(12) + ui(15) 单元测试；e2e/(6 条 Playwright)
-docs/                          # 业务规格 / 架构 ADR / UI 设计 / 本文档
-scripts/migrate-db.ts          # 手动建表（一般不需要，服务首次访问自动建）
-scripts/import-buildcores.ts   # BuildCores 导入 CLI（npm run import-catalog）
+│  ├─ category-form.ts finding-model.ts components/ canvas/   # 原有体系（/diy 与报告仍在用）
+└─ (全局样式) app/globals.css  # 新增 home-page/design-page/proposal-item/agent-event 版式段
+tests/                          # domain(49，含 design 4) + application(16) + ui(19) + infra(46) 单测
+tests/e2e/                      # design(2) + diy-workbench(9) + navigation(2) + report(2) + evidence(2)
+docs/                           # 业务规格 V2 / ADR / 布局规划 v2 / 视觉母版 / 本文档
 ```
 
 ## 6. 如何验证
@@ -309,9 +332,9 @@ scripts/import-buildcores.ts   # BuildCores 导入 CLI（npm run import-catalog�
 ```bash
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit（strict）
-npm test            # Vitest，124 个单元测试
+npm test            # Vitest，130 个单元测试
 npm run build       # Next.js 生产构建（含类型检查）
-npm run test:e2e    # Playwright，14 条端到端（独立端口 3100 + 每次运行前重置 data/e2e.db + 独立构建目录 .next-e2e；⚠️ 静默机器上跑，见 §0）
+npm run test:e2e    # Playwright，17 条端到端（独立端口 3100 + 每次运行前重置 data/e2e.db + 独立构建目录 .next-e2e；⚠️ 静默机器上跑，见 §0）
 ```
 
 全部通过才算完成。**Windows 环境注意**：Playwright 无头壳下载在本机超时过，E2E 用环境变量指定浏览器：`RIGMATE_E2E_EXECUTABLE_PATH='C:/Users/25128/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe'`（未设置时走 Playwright 默认浏览器，其他机器无需此变量）。
@@ -396,6 +419,7 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-09-23 v3.8：M27 产品方向重校准 + M28 目标驱动垂直切片上线——业务规格 V2 / 布局规划 v2 / 视觉母版重写（文档层）；`/` 自然语言目标入口 + `/design/[id]` 审阅工作台 + v6 迁移五表（design_requests/proposals/items/agent_runs/events）+ 意图解析与预算分档生成（规则式，LLM 未接，界面如实标注"经验估算/本地目录按档位挑选"）+ 接受幂等与冲突 409 + 旧工作台迁 `/diy`；修复 IAB 受控输入不同步（FormData 原生提交兜底）；130 单测 + 17 E2E。
 - 2026-09-23 v3.7：M26 证据台账上线——v5 迁移 price_evidence 追加式价格快照表 + 领域 schema + 仓储（只增不改）+ GET/POST /api/evidence + /evidence 页（录入表单/台账表/类别过滤，导航转正）；126 单测 + 16 E2E。踩坑重申：改 migrate.ts 后必须重启 dev server。
 - 2026-09-23 v3.6：M25 整机复核上线——方案库粘贴配置单（解析器 parse.ts：类别关键词识别/型号名提取/行尾价格提取含千分位与¥、赠品服务行硬跳过、未识别行交用户手动归类）+ 逐行目录候选确认（modelTokenOf 检索，选中带规格并标记来源）+ 一键建项目跑检查跳报告；6 解析器单测用真实样本行回归；124 单测 + 14 E2E。
 - 2026-09-23 v3.5：报告页检修打磨（用户反馈）——清单表"型号/关键规格"列名实相符（复用 CATEGORY_META.summary 带出人话规格，空规格弱化标注"规格待补充"）；诊断条款分级呈现：阻断/警告保留完整六要素卡，待补充/通过降为一行式紧凑条款（规则号+具体行动/结论），报告从重复卡片墙变成可扫读文档。

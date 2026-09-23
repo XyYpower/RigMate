@@ -1,869 +1,127 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  buildSpecPayload,
-  CATEGORY_META,
-  CATEGORY_ORDER,
-  hasAnySpec,
-  specToFormValues,
-  type FieldDef,
-  type ItemSpec,
-} from "@/ui/category-form";
-import { FindingCard } from "@/ui/components/finding-card";
-import { StatusChip } from "@/ui/components/status-chip";
-import type { BudgetSummary, Finding, FindingStatus } from "@/domain/build/types";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
 
-type Category = keyof typeof CATEGORY_META;
-
-type Item = {
-  id: string;
-  category: Category;
-  label: string;
-  spec: ItemSpec;
-  priceCents?: number;
-  source?: string;
-};
-
-type Build = {
+type BuildSummary = {
   id: string;
   name: string;
-  useCase: string | null;
-  status: string;
   updatedAt: string;
+  items: unknown[];
   budgetCents: number | null;
-  budgetSummary?: BudgetSummary;
-  items: Item[];
 };
 
-type CategoryDraft = { label: string; price: string; catalogId?: string; fields: Record<string, string> };
-
-type CatalogEntry = {
-  id: string;
-  category: string;
-  name: string;
-  aliases: string[];
-  spec: ItemSpec;
-};
-
-type CatalogProvenance = {
-  upstreamCommit: string;
-  upstreamUrl: string;
-  license: string;
-  licenseUrl: string;
-  importedAt: string;
-  entryCount: number;
-};
-
-const EMPTY_DRAFT: CategoryDraft = { label: "", price: "", fields: {} };
-
-function latestFirst(builds: Build[]): Build[] {
-  return [...builds].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-}
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatYuan(cents: number): string {
-  return `¥${(cents / 100).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
+function formatTime(value: string): string {
+  return new Date(value).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 export default function Home() {
-  const [build, setBuild] = useState<Build | null>(null);
-  const [projects, setProjects] = useState<Build[]>([]);
-  const [name, setName] = useState("我的第一台 DIY 主机");
-  const [useCase, setUseCase] = useState("2K 游戏");
-  const [budgetYuan, setBudgetYuan] = useState("");
-  const [itemCategory, setItemCategory] = useState<Category>("cpu");
-  const [drafts, setDrafts] = useState<Record<string, CategoryDraft>>({});
-  const [findings, setFindings] = useState<Finding[]>([]);
-  const [resultMeta, setResultMeta] = useState<{ time: string; stale: boolean } | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [confirmItemId, setConfirmItemId] = useState<string | null>(null);
-  const [catalogByCategory, setCatalogByCategory] = useState<Record<string, CatalogEntry[]>>({});
-  const [catalogProvenance, setCatalogProvenance] = useState<CatalogProvenance | null>(null);
-  const [message, setMessage] = useState("正在加载你的历史项目…");
+  const router = useRouter();
+  const [goal, setGoal] = useState("");
+  const [budget, setBudget] = useState("");
+  const [builds, setBuilds] = useState<BuildSummary[]>([]);
+  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const meta = CATEGORY_META[itemCategory];
-  const draft = drafts[itemCategory] ?? EMPTY_DRAFT;
-  const fieldValues = draft.fields;
-
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      try {
-        const response = await fetch("/api/builds");
-        if (!response.ok) return;
-        const data = await response.json();
-        if (cancelled) return;
-        const builds: Build[] = latestFirst(data.builds ?? []);
-        setProjects(builds);
-        // 方案库「打开」带 ?project=id 直达指定项目；无参数则恢复最近项目
-        const requestedId = new URLSearchParams(window.location.search).get("project");
-        const requested = requestedId ? builds.find((b) => b.id === requestedId) : undefined;
-        const latest = requested ?? builds[0];
-        if (latest) {
-          setBuild(latest);
-          setMessage(
-            requested
-              ? `已从方案库打开「${latest.name}」，共 ${latest.items.length} 个配件。`
-              : `已恢复最近的项目「${latest.name}」，共 ${latest.items.length} 个配件。历史项目可在上方切换。`,
-          );
-          const checkResponse = await fetch(`/api/builds/${latest.id}/check`);
-          if (cancelled) return;
-          if (checkResponse.ok) {
-            const checkData = await checkResponse.json();
-            if (checkData.check) {
-              setFindings(checkData.check.findings);
-              setResultMeta({
-                time: new Date(checkData.check.createdAt).toLocaleString(),
-                stale: Boolean(checkData.check.stale),
-              });
-            }
-          }
-        } else {
-          setMessage("还没有历史项目。先创建一个项目，数据会实时保存到数据库。");
-        }
-      } catch {
-        if (!cancelled) setMessage("无法连接服务，请确认开发服务器正在运行。");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (catalogByCategory[itemCategory]) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const response = await fetch(`/api/catalog?category=${itemCategory}`);
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!cancelled) {
-          setCatalogByCategory((prev) => ({ ...prev, [itemCategory]: data.entries ?? [] }));
-          if (data.provenance) setCatalogProvenance(data.provenance);
-        }
-      } catch {
-        /* 目录加载失败不阻塞手填 */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [itemCategory, catalogByCategory]);
-
-  // 目录规模 = 人工种子 + BuildCores 导入（万级）：下拉默认只给前 30 条，
-  // 输入关键词改走 q 检索，否则具体型号无法触达
-  const [catalogSearch, setCatalogSearch] = useState("");
-  const [catalogSearchResults, setCatalogSearchResults] = useState<CatalogEntry[]>([]);
-  useEffect(() => {
-    const query = catalogSearch.trim();
-    // 空关键词不请求：catalogOptions 直接回落到类别缓存（种子 + 未检索的前 30 条）
-    if (!query) return;
-    let cancelled = false;
-    const handle = setTimeout(() => {
-      void (async () => {
-        try {
-          const response = await fetch(
-            `/api/catalog?category=${itemCategory}&q=${encodeURIComponent(query)}`,
-          );
-          if (!response.ok) return;
-          const data = await response.json();
-          if (!cancelled) {
-            setCatalogSearchResults(data.entries ?? []);
-            if (data.provenance) setCatalogProvenance(data.provenance);
-          }
-        } catch {
-          /* 检索失败保持上次结果 */
-        }
-      })();
-    }, 250);
-    return () => {
-      cancelled = true;
-      clearTimeout(handle);
-    };
-  }, [itemCategory, catalogSearch]);
-  const catalogOptions = catalogSearch.trim() ? catalogSearchResults : catalogByCategory[itemCategory] ?? [];
-
-  const counts = useMemo(() => {
-    const result: Record<FindingStatus, number> = {
-      pass: 0,
-      block: 0,
-      warn: 0,
-      unknown: 0,
-      not_applicable: 0,
-    };
-    for (const finding of findings) result[finding.status] += 1;
-    return result;
-  }, [findings]);
-
-  function switchProject(id: string) {
-    const target = projects.find((project) => project.id === id);
-    if (!target || target.id === build?.id) return;
-    setBuild(target);
-    setFindings([]);
-    setResultMeta(null);
-    setConfirmDelete(false);
-    setEditingItemId(null);
-    setConfirmItemId(null);
-    setMessage(`已切换到项目「${target.name}」，共 ${target.items.length} 个配件。`);
-    void (async () => {
-      const response = await fetch(`/api/builds/${target.id}/check`);
+    void fetch("/api/builds").then(async (response) => {
       if (!response.ok) return;
       const data = await response.json();
-      if (data.check) {
-        setFindings(data.check.findings);
-        setResultMeta({
-          time: new Date(data.check.createdAt).toLocaleString(),
-          stale: Boolean(data.check.stale),
-        });
-      }
-    })();
-  }
+      if (!cancelled) setBuilds((data.builds ?? []).slice(0, 4));
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
 
-  async function deleteProject() {
-    if (!build) return;
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      setMessage("再点一次「确认删除」就会连同配件和检查记录一起删除。");
+  async function startDesign(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const goalValue = String(formData.get("goal") ?? "").trim();
+    const budgetValue = String(formData.get("budget") ?? "").trim();
+    if (!goalValue) return;
+    const amount = budgetValue ? Number(budgetValue.replace(/[¥,]/g, "")) : undefined;
+    if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) {
+      setMessage("预算请输入大于 0 的金额，或留空让助手从描述中识别。");
       return;
     }
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch(`/api/builds/${build.id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("删除失败");
-      const remaining = latestFirst(projects.filter((project) => project.id !== build.id));
-      setProjects(remaining);
-      setBuild(remaining[0] ?? null);
-      setFindings([]);
-      setResultMeta(null);
-      setConfirmDelete(false);
-      setEditingItemId(null);
-      setConfirmItemId(null);
-      setMessage(
-        remaining[0]
-          ? `项目已删除。已切换到「${remaining[0].name}」。`
-          : "项目已删除。当前没有其他项目。",
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "删除失败");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function createProject() {
-    const budgetRaw = budgetYuan.trim();
-    let budgetCents: number | undefined;
-    if (budgetRaw) {
-      const yuan = Number(budgetRaw);
-      if (!Number.isFinite(yuan) || yuan <= 0) {
-        setMessage("预算需要是大于 0 的数字（单位：元）。");
-        return;
-      }
-      budgetCents = Math.round(yuan * 100);
-    }
-    setBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch("/api/builds", {
+      const response = await fetch("/api/design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, useCase, budgetCents }),
+        body: JSON.stringify({ rawInput: goalValue, budgetCents: amount ? Math.round(amount * 100) : undefined }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "创建失败");
-      const created: Build = data.build;
-      setBuild(created);
-      setProjects((prev) => latestFirst([created, ...prev]));
-      setFindings([]);
-      setResultMeta(null);
-      setConfirmDelete(false);
-      setEditingItemId(null);
-      setConfirmItemId(null);
-      setMessage(`新项目「${created.name}」已创建并保存。旧项目仍在历史列表里，随时可以切回。`);
+      if (!response.ok) throw new Error(data.error ?? "暂时无法生成方案。");
+      router.push(`/design/${data.result.request.id}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "创建失败");
-    } finally {
+      setMessage(error instanceof Error ? error.message : "暂时无法生成方案，请重试。");
       setBusy(false);
     }
   }
-
-  function parsePriceInput(): { priceCents: number | undefined; error: string | null } {
-    const raw = draft.price.trim();
-    if (!raw) return { priceCents: undefined, error: null };
-    const yuan = Number(raw);
-    if (!Number.isFinite(yuan) || yuan <= 0) {
-      return { priceCents: undefined, error: "价格需要是大于 0 的数字（单位：元）。" };
-    }
-    return { priceCents: Math.round(yuan * 100), error: null };
-  }
-
-  async function addItem() {
-    if (!build) return;
-    const { spec, error } = buildSpecPayload(meta, draft.fields);
-    if (error) {
-      setMessage(error);
-      return;
-    }
-    const price = parsePriceInput();
-    if (price.error) {
-      setMessage(price.error);
-      return;
-    }
-    setBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch(`/api/builds/${build.id}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: itemCategory,
-          label: draft.label,
-          spec,
-          priceCents: price.priceCents,
-          source: draft.catalogId ? `catalog:${draft.catalogId}` : undefined,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "添加失败");
-      const updated: Build = data.build;
-      setBuild(updated);
-      setProjects((prev) => prev.map((project) => (project.id === updated.id ? updated : project)));
-      setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
-      if (findings.length > 0) {
-        setResultMeta((prev) => (prev ? { ...prev, stale: true } : prev));
-      }
-      setMessage(`${meta.label} 已加入清单并保存。`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "添加失败");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function startEdit(item: Item) {
-    setItemCategory(item.category);
-    setDrafts((prev) => ({
-      ...prev,
-      [item.category]: {
-        label: item.label,
-        price: typeof item.priceCents === "number" ? String(item.priceCents / 100) : "",
-        catalogId: item.source?.startsWith("catalog:") ? item.source.slice("catalog:".length) : undefined,
-        fields: specToFormValues(CATEGORY_META[item.category], item.spec ?? {}),
-      },
-    }));
-    setEditingItemId(item.id);
-    setConfirmItemId(null);
-    setMessage(`正在编辑「${item.label}」：改完点「保存修改」，或点「取消编辑」。`);
-  }
-
-  function cancelEdit() {
-    if (!editingItemId) return;
-    setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
-    setEditingItemId(null);
-    setMessage("已取消编辑。");
-  }
-
-  async function saveItem() {
-    if (!build || !editingItemId) return;
-    const { spec, error } = buildSpecPayload(meta, draft.fields);
-    if (error) {
-      setMessage(error);
-      return;
-    }
-    const price = parsePriceInput();
-    if (price.error) {
-      setMessage(price.error);
-      return;
-    }
-    setBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch(`/api/builds/${build.id}/items/${editingItemId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: draft.label, spec, priceCents: price.priceCents }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "保存失败");
-      const updated: Build = data.build;
-      setBuild(updated);
-      setProjects((prev) => prev.map((project) => (project.id === updated.id ? updated : project)));
-      setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
-      setEditingItemId(null);
-      if (findings.length > 0) {
-        setResultMeta((prev) => (prev ? { ...prev, stale: true } : prev));
-      }
-      setMessage(`「${draft.label}」的修改已保存。`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "保存失败");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function removeItem(itemId: string) {
-    if (!build) return;
-    if (confirmItemId !== itemId) {
-      setConfirmItemId(itemId);
-      setMessage("再点一次「确认删」会删除这个配件（项目保留）。");
-      return;
-    }
-    setBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch(`/api/builds/${build.id}/items/${itemId}`, { method: "DELETE" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "删除失败");
-      const updated: Build = data.build;
-      setBuild(updated);
-      setProjects((prev) => prev.map((project) => (project.id === updated.id ? updated : project)));
-      setConfirmItemId(null);
-      if (editingItemId === itemId) {
-        setEditingItemId(null);
-        setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
-      }
-      if (findings.length > 0) {
-        setResultMeta((prev) => (prev ? { ...prev, stale: true } : prev));
-      }
-      setMessage("配件已删除，项目保留。");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "删除失败");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function runCheck() {
-    if (!build) return;
-    setBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch(`/api/builds/${build.id}/check`, { method: "POST" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "检查失败");
-      const updated: Build = data.build;
-      setBuild(updated);
-      setProjects((prev) => prev.map((project) => (project.id === updated.id ? updated : project)));
-      setFindings(data.findings);
-      setResultMeta({ time: "刚刚更新", stale: false });
-      setMessage(
-        data.findings.some((finding: Finding) => finding.status === "block")
-          ? "检查完成：存在阻断问题，请先处理。"
-          : "检查完成，结果已保存。",
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "检查失败");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function renderField(field: FieldDef) {
-    const value = fieldValues[field.key] ?? "";
-    const setValue = (next: string) =>
-      setDrafts((prev) => ({
-        ...prev,
-        [itemCategory]: {
-          label: prev[itemCategory]?.label ?? "",
-          price: prev[itemCategory]?.price ?? "",
-          catalogId: prev[itemCategory]?.catalogId,
-          fields: { ...(prev[itemCategory]?.fields ?? {}), [field.key]: next },
-        },
-      }));
-    if (field.type === "select") {
-      return (
-        <label className="field" key={field.key}>
-          <span className="field-label">{field.label}</span>
-          <select value={value} onChange={(event) => setValue(event.target.value)} disabled={busy}>
-            <option value="">待选择</option>
-            {field.options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      );
-    }
-    return (
-      <label className="field" key={field.key}>
-        <span className="field-label">{field.label}</span>
-        <input
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          placeholder={field.placeholder}
-          inputMode={field.type === "number" || field.type === "count" ? "numeric" : undefined}
-          disabled={busy}
-        />
-      </label>
-    );
-  }
-
-  const summary = build?.budgetSummary;
-  const hasBudget = Boolean(summary && summary.budgetCents !== null && summary.budgetCents > 0);
-  const budget = summary?.budgetCents ?? 0;
-  const ratio = hasBudget ? Math.min((summary?.pricedTotalCents ?? 0) / budget, 1) : 0;
-  const over = hasBudget && (summary?.pricedTotalCents ?? 0) > budget;
-  const difference = summary?.differenceCents ?? null;
 
   return (
-    <main className="shell">
-      <header className="masthead">
-        <div className="masthead-brand">
-          <span className="brand-mark">R</span>
-          <span className="masthead-title">装机清单工作台</span>
-          <span className="masthead-sub">先确认能装，再决定买什么。</span>
-        </div>
-        <div className="masthead-meta">
-          <span><span className="live-dot" />规则引擎在线 · 12 条规则</span>
-          {build && <span>清单 {build.items.length} 件</span>}
-        </div>
-      </header>
+    <main className="home-page">
+      <section className="home-intro">
+        <p className="home-kicker">RIGMATE · PC 装机决策工作台</p>
+        <h1>你想配置一台什么样的电脑？</h1>
+        <p className="home-lede">说说预算、用途和偏好。RigMate 会先给出一套方案，再由你决定怎么调整。</p>
+      </section>
 
-      <section className="projbar">
-        {projects.length > 0 && (
-          <label className="field">
-            <span className="field-label">历史项目 <span className="field-hint">切换后自动加载</span></span>
-            <select value={build?.id ?? ""} onChange={(event) => switchProject(event.target.value)} disabled={busy}>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}（{project.items.length} 配件 · {formatTime(project.updatedAt)}）
-                </option>
-              ))}
-            </select>
+      <form className="goal-composer" onSubmit={(event) => void startDesign(event)}>
+        <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
+        <textarea
+          id="design-goal"
+          name="goal"
+          value={goal}
+          onChange={(event) => setGoal(event.target.value)}
+          onInput={(event) => setGoal(event.currentTarget.value)}
+          rows={4}
+          maxLength={4000}
+          placeholder="例如：2 万预算，想要白色海景房，主要做视频剪辑和玩 3A 游戏……"
+          disabled={busy}
+        />
+        <div className="goal-composer-footer">
+          <label className="goal-budget">
+            <span>预算</span>
+            <input name="budget" aria-label="预算（元，可选）" inputMode="numeric" value={budget} onChange={(event) => setBudget(event.target.value)} onInput={(event) => setBudget(event.currentTarget.value)} placeholder="从描述中识别" disabled={busy} />
           </label>
-        )}
-        <label className="field">
-          <span className="field-label">新项目名称</span>
-          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：我的第一台 DIY 主机" disabled={busy} />
-        </label>
-        <label className="field">
-          <span className="field-label">主要用途</span>
-          <input value={useCase} onChange={(event) => setUseCase(event.target.value)} placeholder="例如：2K 游戏 / 开发" disabled={busy} />
-        </label>
-        <label className="field">
-          <span className="field-label">预算（元）· 可选，用于余量计</span>
-          <input value={budgetYuan} onChange={(event) => setBudgetYuan(event.target.value)} placeholder="例如：8000" inputMode="numeric" disabled={busy} />
-        </label>
-        <div className="projbar-actions">
-          <button className="button primary" onClick={createProject} disabled={busy || !name.trim()}>
-            {busy ? "处理中…" : "新建项目"}<span>→</span>
-          </button>
-          {build && (
-            <button className={`button ${confirmDelete ? "danger-active" : "danger"}`} onClick={deleteProject} disabled={busy}>
-              {confirmDelete ? `确认删除「${build.name}」？再点一次` : "删除当前项目"}<span>✕</span>
-            </button>
-          )}
-        </div>
-      </section>
-
-      <section className="titleline">
-        <div className="titleline-main">
-          <h2>{build ? build.name : "还没有活动项目"}</h2>
-          <p className="titleline-sub">
-            {build
-              ? `用途 ${build.useCase ?? "未设置"} · 更新于 ${formatTime(build.updatedAt)}`
-              : "在上方填写项目名称并新建，数据会实时保存到 SQLite"}
-          </p>
-        </div>
-        <div className="titleline-actions">
-          <button
-            className="button check-button"
-            onClick={runCheck}
-            disabled={!build || build.items.length === 0 || busy}
-          >
-            运行兼容性检查 <span>↗</span>
+          <button className="button primary goal-submit" type="submit" disabled={busy}>
+            {busy ? "正在搭配…" : "生成装机方案"}<span aria-hidden>→</span>
           </button>
         </div>
-      </section>
+        {message && <p className="form-feedback" role="status">{message}</p>}
+      </form>
 
-      {summary && (
-        <>
-          <section className="dataline">
-            <span className="stat">
-              <span className="stat-label">预算</span>
-              <span className={`stat-value ${hasBudget ? "" : "muted"}`}>{hasBudget ? formatYuan(budget) : "未设置"}</span>
-            </span>
-            <span className="stat">
-              <span className="stat-label">已计价</span>
-              <span className="stat-value accent">{formatYuan(summary.pricedTotalCents)}</span>
-              <span className="stat-sub">{summary.pricedCount} / {build?.items.length ?? 0} 件</span>
-            </span>
-            <span className="stat">
-              <span className="stat-label">未计价</span>
-              <span className="stat-value">{summary.unpricedCount} 件</span>
-              <span className="stat-sub">不按零元计入</span>
-            </span>
-            <span className="stat">
-              <span className="stat-label">{over ? "超支" : "余量"}</span>
-              <span className={`stat-value ${over ? "over" : ""} ${difference === null ? "muted" : ""}`}>
-                {difference === null ? "—" : `${difference < 0 ? "−" : ""}${formatYuan(Math.abs(difference))}`}
-              </span>
-            </span>
-          </section>
-          {hasBudget ? (
-            <section className="ruler">
-              <div className="ruler-bar" role="img" aria-label={`预算 ${formatYuan(budget)}，已计价 ${formatYuan(summary.pricedTotalCents)}`}>
-                {summary.unpricedCount > 0 && <div className="ruler-ghost" aria-hidden />}
-                <div className={`ruler-fill ${over ? "over" : ""}`} style={{ width: `${ratio * 100}%` }} />
-              </div>
-              <div className="ruler-scale" aria-hidden>
-                <span>0</span><span>25%</span><span>50%</span><span>75%</span><span>{formatYuan(budget)}</span>
-              </div>
-            </section>
-          ) : (
-            <p className="note-line">该项目未设置预算：新建项目时填写「预算（元）」即可显示余量尺；未计价件永远不按零元计入。</p>
-          )}
-          {hasBudget && summary.unpricedCount > 0 && (
-            <p className="note-line ghost">
-              斜纹区间 = 未计价 {summary.unpricedCount} 件（{summary.unpricedLabels.join("、")}），补价后差额会变化。
-            </p>
-          )}
-        </>
-      )}
-
-      <div className="sheet">
-        <div>
-          {/* 规格表 */}
-          <section className="sec">
-            <div className="sec-head">
-              <h3 className="sec-title">清单</h3>
-              <span className="count-badge">{build?.items.length ?? 0} / 8 类</span>
-            </div>
-            {build?.items.length ? (
-              <div className="table">
-                <div className="thead" aria-hidden>
-                  <span>类型</span>
-                  <span>型号 / 关键规格</span>
-                  <span className="col-price">价格</span>
-                  <span className="col-state">状态</span>
-                  <span />
-                </div>
-                {build.items.map((item) => (
-                  <div className={`item-row ${editingItemId === item.id ? "editing" : ""}`} key={item.id}>
-                    <span className="cat-label">{CATEGORY_META[item.category].badge}</span>
-                    <div className="item-main">
-                      <strong>{item.label}</strong>
-                      <span>
-                        {CATEGORY_META[item.category].label} · {CATEGORY_META[item.category].summary(item.spec ?? {})}
-                        {item.source?.startsWith("catalog:") ? " · 目录型号" : ""}
-                      </span>
-                    </div>
-                    <span className={`item-price ${typeof item.priceCents === "number" ? "" : "empty"}`}>
-                      {typeof item.priceCents === "number" ? formatYuan(item.priceCents) : "—"}
-                    </span>
-                    <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
-                      {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
-                    </span>
-                    <div className="item-actions">
-                      <button className={`item-action ${editingItemId === item.id ? "active" : ""}`} onClick={() => startEdit(item)} disabled={busy}>改</button>
-                      <button
-                        className={`item-action danger ${confirmItemId === item.id ? "active" : ""}`}
-                        onClick={() => removeItem(item.id)}
-                        disabled={busy}
-                      >
-                        {confirmItemId === item.id ? "确认删" : "删"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="empty-line">清单为空。在下方选择类别、填写型号即可加入，数据实时保存。</p>
-            )}
-          </section>
-
-          {/* 配件录入 */}
-          <section className="sec">
-            <div className="sec-head">
-              <h3 className="sec-title">{editingItemId ? "编辑配件" : "配件录入"}</h3>
-              <span className="sec-meta">数据由你确认，不自动猜测型号</span>
-            </div>
-            <div className="tabs" role="tablist" aria-label="配件类别">
-              {CATEGORY_ORDER.map((category) => (
-                <button
-                  key={category}
-                  className={`tab ${itemCategory === category ? "active" : ""}`}
-                  onClick={() => {
-                    if (editingItemId) {
-                      setEditingItemId(null);
-                      setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
-                      setMessage("已退出编辑（切换了类别）。");
-                    }
-                    setItemCategory(category);
-                  }}
-                  disabled={busy}
-                >
-                  {CATEGORY_META[category].label}
-                </button>
-              ))}
-            </div>
-            {editingItemId && (
-              <p className="edit-note">正在编辑清单中的配件：类别保持不变，改完点「保存修改」。</p>
-            )}
-              <div className="addgrid">
-                <label className="field wide">
-                  <span className="field-label">
-                    检索目录（输入型号关键词） <span className="field-hint">种子 + BuildCores 导入共万级条目</span>
-                  </span>
-                  <input
-                    value={catalogSearch}
-                    onChange={(event) => setCatalogSearch(event.target.value)}
-                    placeholder="例如：9800X3D / 4070 SUPER / B650M"
-                    disabled={busy}
-                  />
-                </label>
-                <label className="field wide">
-                  <span className="field-label">从目录选择型号 <span className="field-hint">自动带出已核规格</span></span>
-                  <select
-                    value={draft.catalogId ?? ""}
-                    onChange={(event) => {
-                      const entryId = event.target.value || undefined;
-                      const entry = entryId
-                        ? catalogOptions.find((e) => e.id === entryId)
-                        : undefined;
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [itemCategory]: {
-                          label: entry ? entry.name : prev[itemCategory]?.label ?? "",
-                          price: prev[itemCategory]?.price ?? "",
-                          catalogId: entry?.id,
-                          fields: entry ? specToFormValues(meta, entry.spec) : prev[itemCategory]?.fields ?? {},
-                        },
-                      }));
-                    }}
-                    disabled={busy}
-                  >
-                    <option value="">手动填写（不使用目录）</option>
-                    {catalogOptions.map((entry) => (
-                      <option key={entry.id} value={entry.id}>
-                        {entry.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {catalogProvenance && (
-                  <p className="catalog-provenance field wide">
-                    目录含{" "}
-                    <a
-                      href={catalogProvenance.upstreamUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      BuildCores OpenDB
-                    </a>{" "}
-                    导入 {catalogProvenance.entryCount} 条 · commit{" "}
-                    {catalogProvenance.upstreamCommit.slice(0, 7)} ·{" "}
-                    {catalogProvenance.license}（须保留署名）
-                  </p>
-                )}
-                <label className="field wide">
-                  <span className="field-label">型号或商品名称</span>
-                <input
-                  value={draft.label}
-                  onChange={(event) =>
-                    setDrafts((prev) => ({
-                      ...prev,
-                      [itemCategory]: { label: event.target.value, price: prev[itemCategory]?.price ?? "", catalogId: prev[itemCategory]?.catalogId, fields: prev[itemCategory]?.fields ?? {} },
-                    }))
-                  }
-                  placeholder={`${meta.label}型号`}
-                  disabled={busy}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">价格（元）· 可选</span>
-                <input
-                  value={draft.price}
-                  onChange={(event) =>
-                    setDrafts((prev) => ({
-                      ...prev,
-                      [itemCategory]: { label: prev[itemCategory]?.label ?? "", price: event.target.value, catalogId: prev[itemCategory]?.catalogId, fields: prev[itemCategory]?.fields ?? {} },
-                    }))
-                  }
-                  placeholder="例如：2899"
-                  inputMode="decimal"
-                  disabled={busy}
-                />
-              </label>
-              {meta.fields.map(renderField)}
-            </div>
-            <div className="form-actions">
-              {editingItemId ? (
-                <>
-                  <button className="button ghost" onClick={cancelEdit} disabled={busy}>取消编辑</button>
-                  <button className="button secondary" onClick={saveItem} disabled={!draft.label.trim() || busy}>
-                    保存修改 <span>✓</span>
-                  </button>
-                </>
-              ) : (
-                <button className="button secondary" onClick={addItem} disabled={!build || !draft.label.trim() || busy}>
-                  加入清单 <span>＋</span>
-                </button>
-              )}
-            </div>
-            {/* 操作反馈必须离按钮近：footer 在页面最底端，校验错误看不见会被当成"点了没反应" */}
-            {message && <p className="form-feedback">{message}</p>}
-            {!build && <p className="helper">请先创建或选择一个项目。</p>}
-          </section>
-        </div>
-
-        {/* 诊断 */}
-        <div>
-          <section className="sec">
-            <div className="results-head">
-              <h3 className="sec-title">兼容性诊断</h3>
-              {findings.length > 0 && resultMeta && (
-                <span className="result-time">
-                  结果时间：{resultMeta.time}
-                  {" · "}
-                  <a className="result-report-link" href={`/builds/${build?.id ?? ""}/report`}>
-                    查看报告 ↗
-                  </a>
-                </span>
-              )}
-            </div>
-            {resultMeta?.stale && (
-              <div className="stale-banner">清单在这次检查之后发生过变化，以下结论基于旧清单，请重新运行检查。</div>
-            )}
-            <div className="tally">
-              <StatusChip status="block" count={counts.block} />
-              <StatusChip status="unknown" count={counts.unknown} />
-              <StatusChip status="warn" count={counts.warn} />
-              <StatusChip status="pass" count={counts.pass} />
-            </div>
-            {findings.length ? (
-              <div className="findings">
-                {findings.map((finding) => (
-                  <FindingCard key={finding.ruleId} finding={finding} />
-                ))}
-              </div>
-            ) : (
-              <p className="empty-line">
-                尚无检查结果。录入配件后点右上角「运行兼容性检查 ↗」，结论会按阻断、待补充、警告、通过排列。
-              </p>
-            )}
-          </section>
-        </div>
+      <div className="home-shortcuts">
+        <span>也可以</span>
+        <Link href="/projects">从已有方案继续</Link>
+        <span aria-hidden>·</span>
+        <Link href="/projects?mode=review">粘贴配置单复核</Link>
+        <span aria-hidden>·</span>
+        <Link href="/diy">直接进入自由 DIY</Link>
       </div>
 
-      <footer className="footer">
-        <span className="footer-brand">RIGMATE / 业务规则优先</span>
-        {/* 操作反馈移至表单按钮旁（form-feedback）：footer 在页面底端，用户看不见 */}
-      </footer>
+      {builds.length > 0 && (
+        <section className="recent-designs" aria-labelledby="recent-title">
+          <div className="home-section-heading">
+            <h2 id="recent-title">最近的方案</h2>
+            <Link href="/projects">全部方案 <span aria-hidden>→</span></Link>
+          </div>
+          <ul>
+            {builds.map((build) => (
+              <li key={build.id}>
+                <Link href={`/diy?project=${build.id}`}>
+                  <span>{build.name}</span>
+                  <span className="recent-meta">{build.items.length} 个配件 · {formatTime(build.updatedAt)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }

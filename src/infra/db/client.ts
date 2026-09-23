@@ -72,6 +72,68 @@ export const priceEvidence = sqliteTable("price_evidence", {
   createdAt: text("created_at").notNull(),
 });
 
+export const designRequests = sqliteTable("design_requests", {
+  id: text("id").primaryKey(),
+  rawInput: text("raw_input").notNull(),
+  intent: text("intent").notNull(),
+  status: text("status").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const designProposals = sqliteTable("design_proposals", {
+  id: text("id").primaryKey(),
+  requestId: text("request_id").notNull(),
+  version: integer("version").notNull(),
+  status: text("status").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  budgetCents: integer("budget_cents"),
+  estimatedLowCents: integer("estimated_low_cents"),
+  estimatedHighCents: integer("estimated_high_cents"),
+  acceptedBuildId: text("accepted_build_id"),
+  fitNotes: text("fit_notes").notNull().default("[]"),
+  tradeoffs: text("tradeoffs").notNull().default("[]"),
+  unknowns: text("unknowns").notNull().default("[]"),
+  compatibility: text("compatibility").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const proposalItems = sqliteTable("proposal_items", {
+  id: text("id").primaryKey(),
+  proposalId: text("proposal_id").notNull(),
+  category: text("category").notNull(),
+  label: text("label").notNull(),
+  catalogId: text("catalog_id"),
+  spec: text("spec").notNull().default("{}"),
+  sourceLevel: text("source_level").notNull(),
+  priceEstimateLowCents: integer("price_estimate_low_cents"),
+  priceEstimateHighCents: integer("price_estimate_high_cents"),
+  priceBasis: text("price_basis").notNull(),
+  rationale: text("rationale").notNull(),
+  confirmationRequired: integer("confirmation_required", { mode: "boolean" }).notNull().default(false),
+  confirmationReason: text("confirmation_reason"),
+});
+
+export const agentRuns = sqliteTable("agent_runs", {
+  id: text("id").primaryKey(),
+  requestId: text("request_id").notNull(),
+  proposalId: text("proposal_id"),
+  status: text("status").notNull(),
+  createdAt: text("created_at").notNull(),
+  completedAt: text("completed_at"),
+});
+
+export const agentEvents = sqliteTable("agent_events", {
+  id: text("id").primaryKey(),
+  runId: text("run_id").notNull(),
+  type: text("type").notNull(),
+  status: text("status").notNull(),
+  message: text("message").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
 export type RigmateDatabase = BetterSQLite3Database<Record<string, never>>;
 
 type DatabaseStore = {

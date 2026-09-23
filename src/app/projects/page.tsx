@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { parseReviewText } from "@/domain/review/parse";
 
 type Build = {
   id: string;
@@ -40,8 +40,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   case: "机箱",
 };
 
-const SOURCE_SHORT: Record<string, string> = { seed: "种子", manual: "人工", buildcores: "BC" };
-
 function latestFirst(builds: Build[]): Build[] {
   return [...builds].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
@@ -68,6 +66,7 @@ function parsePriceInput(raw: string): number | undefined {
 }
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [builds, setBuilds] = useState<Build[] | null>(null);
   const [loadError, setLoadError] = useState(false);
 
@@ -172,7 +171,7 @@ export default function ProjectsPage() {
       }
 
       await fetch(`/api/builds/${build.id}/check`, { method: "POST" });
-      window.location.href = `/builds/${build.id}/report`;
+      router.push(`/builds/${build.id}/report`);
     } catch (error) {
       setReviewMessage(error instanceof Error ? error.message : "复核失败，请重试。");
       setReviewBusy(false);
@@ -189,9 +188,9 @@ export default function ProjectsPage() {
     <main className="hw-page">
       <header className="hw-head">
         <h1>方案库</h1>
-        <p className="hw-sub">
-          历史项目一览，点「打开」回到
-          <Link href="/"> 装机配置 </Link>工作台继续编辑。
+          <p className="hw-sub">
+          历史方案一览，点「打开」回到
+          <Link href="/diy"> 高级 DIY </Link>工作台继续编辑。
         </p>
       </header>
 
@@ -300,14 +299,14 @@ export default function ProjectsPage() {
       <section className="sec">
         <div className="hw-sec-head">
           <h2>项目</h2>
-          <Link href="/" className="pj-new">
-            ＋ 新建项目
+          <Link href="/diy" className="pj-new">
+            ＋ 进入高级 DIY
           </Link>
         </div>
         {loadError && <p className="helper">项目列表加载失败，请确认开发服务器正在运行。</p>}
         {builds && builds.length === 0 && (
           <p className="helper">
-            还没有项目。去<Link href="/"> 装机配置 </Link>工作台创建第一个。
+            还没有项目。去<Link href="/diy"> 高级 DIY </Link>工作台创建第一个。
           </p>
         )}
         {builds && builds.length > 0 && (
@@ -335,7 +334,7 @@ export default function ProjectsPage() {
                   </td>
                   <td>{formatTime(build.updatedAt)}</td>
                   <td>
-                    <Link className="pj-open" href={`/?project=${build.id}`}>
+                    <Link className="pj-open" href={`/diy?project=${build.id}`}>
                       打开
                     </Link>
                     <span className="pj-sep">·</span>

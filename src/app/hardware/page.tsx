@@ -120,7 +120,7 @@ export default function HardwarePage() {
         <h1>硬件中心</h1>
         <p className="hw-sub">
           三层目录与导入审计。选件检索在
-          <Link href="/"> 装机配置 </Link>工作台。
+          <Link href="/diy"> 高级 DIY </Link>工作台。
         </p>
       </header>
 

@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 5;
+export const LATEST_SCHEMA_VERSION = 6;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -148,6 +148,73 @@ export const MIGRATIONS: Migration[] = [
         captured_at text NOT NULL,
         created_at text NOT NULL
       )`);
+    },
+  },
+  {
+    version: 6,
+    name: "目标驱动方案：design_requests / proposals / agent_runs / events",
+    up: (db) => {
+      db.run(sql`CREATE TABLE IF NOT EXISTS design_requests (
+        id text PRIMARY KEY NOT NULL,
+        raw_input text NOT NULL,
+        intent text NOT NULL,
+        status text NOT NULL,
+        created_at text NOT NULL,
+        updated_at text NOT NULL
+      )`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS design_proposals (
+        id text PRIMARY KEY NOT NULL,
+        request_id text NOT NULL,
+        version integer NOT NULL,
+        status text NOT NULL,
+        title text NOT NULL,
+        summary text NOT NULL,
+        budget_cents integer,
+        estimated_low_cents integer,
+        estimated_high_cents integer,
+        accepted_build_id text,
+        fit_notes text NOT NULL DEFAULT '[]',
+        tradeoffs text NOT NULL DEFAULT '[]',
+        unknowns text NOT NULL DEFAULT '[]',
+        compatibility text NOT NULL,
+        created_at text NOT NULL,
+        updated_at text NOT NULL
+      )`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS proposal_items (
+        id text PRIMARY KEY NOT NULL,
+        proposal_id text NOT NULL,
+        category text NOT NULL,
+        label text NOT NULL,
+        catalog_id text,
+        spec text NOT NULL DEFAULT '{}',
+        source_level text NOT NULL,
+        price_estimate_low_cents integer,
+        price_estimate_high_cents integer,
+        price_basis text NOT NULL,
+        rationale text NOT NULL,
+        confirmation_required integer NOT NULL DEFAULT 0,
+        confirmation_reason text
+      )`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS agent_runs (
+        id text PRIMARY KEY NOT NULL,
+        request_id text NOT NULL,
+        proposal_id text,
+        status text NOT NULL,
+        created_at text NOT NULL,
+        completed_at text
+      )`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS agent_events (
+        id text PRIMARY KEY NOT NULL,
+        run_id text NOT NULL,
+        type text NOT NULL,
+        status text NOT NULL,
+        message text NOT NULL,
+        created_at text NOT NULL
+      )`);
+      const columns = db.all<{ name: string }>(sql`PRAGMA table_info(design_proposals)`);
+      if (!columns.some((column) => column.name === "accepted_build_id")) {
+        db.run(sql`ALTER TABLE design_proposals ADD COLUMN accepted_build_id text`);
+      }
     },
   },
 ];

@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/", label: "装机配置", ready: true },
-  { href: "/hardware", label: "硬件中心", ready: true },
-  { href: "/projects", label: "方案库", ready: true },
-  { href: "/evidence", label: "证据台账", ready: true },
+  { href: "/", label: "开始配置", ready: true },
+  { href: "/projects", label: "我的方案", ready: true },
+  { href: "/diy", label: "高级 DIY", ready: true },
+  { href: "/hardware", label: "硬件资料", ready: true },
+  { href: "/evidence", label: "价格证据", ready: true },
 ] as const;
 
 /** 全局导航壳（M22 系统布局第一步）：四区结构来自 docs/design/10-系统布局规划.md */
@@ -18,7 +19,7 @@ export function NavShell() {
       <span className="nav-brand">RIGMATE</span>
       <div className="nav-links">
         {NAV_ITEMS.map((item) => {
-          const active = item.ready && pathname === item.href;
+          const active = item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}

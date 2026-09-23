@@ -127,7 +127,7 @@ export default function ReportPage() {
   return (
     <main className="report-page">
       <div className="report-actions">
-        <Link href="/">← 回工作台</Link>
+        <Link href="/diy">← 回高级 DIY</Link>
         <button className="button secondary" onClick={() => window.print()}>
           打印 / 导出 PDF
         </button>
@@ -219,9 +219,9 @@ export default function ReportPage() {
         <h2>兼容性诊断</h2>
         {!check && (
           <p className="helper">
-            该项目尚未运行兼容性检查。回
-            <Link href="/"> 工作台 </Link>
-            点「运行兼容性检查」后，报告会带上结论条款。
+            回
+            <Link href="/diy"> 高级 DIY </Link>
+            重新检查后，报告会带上结论条款。
           </p>
         )}
         {check && grouped.length === 0 && <p className="helper">检查未产生条款。</p>}
