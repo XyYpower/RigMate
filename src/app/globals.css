@@ -317,6 +317,9 @@ select {
 .hw-audit summary:hover { color: var(--rm-ink); }
 .hw-audit table { margin-top: 8px; }
 
+.result-report-link { color: var(--rm-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.result-report-link:hover { color: var(--rm-accent); }
+
 /* ---------- 方案库 ---------- */
 .pj-new {
   font-size: 12px; font-weight: 700; color: var(--rm-ink);
@@ -325,6 +328,73 @@ select {
 .pj-new:hover { border-color: var(--rm-accent); color: var(--rm-accent); }
 .pj-open { color: var(--rm-ink); font-weight: 600; font-size: 12.5px; text-decoration: underline; text-underline-offset: 3px; }
 .pj-open:hover { color: var(--rm-accent); }
+.pj-sep { margin: 0 6px; color: var(--rm-ink-faint); }
+
+/* ---------- 装机方案检查报告（工程图纸风，打印友好） ---------- */
+.report-page { max-width: 900px; margin: 0 auto; padding: 26px 40px 60px; }
+.report-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.report-actions a { color: var(--rm-ink-muted); font-size: 12.5px; text-decoration: none; }
+.report-actions a:hover { color: var(--rm-ink); }
+
+.report-frame { border: 1.5px solid var(--rm-ink); padding: 16px 20px 14px; background: var(--rm-panel); }
+.report-brand {
+  font-family: ui-monospace, Consolas, monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; color: var(--rm-ink-faint);
+  border-bottom: 1px solid var(--rm-line); padding-bottom: 8px;
+}
+.report-title { font-size: 21px; font-weight: 800; margin: 10px 0 12px; }
+.report-metagrid {
+  display: grid; grid-template-columns: 90px 1fr 90px 1.4fr; gap: 4px 18px;
+  font-size: 12.5px;
+}
+.report-metagrid span:nth-child(odd) { color: var(--rm-ink-faint); }
+
+.report-dateline {
+  display: flex; flex-wrap: wrap; gap: 10px 26px;
+  padding: 11px 0; margin: 14px 0 6px;
+  border-top: 1px solid var(--rm-ink); border-bottom: 1px solid var(--rm-line);
+  font-size: 12.5px; color: var(--rm-ink-muted);
+}
+.report-dateline em {
+  font-style: normal; font-family: ui-monospace, Consolas, monospace;
+  font-variant-numeric: tabular-nums; font-weight: 700; color: var(--rm-ink); font-size: 13px;
+}
+
+.report-sec { margin-top: 22px; }
+.report-sec h2 {
+  margin: 0 0 8px; font-size: 14px; font-weight: 800;
+  border-bottom: 1px solid var(--rm-ink); padding-bottom: 6px;
+}
+.report-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.report-table th {
+  text-align: left; padding: 5px 10px 5px 0;
+  color: var(--rm-ink-faint); font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--rm-ink); font-family: ui-monospace, Consolas, monospace;
+}
+.report-table th.num { text-align: right; }
+.report-table td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--rm-line); }
+.report-table .num { text-align: right; font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.report-group { margin: 14px 0 6px; font-size: 12px; color: var(--rm-ink-muted); font-weight: 700; }
+.report-finding { padding: 8px 0 9px; border-bottom: 1px solid var(--rm-line); }
+.report-finding-head { display: flex; align-items: baseline; gap: 10px; }
+.report-finding-head strong { font-size: 13px; flex: 1; }
+.report-rule { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--rm-ink-faint); }
+.report-status { font-size: 12px; font-weight: 800; white-space: nowrap; }
+.report-status-block { color: var(--rm-block); }
+.report-status-unknown { color: var(--rm-unknown); }
+.report-status-warn { color: var(--rm-warn); }
+.report-status-pass { color: var(--rm-pass); }
+.report-status-not_applicable { color: var(--rm-ink-faint); }
+.report-line { margin: 3px 0 0; font-size: 12px; color: var(--rm-ink-muted); }
+.report-notes .report-line { margin-bottom: 5px; }
+
+@media print {
+  .nav-shell, .report-actions { display: none !important; }
+  body { background: #fff; }
+  .report-page { padding: 0; max-width: none; }
+  .report-frame { background: #fff; }
+}
 /* 表单操作反馈（成功/校验错误）：必须出现在按钮正下方，footer 用户看不见 */
 .form-feedback {
   margin: 9px 0 0; padding-top: 7px;

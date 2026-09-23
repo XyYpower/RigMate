@@ -102,6 +102,10 @@ export default function ProjectsPage() {
                     <Link className="pj-open" href={`/?project=${build.id}`}>
                       打开
                     </Link>
+                    <span className="pj-sep">·</span>
+                    <Link className="pj-open" href={`/builds/${build.id}/report`}>
+                      报告
+                    </Link>
                   </td>
                 </tr>
               ))}

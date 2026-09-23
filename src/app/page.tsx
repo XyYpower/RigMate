@@ -826,7 +826,15 @@ export default function Home() {
           <section className="sec">
             <div className="results-head">
               <h3 className="sec-title">兼容性诊断</h3>
-              {findings.length > 0 && resultMeta && <span className="result-time">结果时间：{resultMeta.time}</span>}
+              {findings.length > 0 && resultMeta && (
+                <span className="result-time">
+                  结果时间：{resultMeta.time}
+                  {" · "}
+                  <a className="result-report-link" href={`/builds/${build?.id ?? ""}/report`}>
+                    查看报告 ↗
+                  </a>
+                </span>
+              )}
             </div>
             {resultMeta?.stale && (
               <div className="stale-banner">清单在这次检查之后发生过变化，以下结论基于旧清单，请重新运行检查。</div>
