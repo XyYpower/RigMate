@@ -60,3 +60,25 @@ test("M22 方案库：新建项目后出现在列表，打开可回工作台载�
   await expect(page.getByText("1 / 8 类")).toBeVisible();
   await expect(page.getByText(/已从方案库打开/)).toBeVisible();
 });
+
+test("M25 整机复核：粘贴配置单解析成行，创建项目并出报告", async ({ page }) => {
+  await page.goto("/projects");
+
+  const pasteText = [
+    "CPU：AMD 锐龙7 9800X3D 8核16线程 散片",
+    "主板：技嘉 B650M 迫击炮",
+    "总价 19999",
+  ].join("\n");
+  await page.getByRole("textbox", { name: "复核配置单" }).fill(pasteText);
+  await page.getByRole("textbox", { name: "复核项目名称" }).fill("M25 复核测试");
+  await page.getByRole("button", { name: "解析配置单" }).click();
+
+  // 两行配置被识别，总价行被跳过
+  await expect(page.getByRole("row", { name: /9800X3D/ })).toBeVisible();
+  await expect(page.getByRole("row", { name: /B650M 迫击炮/ })).toBeVisible();
+  await expect(page.getByText(/另跳过 1 行/)).toBeVisible();
+
+  await page.getByRole("button", { name: /创建项目并运行检查/ }).click();
+  await expect(page.getByText("装机方案检查报告")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "M25 复核测试" })).toBeVisible();
+});

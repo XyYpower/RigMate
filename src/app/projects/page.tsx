@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { parseReviewText } from "@/domain/review/parse";
 
 type Build = {
   id: string;
@@ -12,6 +13,34 @@ type Build = {
   budgetSummary?: { pricedTotalCents: number };
   items: unknown[];
 };
+
+type CatalogHit = {
+  id: string;
+  name: string;
+  spec: Record<string, unknown>;
+};
+
+type ReviewRow = {
+  key: string;
+  category: string; // "" = 忽略该行
+  name: string;
+  priceInput: string;
+  candidates: CatalogHit[];
+  candidateId: string; // "" = 不带目录规格
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  cpu: "CPU",
+  motherboard: "主板",
+  gpu: "显卡",
+  ram: "内存",
+  storage: "SSD/HDD",
+  psu: "电源",
+  cooler: "散热器",
+  case: "机箱",
+};
+
+const SOURCE_SHORT: Record<string, string> = { seed: "种子", manual: "人工", buildcores: "BC" };
 
 function latestFirst(builds: Build[]): Build[] {
   return [...builds].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -30,9 +59,24 @@ function formatTime(iso: string): string {
   });
 }
 
+function parsePriceInput(raw: string): number | undefined {
+  const text = raw.trim();
+  if (!text) return undefined;
+  const yuan = Number(text.replace(/[¥,]/g, ""));
+  if (!Number.isFinite(yuan) || yuan <= 0) return undefined;
+  return Math.round(yuan * 100);
+}
+
 export default function ProjectsPage() {
   const [builds, setBuilds] = useState<Build[] | null>(null);
   const [loadError, setLoadError] = useState(false);
+
+  // 整机复核流程状态
+  const [pasteText, setPasteText] = useState("");
+  const [reviewName, setReviewName] = useState("整机复核清单");
+  const [reviewRows, setReviewRows] = useState<ReviewRow[] | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +95,96 @@ export default function ProjectsPage() {
     };
   }, []);
 
+  async function parsePasted() {
+    const { parseReviewText, modelTokenOf } = await import("@/domain/review/parse");
+    const parsed = parseReviewText(pasteText);
+    const rows: ReviewRow[] = [];
+    for (const line of parsed) {
+      if (line.skipped) continue;
+      const token = modelTokenOf(line.name);
+      let candidates: CatalogHit[] = [];
+      if (line.category && token) {
+        try {
+          const params = new URLSearchParams({ category: line.category, q: token });
+          const response = await fetch(`/api/catalog?${params.toString()}`);
+          if (response.ok) {
+            const data = await response.json();
+            candidates = (data.entries ?? []).slice(0, 5);
+          }
+        } catch {
+          candidates = [];
+        }
+      }
+      rows.push({
+        key: `${line.lineNumber}-${line.name}`,
+        category: line.category ?? "",
+        name: line.name,
+        priceInput: line.priceCents !== null ? String(line.priceCents / 100) : "",
+        candidates,
+        candidateId: "",
+      });
+    }
+    setReviewRows(rows);
+    const skippedCount = parsed.filter((line) => line.skipped).length;
+    setReviewMessage(
+      rows.length === 0
+        ? "没有解析出配置行。请检查粘贴内容。"
+        : `解析出 ${rows.length} 行${skippedCount > 0 ? `（另跳过 ${skippedCount} 行赠品/服务/标题）` : ""}。逐行确认类别与目录候选后，点「创建项目并运行检查」。`,
+    );
+  }
+
+  async function createAndCheck() {
+    if (!reviewRows) return;
+    const usable = reviewRows.filter((row) => row.category !== "" && row.name.trim());
+    if (usable.length === 0) {
+      setReviewMessage("没有可用的配置行：至少确认一行的类别与型号。");
+      return;
+    }
+    setReviewBusy(true);
+    setReviewMessage("");
+    try {
+      const buildRes = await fetch("/api/builds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: reviewName.trim() || "整机复核清单" }),
+      });
+      const buildData = await buildRes.json();
+      if (!buildRes.ok) throw new Error(buildData.error ?? "创建项目失败");
+      const build: Build = buildData.build;
+
+      for (const row of usable) {
+        const candidate = row.candidates.find((c) => c.id === row.candidateId);
+        const response = await fetch(`/api/builds/${build.id}/items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: row.category,
+            label: row.name.trim(),
+            spec: candidate ? candidate.spec : {},
+            priceCents: parsePriceInput(row.priceInput),
+            source: candidate ? `catalog:${candidate.id}` : undefined,
+          }),
+        });
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error ?? `添加 ${row.name} 失败`);
+        }
+      }
+
+      await fetch(`/api/builds/${build.id}/check`, { method: "POST" });
+      window.location.href = `/builds/${build.id}/report`;
+    } catch (error) {
+      setReviewMessage(error instanceof Error ? error.message : "复核失败，请重试。");
+      setReviewBusy(false);
+    }
+  }
+
+  function updateRow(key: string, patch: Partial<ReviewRow>) {
+    setReviewRows((prev) =>
+      prev?.map((row) => (row.key === key ? { ...row, ...patch } : row)) ?? null,
+    );
+  }
+
   return (
     <main className="hw-page">
       <header className="hw-head">
@@ -60,6 +194,108 @@ export default function ProjectsPage() {
           <Link href="/"> 装机配置 </Link>工作台继续编辑。
         </p>
       </header>
+
+      <section className="sec">
+        <div className="hw-sec-head">
+          <h2>整机复核</h2>
+          <span className="hw-total">粘贴主播/电商配置单 → 确认 → 查坑</span>
+        </div>
+        <textarea
+          className="review-paste"
+          value={pasteText}
+          onChange={(event) => setPasteText(event.target.value)}
+          rows={5}
+          aria-label="复核配置单"
+          placeholder={"粘贴配置单，每行一件，例如：\nCPU    i7 14700KF 盒装        2689\n主板   微星 B650M 迫击炮      1099\n显卡   七彩虹 RTX4080S 火神   9399"}
+        />
+        <div className="review-bar">
+          <input
+            className="review-name"
+            value={reviewName}
+            onChange={(event) => setReviewName(event.target.value)}
+            placeholder="复核项目名称"
+            aria-label="复核项目名称"
+          />
+          <button className="button secondary" onClick={() => void parsePasted()} disabled={!pasteText.trim()}>
+            解析配置单
+          </button>
+        </div>
+        {reviewMessage && <p className="review-msg">{reviewMessage}</p>}
+
+        {reviewRows && reviewRows.length > 0 && (
+          <>
+            <table className="hw-table review-table">
+              <thead>
+                <tr>
+                  <th>类别</th>
+                  <th>型号（可改）</th>
+                  <th>目录候选</th>
+                  <th className="num">价格（元）</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reviewRows.map((row) => (
+                  <tr key={row.key} className={row.category === "" ? "row-ignored" : undefined}>
+                    <td>
+                      <select
+                        value={row.category}
+                        onChange={(event) => updateRow(row.key, { category: event.target.value, candidateId: "", candidates: [] })}
+                        aria-label="行类别"
+                      >
+                        <option value="">忽略此行</option>
+                        {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        value={row.name}
+                        onChange={(event) => updateRow(row.key, { name: event.target.value })}
+                        aria-label="行型号"
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={row.candidateId}
+                        onChange={(event) => updateRow(row.key, { candidateId: event.target.value })}
+                        aria-label="目录候选"
+                        disabled={row.category === ""}
+                      >
+                        <option value="">不带目录规格</option>
+                        {row.candidates.map((candidate) => (
+                          <option key={candidate.id} value={candidate.id}>
+                            {candidate.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="num">
+                      <input
+                        className="review-price"
+                        value={row.priceInput}
+                        onChange={(event) => updateRow(row.key, { priceInput: event.target.value })}
+                        placeholder="—"
+                        aria-label="行价格"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="review-bar">
+              <span className="helper">
+                「目录候选」选中后自动带出规格并标记来源；不带候选的行规格留空，检查时按待补充处理。
+              </span>
+              <button className="button secondary" onClick={() => void createAndCheck()} disabled={reviewBusy}>
+                {reviewBusy ? "创建中…" : "创建项目并运行检查"}
+              </button>
+            </div>
+          </>
+        )}
+      </section>
 
       <section className="sec">
         <div className="hw-sec-head">
@@ -112,17 +348,6 @@ export default function ProjectsPage() {
             </tbody>
           </table>
         )}
-      </section>
-
-      <section className="sec">
-        <div className="hw-sec-head">
-          <h2>整机复核</h2>
-          <span className="hw-total">V1-B 规划中</span>
-        </div>
-        <p className="helper">
-          粘贴主播/电商的整机配置单 → 自动解析 → 跑兼容性检查（"查坑"场景）。后端与解析流程按
-          docs/design/10-系统布局规划.md §1 排期。
-        </p>
       </section>
     </main>
   );

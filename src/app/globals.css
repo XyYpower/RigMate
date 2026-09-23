@@ -330,6 +330,30 @@ select {
 .pj-open:hover { color: var(--rm-accent); }
 .pj-sep { margin: 0 6px; color: var(--rm-ink-faint); }
 
+/* ---------- 整机复核（粘贴配置单流程） ---------- */
+.review-paste {
+  width: 100%; font-size: 12.5px; line-height: 1.7;
+  border: 1px solid var(--rm-line-strong); background: var(--rm-panel);
+  padding: 10px 12px; color: var(--rm-ink); resize: vertical;
+}
+.review-paste:focus { outline: none; border-color: var(--rm-accent); }
+.review-bar { display: flex; gap: 14px; align-items: center; justify-content: flex-end; margin-top: 10px; }
+.review-name {
+  flex: 0 0 260px; font-size: 13px; font-weight: 600;
+  border: 0; border-bottom: 1px solid var(--rm-line-strong); background: transparent;
+  padding: 4px 0 5px; color: var(--rm-ink);
+}
+.review-name:focus { outline: none; border-bottom-color: var(--rm-accent); }
+.review-msg { margin: 8px 0 0; font-size: 12px; color: var(--rm-ink-muted); }
+.review-table td { vertical-align: middle; }
+.review-table select, .review-table input {
+  border: 0; border-bottom: 1px solid var(--rm-line-strong); background: transparent;
+  color: var(--rm-ink); font-size: 12.5px; padding: 3px 0; width: 100%;
+}
+.review-table select:focus, .review-table input:focus { outline: none; border-bottom-color: var(--rm-accent); }
+.review-table .review-price { text-align: right; font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.row-ignored td { opacity: 0.45; }
+
 /* ---------- 装机方案检查报告（工程图纸风，打印友好） ---------- */
 .report-page { max-width: 900px; margin: 0 auto; padding: 26px 40px 60px; }
 .report-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
