@@ -388,6 +388,13 @@ select {
 .report-status-not_applicable { color: var(--rm-ink-faint); }
 .report-line { margin: 3px 0 0; font-size: 12px; color: var(--rm-ink-muted); }
 .report-notes .report-line { margin-bottom: 5px; }
+.report-mini {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 5px 0; border-bottom: 1px solid var(--rm-line);
+  font-size: 12px; color: var(--rm-ink-muted);
+}
+.report-mini .report-rule { white-space: nowrap; }
+.report-item-spec { color: var(--rm-ink-faint); font-size: 12px; }
 
 @media print {
   .nav-shell, .report-actions { display: none !important; }

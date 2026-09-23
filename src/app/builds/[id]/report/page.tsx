@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Build, Finding } from "@/domain/build/types";
+import { CATEGORY_META, type ItemSpec } from "@/ui/category-form";
 import { STATUS_ORDER, toFindingCardModel } from "@/ui/finding-model";
 
 type CheckPayload = {
@@ -33,6 +34,12 @@ function formatTime(iso: string | null | undefined): string {
 
 function formatYuan(cents: number): string {
   return `¥${(cents / 100).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
+}
+
+/** 人话规格摘要（复用工作台 CATEGORY_META）；空规格返回空串 */
+function specSummaryOf(category: string, spec: ItemSpec): string {
+  const meta = (CATEGORY_META as Record<string, { summary: (s: ItemSpec) => string }>)[category];
+  return meta ? meta.summary(spec) : "";
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -179,18 +186,25 @@ export default function ReportPage() {
             </tr>
           </thead>
           <tbody>
-            {build.items.map((item) => (
-              <tr key={item.id}>
-                <td>{TYPE_LABELS[item.category] ?? item.category}</td>
-                <td>
-                  {item.label}
-                  {item.spec && Object.keys(item.spec).length > 0 ? null : "（规格待补充）"}
-                </td>
-                <td className="num">
-                  {item.priceCents != null ? formatYuan(item.priceCents) : "—"}
-                </td>
-              </tr>
-            ))}
+            {build.items.map((item) => {
+              const summary = specSummaryOf(item.category, item.spec);
+              return (
+                <tr key={item.id}>
+                  <td>{TYPE_LABELS[item.category] ?? item.category}</td>
+                  <td>
+                    {item.label}
+                    {summary ? (
+                      <span className="report-item-spec"> · {summary}</span>
+                    ) : (
+                      <span className="report-item-spec"> · 规格待补充</span>
+                    )}
+                  </td>
+                  <td className="num">
+                    {item.priceCents != null ? formatYuan(item.priceCents) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
             {build.items.length === 0 && (
               <tr>
                 <td colSpan={3}>清单为空。</td>
@@ -218,28 +232,41 @@ export default function ReportPage() {
             </h3>
             {group.findings.map((finding) => {
               const model = toFindingCardModel(finding);
+              // 阻断/警告需要完整证据链；待补充/通过是"一行结论"——铺满卡片只会稀释重点
+              if (model.status === "block" || model.status === "warn") {
+                return (
+                  <article className="report-finding" key={model.ruleId + model.conclusion}>
+                    <div className="report-finding-head">
+                      <span className={`report-status report-status-${model.status}`}>{model.statusLabel}</span>
+                      <strong>{model.conclusion}</strong>
+                      <code className="report-rule">{model.ruleId}</code>
+                    </div>
+                    {model.evidenceLines.length > 0 && (
+                      <p className="report-line">
+                        证据：{model.evidenceLines.join("；")}
+                      </p>
+                    )}
+                    {model.missingFields.length > 0 && (
+                      <p className="report-line">
+                        待补充：{model.missingFields.join("、")}
+                      </p>
+                    )}
+                    {model.assumptions.length > 0 && (
+                      <p className="report-line">假设条件：{model.assumptions.join("；")}</p>
+                    )}
+                    {model.suggestedAction && <p className="report-line">下一步：{model.suggestedAction}</p>}
+                  </article>
+                );
+              }
+              const line =
+                model.status === "unknown"
+                  ? model.suggestedAction || `待补充：${model.missingFields.join("、")}`
+                  : model.conclusion;
               return (
-                <article className="report-finding" key={model.ruleId + model.conclusion}>
-                  <div className="report-finding-head">
-                    <span className={`report-status report-status-${model.status}`}>{model.statusLabel}</span>
-                    <strong>{model.conclusion}</strong>
-                    <code className="report-rule">{model.ruleId}</code>
-                  </div>
-                  {model.evidenceLines.length > 0 && (
-                    <p className="report-line">
-                      证据：{model.evidenceLines.join("；")}
-                    </p>
-                  )}
-                  {model.missingFields.length > 0 && (
-                    <p className="report-line">
-                      待补充：{model.missingFields.join("、")}
-                    </p>
-                  )}
-                  {model.assumptions.length > 0 && (
-                    <p className="report-line">假设条件：{model.assumptions.join("；")}</p>
-                  )}
-                  {model.suggestedAction && <p className="report-line">下一步：{model.suggestedAction}</p>}
-                </article>
+                <p className="report-mini" key={model.ruleId + model.conclusion}>
+                  <code className="report-rule">{model.ruleId}</code>
+                  <span>{line}</span>
+                </p>
               );
             })}
           </div>
