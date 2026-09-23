@@ -258,26 +258,27 @@ select {
 }
 
 /* ---------- 硬件中心（数据运营视图） ---------- */
-.hw-page { max-width: 1100px; margin: 0 auto; padding: 26px 40px 60px; }
+.hw-page { max-width: 980px; margin: 0 auto; padding: 26px 40px 60px; }
 .hw-head h1 { margin: 0 0 4px; font-size: 20px; }
-.hw-sub { margin: 0 0 8px; color: var(--rm-ink-faint); font-size: 12px; }
+.hw-sub { margin: 0 0 10px; color: var(--rm-ink-faint); font-size: 12px; }
 .hw-sub a { color: var(--rm-ink); text-decoration: underline; text-underline-offset: 2px; }
-.hw-sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin: 4px 0 8px; }
+.hw-sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin: 4px 0 10px; }
 .hw-sec-head h2 { margin: 0; font-size: 14px; }
-.hw-total { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 12px; color: var(--rm-ink-muted); }
-.hw-hint { color: var(--rm-ink-faint); font-size: 11px; }
+.hw-total { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 11px; color: var(--rm-ink-faint); }
 
-.src-table { border-top: 1px solid var(--rm-ink); }
-.src-row {
-  display: grid; grid-template-columns: 130px 110px 1fr auto;
-  gap: 14px; align-items: baseline; padding: 8px 0;
-  border-bottom: 1px solid var(--rm-line);
+/* 来源数字条：像预算数据行一样把数字立起来 */
+.hw-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+  padding: 14px 0 4px; border-top: 1px solid var(--rm-ink);
 }
-.src-label { font-weight: 700; font-size: 13px; }
-.src-count { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--rm-accent); }
-.src-meta { color: var(--rm-ink-muted); font-size: 12px; }
-.src-attr { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--rm-ink-faint); }
-.src-attr a { color: var(--rm-ink); }
+.hw-stat { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.hw-stat-num {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 700; color: var(--rm-ink);
+}
+.hw-stat-label { font-size: 12px; font-weight: 700; color: var(--rm-ink); }
+.hw-stat-meta { color: var(--rm-ink-faint); font-size: 11px; }
+.hw-stat-meta a { color: var(--rm-ink-muted); }
 
 .hw-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .hw-table th {
@@ -285,15 +286,36 @@ select {
   color: var(--rm-ink-faint); font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
   border-bottom: 1px solid var(--rm-ink);
   font-family: ui-monospace, Consolas, monospace;
+  white-space: nowrap;
 }
-.hw-table td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--rm-line); vertical-align: top; }
+.hw-table th.num { text-align: right; }
+.hw-table td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--rm-line); vertical-align: baseline; }
 .hw-table .num {
   text-align: right; font-family: ui-monospace, Consolas, monospace;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.hw-spec { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--rm-ink-muted); word-break: break-all; }
+.hw-spec { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--rm-ink-muted); }
 
-.hw-searchbar { display: grid; grid-template-columns: 140px 1fr auto; gap: 14px; align-items: end; margin-bottom: 12px; }
+/* 规格覆盖：细条 + 百分比 */
+.cov { display: flex; align-items: center; gap: 8px; }
+.cov-track { width: 120px; height: 4px; background: var(--rm-line); display: inline-block; }
+.cov-fill { display: block; height: 100%; background: var(--rm-ink); }
+.cov-pct { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 12px; }
+.hw-mix { color: var(--rm-ink-muted); }
+
+.hw-searchbar { display: grid; grid-template-columns: 130px 1fr auto; gap: 14px; align-items: end; margin-bottom: 12px; }
+
+/* 导入审计：默认折叠，降低页面噪音 */
+.hw-audit { margin-top: 26px; }
+.hw-audit summary {
+  cursor: pointer; color: var(--rm-ink-muted); font-size: 12px; font-weight: 700;
+  padding: 8px 0; border-top: 1px solid var(--rm-line);
+  list-style: none;
+}
+.hw-audit summary::before { content: "▸ "; color: var(--rm-ink-faint); }
+.hw-audit[open] summary::before { content: "▾ "; }
+.hw-audit summary:hover { color: var(--rm-ink); }
+.hw-audit table { margin-top: 8px; }
 /* 表单操作反馈（成功/校验错误）：必须出现在按钮正下方，footer 用户看不见 */
 .form-feedback {
   margin: 9px 0 0; padding-top: 7px;

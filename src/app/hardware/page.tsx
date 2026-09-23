@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CATEGORY_META, type ItemSpec } from "@/ui/category-form";
 
 type SourceInfo = {
   key: string;
@@ -40,7 +41,7 @@ type CatalogHit = {
   id: string;
   category: string;
   name: string;
-  spec: Record<string, string | number | string[] | undefined>;
+  spec: ItemSpec;
   source: string;
 };
 
@@ -55,15 +56,18 @@ const CATEGORY_LABELS: Record<string, string> = {
   case: "机箱",
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  seed: "种子",
-  manual: "人工",
-  buildcores: "BuildCores",
-};
+const SOURCE_SHORT: Record<string, string> = { seed: "种子", manual: "人工", buildcores: "BC" };
 
 function formatTime(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+/** 人话规格摘要；未知类别回退 JSON */
+function specSummary(category: string, spec: ItemSpec): string {
+  const meta = (CATEGORY_META as Record<string, typeof CATEGORY_META[keyof typeof CATEGORY_META]>)[category];
+  if (!meta) return JSON.stringify(spec);
+  return meta.summary(spec) || "—";
 }
 
 export default function HardwarePage() {
@@ -115,79 +119,89 @@ export default function HardwarePage() {
       <header className="hw-head">
         <h1>硬件中心</h1>
         <p className="hw-sub">
-          目录数据的三层结构与导入审计。检索与点选请回
-          <Link href="/"> 装机配置 </Link>工作台；本页是数据运营视图。
+          三层目录与导入审计。选件检索在
+          <Link href="/"> 装机配置 </Link>工作台。
         </p>
       </header>
 
       {loadError && <p className="helper">目录总览加载失败，请确认开发服务器正在运行。</p>}
 
       {overview && (
-        <>
-          <section className="sec">
-            <div className="hw-sec-head">
-              <h2>目录来源</h2>
-              <span className="hw-total">共 {overview.totalEntries.toLocaleString("zh-CN")} 条</span>
-            </div>
-            <div className="src-table" role="table" aria-label="目录来源">
-              {overview.sources.map((source) => (
-                <div className="src-row" key={source.key}>
-                  <span className="src-label">{source.label}</span>
-                  <span className="src-count">{source.count.toLocaleString("zh-CN")} 条</span>
-                  <span className="src-meta">
-                    {source.importedAt ? `导入于 ${formatTime(source.importedAt)}` : "随代码维护"}
-                    {source.note ? ` · ${source.note}` : ""}
-                  </span>
-                  {source.attribution && (
-                    <span className="src-attr">
+        <section className="sec">
+          <div className="hw-sec-head">
+            <h2>目录来源</h2>
+            <span className="hw-total">共 {overview.totalEntries.toLocaleString("zh-CN")} 条</span>
+          </div>
+          <div className="hw-stats">
+            {overview.sources.map((source) => (
+              <div className="hw-stat" key={source.key}>
+                <span className="hw-stat-num">{source.count.toLocaleString("zh-CN")}</span>
+                <span className="hw-stat-label">{source.label}</span>
+                <span className="hw-stat-meta">
+                  {source.key === "buildcores" && source.attribution ? (
+                    <>
                       <a href={source.attribution.upstreamUrl} target="_blank" rel="noreferrer">
                         {source.attribution.license}
-                      </a>{" "}
-                      @ commit {source.attribution.upstreamCommit.slice(0, 7)}
-                    </span>
+                      </a>
+                      {" · "}
+                      {source.attribution.upstreamCommit.slice(0, 7)} · {formatTime(source.importedAt)}
+                    </>
+                  ) : source.key === "manual" ? (
+                    `导入于 ${formatTime(source.importedAt)}`
+                  ) : (
+                    "随代码维护"
                   )}
-                </div>
-              ))}
-            </div>
-          </section>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-          <section className="sec">
-            <div className="hw-sec-head">
-              <h2>类别覆盖</h2>
-              <span className="hw-hint">「有规格」= 至少带出一个可用于规则的字段；空规格条目仅提供型号名</span>
-            </div>
-            <table className="hw-table">
-              <thead>
-                <tr>
-                  <th>类别</th>
-                  <th>条目</th>
-                  <th>有规格</th>
-                  <th>种子</th>
-                  <th>人工</th>
-                  <th>BuildCores</th>
-                </tr>
-              </thead>
-              <tbody>
-                {overview.categories.map((row) => (
+      {overview && (
+        <section className="sec">
+          <div className="hw-sec-head">
+            <h2>类别覆盖</h2>
+            <span className="hw-total">来源构成 = 种子 / 人工 / BuildCores</span>
+          </div>
+          <table className="hw-table">
+            <thead>
+              <tr>
+                <th>类别</th>
+                <th className="num">条目</th>
+                <th>规格覆盖</th>
+                <th className="num">种子 / 人工 / BuildCores</th>
+              </tr>
+            </thead>
+            <tbody>
+              {overview.categories.map((row) => {
+                const pct = row.total > 0 ? Math.round((row.withSpec / row.total) * 100) : 0;
+                return (
                   <tr key={row.category}>
                     <td>{CATEGORY_LABELS[row.category] ?? row.category}</td>
                     <td className="num">{row.total.toLocaleString("zh-CN")}</td>
-                    <td className="num">{row.withSpec.toLocaleString("zh-CN")}</td>
-                    <td className="num">{row.bySource.seed}</td>
-                    <td className="num">{row.bySource.manual}</td>
-                    <td className="num">{row.bySource.buildcores.toLocaleString("zh-CN")}</td>
+                    <td>
+                      <span className="cov">
+                        <span className="cov-track" aria-hidden="true">
+                          <span className="cov-fill" style={{ width: `${pct}%` }} />
+                        </span>
+                        <span className="cov-pct">{pct}%</span>
+                      </span>
+                    </td>
+                    <td className="num hw-mix">
+                      {row.bySource.seed} · {row.bySource.manual} · {row.bySource.buildcores.toLocaleString("zh-CN")}
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
       )}
 
       <section className="sec">
         <div className="hw-sec-head">
-          <h2>目录检索</h2>
-          <span className="hw-hint">与工作台共用同一检索（上限 30 条）</span>
+          <h2>检索</h2>
         </div>
         <div className="hw-searchbar">
           <select
@@ -227,13 +241,13 @@ export default function HardwarePage() {
               {hits.map((hit) => (
                 <tr key={hit.id}>
                   <td>{hit.name}</td>
-                  <td>{SOURCE_LABELS[hit.source] ?? hit.source}</td>
-                  <td className="hw-spec">{JSON.stringify(hit.spec)}</td>
+                  <td>{SOURCE_SHORT[hit.source] ?? hit.source}</td>
+                  <td className="hw-spec">{specSummary(hit.category, hit.spec)}</td>
                 </tr>
               ))}
               {hits.length === 0 && (
                 <tr>
-                  <td colSpan={3}>无命中——这样的检索就是「待录清单」的输入（V1-B 自动统计）。</td>
+                  <td colSpan={3}>无命中</td>
                 </tr>
               )}
             </tbody>
@@ -241,21 +255,15 @@ export default function HardwarePage() {
         )}
       </section>
 
-      <section className="sec">
-        <div className="hw-sec-head">
-          <h2>导入审计</h2>
-          <span className="hw-hint">catalog_import_runs 表，新 → 旧，最多 20 条</span>
-        </div>
+      <details className="hw-audit">
+        <summary>导入审计 · {imports.length} 条</summary>
         <table className="hw-table">
           <thead>
             <tr>
               <th>时间</th>
               <th>来源</th>
-              <th>commit / 类型</th>
-              <th>导入</th>
-              <th>跳过</th>
-              <th>错误</th>
-              <th>许可证</th>
+              <th>版本</th>
+              <th className="num">结果</th>
             </tr>
           </thead>
           <tbody>
@@ -266,20 +274,20 @@ export default function HardwarePage() {
                 <td className="hw-spec">
                   {run.upstreamCommit === "manual" ? "人工整理" : run.upstreamCommit.slice(0, 7)}
                 </td>
-                <td className="num">{run.importedCount.toLocaleString("zh-CN")}</td>
-                <td className="num">{run.skippedCount}</td>
-                <td className="num">{run.errorCount}</td>
-                <td>{run.license}</td>
+                <td className="num">
+                  导入 {run.importedCount.toLocaleString("zh-CN")}
+                  {run.errorCount > 0 ? ` · 错 ${run.errorCount}` : ""}
+                </td>
               </tr>
             ))}
             {imports.length === 0 && (
               <tr>
-                <td colSpan={7}>暂无导入记录。</td>
+                <td colSpan={4}>暂无导入记录。</td>
               </tr>
             )}
           </tbody>
         </table>
-      </section>
+      </details>
     </main>
   );
 }
