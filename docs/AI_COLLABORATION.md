@@ -20,11 +20,11 @@
   - dev server（3000 端口）可能由本窗口遗留进程跑着，接手先查端口；
   - **Bash 工作目录会漂移**：命令一律先 `cd /d/XyyWork/RigMate`；
   - GitHub 推送偶发闪断，重试即可。
-- **功能现状**：V1-A 全部 + 迁移版本检测（M18）+ BuildCores 导入器（M19，26,121 条）+ 人工目录批量录入（M20，CSV 模板 49 条已入库）+ M22 系统布局（导航壳 + /hardware 硬件中心 + GET /api/catalog/overview）+ M23 方案库 /projects + M24 报告导出 /builds/[id]/report + **M25 整机复核（方案库内粘贴配置单 → 解析器逐行识别类别/型号/行尾价格 → 目录候选确认 → 一键建项目跑检查跳报告；解析器 = src/domain/review/parse.ts 纯函数，6 单测用真实样本行回归）**。
+- **功能现状**：V1-A 全部 + 迁移版本检测（M18）+ BuildCores 导入器（M19，26,121 条）+ 人工目录批量录入（M20，CSV 模板 49 条已入库）+ M22 系统布局（导航壳 + /hardware 硬件中心 + GET /api/catalog/overview）+ M23 方案库 /projects + M24 报告导出 /builds/[id]/report + **M25 整机复核（方案库内粘贴配置单 → 解析器逐行识别类别/型号/行尾价格 → 目录候选确认 → 一键建项目跑检查跳报告；解析器 = src/domain/review/parse.ts 纯函数，6 单测用真实样本行回归）** + **M26 证据台账 /evidence（price_evidence 追加式价格快照：类别/型号/价格/口径/渠道/店铺/成色/证据链接/时间；V1 仅手动来源，只增不改；规格 §8.2）**。
 - **UI 规划**：`docs/design/10-系统布局规划.md` 是 UI 结构单一事实源（四区 IA/页面契约/Agent 红线/迁移五步）；视觉层看 M21 母版（boards/）。**改动前先读它。**
 - **数据现状**：目录三层 = 种子 34 + 人工 49（`data/catalog/manual.json`）+ BuildCores 26,121（`data/catalog/buildcores.json`）；上游克隆在 `data/buildcores-open-db/`。规格查证完成第一批（13 项，见模板注释出处）；**剩余字段（A60 高度、EAGLE ICE/火神/魔鹰板长、4 主板槽数、8 电源 16pin、3 机箱限长限高）等搜索配额 2026-09-28 重置后补查，或用户提供商品页截图**。
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
-- **下一项工作**（按 §8 顺序）：1) 证据台账后端（price_evidence 追加式快照，规格 §8.2）+ /evidence 页；2) 副驾抽屉（agent 接入，最后）——其"抽取配置单"能力与 M25 解析器共享领域逻辑；3) V1-B 估值曲线（需价格快照历史）。
+- **下一项工作**（按 §8 顺序）：1) 副驾抽屉（agent 接入，最后一块）——"抽取配置单"与 M25 解析器共享领域逻辑，"解释结论"消费报告页数据；2) 工作台价格字段接线 price_evidence（录入即存证据，V1-B 估值曲线的地基）；3) V1-B 估值曲线/替代方案。
 - **前端所有权**：归 AI 窗口（全栈）。
 
 ## 1. 一分钟了解项目
@@ -66,9 +66,10 @@
 | UI 系统化：方案库 /projects（项目列表 + ?project 直达 + 复核入口） | ✅ 完成（M23，系统布局第三步） |
 | 报告导出 /builds/[id]/report（图框标题栏 + 按状态分组条款 + 打印/PDF） | ✅ 完成（M24，系统布局第四步·三步流闭环） |
 | 整机复核：粘贴配置单 → 解析 → 候选确认 → 一键建项目检查 | ✅ 完成（M25，方案库内） |
+| 证据台账 /evidence（price_evidence 追加式快照 + 手动录入 + 过滤） | ✅ 完成（M26，v5 迁移） |
 | BuildCores 目录导入器（离线导入 + commit 固定 + ODC-By 署名 + 审计表） | ✅ 完成（M19，已导入 26,121 条） |
 | 业务验证：20 份真实清单样本（已 11 份，目标配比 整机10+自购10）+ 5-10 名用户访谈 | 🔶 进行中（用户收集） |
-| V1-B：价格证据链 / 替代方案 / 报告导出 | ⬜ |
+| V1-B：替代方案 / 估值曲线（价格证据链已由 M26 台账承担录入侧） | ⬜ |
 | V1-C：联盟 API / OCR 报价单入口 / PostgreSQL | ⬜ |
 
 ## 4. 已完成里程碑
@@ -261,6 +262,15 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - **打印**：@media print 隐藏导航与操作条，白底，浏览器打印即 PDF；
 - **E2E** report.spec 2 条（阻断条款上报告 + 未检查空态）；**118 单测 + 13 E2E 全绿**；浏览器截图验收（图框/清单/数据行正确）。
 
+### M26（2026-09-23）证据台账 /evidence（本窗口）
+价格证据的录入与台账（规格 §8.2，ADR §8.2）：
+- **v5 迁移**：price_evidence 表（category/product_name/price_cents/price_basis/source_type/platform/shop/condition/evidence_url/note/captured_at/created_at）；LATEST_SCHEMA_VERSION = 5；
+- **领域校验**：`domain/price/evidence.ts` priceEvidenceInputSchema——价格正整数、类别白名单、型号必填；sourceType 枚举 V1 仅 manual_entry/user_submission；
+- **仓储**：price-evidence-repository——**追加式**（只 insert + 查询，无改删接口）；列表按 captured_at 倒序，支持类别/关键词过滤；
+- **API**：GET/POST /api/evidence（POST 强制 sourceType=manual_entry，服务端 schema 校验逐字段报错）；
+- **页面**：/evidence 替换占位——录入表单（类别/型号/价格/口径/渠道/店铺/成色/证据链接）+ 台账表（时间/类别/型号/价格/口径·渠道·店铺/成色/证据链接）+ 类别过滤按钮组；
+- **E2E** evidence.spec 2 条（录入→台账可见→类别过滤；非法价格拒绝且不写库）；**126 单测 + 16 E2E 全绿**；浏览器验收（注意：改 migrate.ts 后 dev server 必须重启，否则新表不存在、页面报加载失败——本次实际踩到）。
+
 ## 5. 代码地图
 
 ```text
@@ -386,6 +396,7 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-09-23 v3.7：M26 证据台账上线——v5 迁移 price_evidence 追加式价格快照表 + 领域 schema + 仓储（只增不改）+ GET/POST /api/evidence + /evidence 页（录入表单/台账表/类别过滤，导航转正）；126 单测 + 16 E2E。踩坑重申：改 migrate.ts 后必须重启 dev server。
 - 2026-09-23 v3.6：M25 整机复核上线——方案库粘贴配置单（解析器 parse.ts：类别关键词识别/型号名提取/行尾价格提取含千分位与¥、赠品服务行硬跳过、未识别行交用户手动归类）+ 逐行目录候选确认（modelTokenOf 检索，选中带规格并标记来源）+ 一键建项目跑检查跳报告；6 解析器单测用真实样本行回归；124 单测 + 14 E2E。
 - 2026-09-23 v3.5：报告页检修打磨（用户反馈）——清单表"型号/关键规格"列名实相符（复用 CATEGORY_META.summary 带出人话规格，空规格弱化标注"规格待补充"）；诊断条款分级呈现：阻断/警告保留完整六要素卡，待补充/通过降为一行式紧凑条款（规则号+具体行动/结论），报告从重复卡片墙变成可扫读文档。
 - 2026-09-23 v3.4：M24 报告导出上线——/builds/[id]/report（图框标题栏/摘要数据行/清单规格表/按状态分组诊断条款/数据说明；@media print 打印 PDF；不做总分红线落实）；入口 = 工作台"查看报告↗" + 方案库"报告"链接；report.spec 2 条；118 单测 + 13 E2E。

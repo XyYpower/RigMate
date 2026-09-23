@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { href: "/", label: "装机配置", ready: true },
   { href: "/hardware", label: "硬件中心", ready: true },
   { href: "/projects", label: "方案库", ready: true },
-  { href: "/evidence", label: "证据台账", ready: false },
+  { href: "/evidence", label: "证据台账", ready: true },
 ] as const;
 
 /** 全局导航壳（M22 系统布局第一步）：四区结构来自 docs/design/10-系统布局规划.md */

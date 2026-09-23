@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 4;
+export const LATEST_SCHEMA_VERSION = 5;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -126,6 +126,27 @@ export const MIGRATIONS: Migration[] = [
         skipped_count integer NOT NULL,
         error_count integer NOT NULL,
         errors text NOT NULL DEFAULT '[]'
+      )`);
+    },
+  },
+  {
+    version: 5,
+    name: "价格证据表 price_evidence（追加式快照，规格 §8.2）",
+    up: (db) => {
+      db.run(sql`CREATE TABLE IF NOT EXISTS price_evidence (
+        id text PRIMARY KEY NOT NULL,
+        category text NOT NULL,
+        product_name text NOT NULL,
+        price_cents integer NOT NULL,
+        price_basis text,
+        source_type text NOT NULL,
+        platform text,
+        shop text,
+        condition text,
+        evidence_url text,
+        note text,
+        captured_at text NOT NULL,
+        created_at text NOT NULL
       )`);
     },
   },
