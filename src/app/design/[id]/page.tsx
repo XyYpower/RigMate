@@ -221,8 +221,40 @@ export default function DesignPage() {
             </details>
           )}
 
+          <section className="revision-composer" aria-labelledby="revision-title">
+            <div className="revision-composer-heading">
+              <div>
+                <span className="overview-label">继续调整</span>
+                <h2 id="revision-title">想改哪里，直接告诉我</h2>
+              </div>
+              <span className="revision-version-note">每次提交都会保留一个新版本</span>
+            </div>
+            <form onSubmit={(event) => void submitRevision(event)}>
+              <label className="sr-only" htmlFor="revision-instruction">继续调整方案</label>
+              <textarea
+                id="revision-instruction"
+                name="instruction"
+                value={revision}
+                onChange={(event) => setRevision(event.target.value)}
+                onInput={(event) => setRevision(event.currentTarget.value)}
+                placeholder="例如：预算压到 1.8 万；我已有电源；更重视剪辑性能……"
+                aria-label="继续调整方案；调整方案"
+                maxLength={500}
+                rows={3}
+                disabled={revising}
+              />
+              <div className="revision-composer-footer">
+                <span>可以继续补充预算、用途、外观或已有硬件</span>
+                <button className="button primary" type="submit" disabled={revising || revision.trim().length < 2}>
+                  {revising ? "正在理解…" : "提交修改"}<span className="sr-only">调整方案</span><span aria-hidden>→</span>
+                </button>
+              </div>
+            </form>
+            {revisionMessage && <p className="revision-feedback" role="status">{revisionMessage}</p>}
+          </section>
+
           <div className="proposal-actions">
-      <button className="button primary" onClick={() => void acceptProposal()} disabled={accepting || proposal.compatibility.status === "conflict"}>
+            <button className="button primary" onClick={() => void acceptProposal()} disabled={accepting || proposal.compatibility.status === "conflict"}>
               {accepting ? "正在保存并检查…" : "接受方案，进入 DIY"}<span aria-hidden>→</span>
             </button>
             <button className="button secondary" onClick={() => void acceptProposal(true)} disabled={accepting}>
@@ -248,24 +280,8 @@ export default function DesignPage() {
           </ol>
           <div className="agent-next-step">
             <span>接下来</span>
-            <p>你可以接受这一版、进入 DIY 修改，或直接告诉我希望调整的方向。</p>
+            <p>这里记录了这次方案的处理过程。需要查看依据时再展开对应条目。</p>
           </div>
-          <form className="revision-row" onSubmit={(event) => void submitRevision(event)}>
-            <input
-              name="instruction"
-              value={revision}
-              onChange={(event) => setRevision(event.target.value)}
-              onInput={(event) => setRevision(event.currentTarget.value)}
-              placeholder="例如：预算压到 1.8 万 / 我已有电源"
-              aria-label="调整方案"
-              maxLength={500}
-              disabled={revising}
-            />
-            <button className="button secondary" type="submit" disabled={revising || revision.trim().length < 2}>
-              {revising ? "正在调整…" : "调整方案"}
-            </button>
-          </form>
-          {revisionMessage && <p className="revision-feedback" role="status">{revisionMessage}</p>}
         </aside>
       </div>
     </main>

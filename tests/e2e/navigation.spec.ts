@@ -20,6 +20,18 @@ test("M27 产品导航：目标入口、方案库、高级 DIY 与资料区可�
   await expect(page.getByRole("heading", { name: "证据台账" })).toBeVisible();
 });
 
+test("M34 硬件资料：先理解类别，再检索具体型号", async ({ page }) => {
+  await page.goto("/hardware");
+  await expect(page.getByText("处理器负责运行程序和游戏逻辑")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "显卡" })).toBeVisible();
+  await page.getByRole("tab", { name: "显卡" }).click();
+  await expect(page.getByText("显卡负责画面渲染、游戏帧率和部分视频编码")).toBeVisible();
+
+  await page.getByRole("textbox", { name: "目录关键词" }).fill("不存在的型号");
+  await page.getByRole("button", { name: "检索" }).click();
+  await expect(page.getByText("没有找到已核实的型号")).toBeVisible();
+});
+
 test("M25 整机复核：粘贴配置单解析成行，创建项目并出报告", async ({ page }) => {
   await page.goto("/projects");
 

@@ -58,6 +58,17 @@ const CATEGORY_LABELS: Record<string, string> = {
   case: "机箱",
 };
 
+const CATEGORY_PURPOSE: Record<string, string> = {
+  cpu: "处理器负责运行程序和游戏逻辑，决定平台和部分生产力性能。",
+  motherboard: "主板连接处理器、内存、显卡和存储，也决定扩展接口。",
+  gpu: "显卡负责画面渲染、游戏帧率和部分视频编码。",
+  ram: "内存为正在运行的程序提供空间，容量不足会影响多任务和剪辑。",
+  storage: "存储保存系统、软件和素材，速度与容量会影响加载和工作流。",
+  psu: "电源为整机供电，需要匹配功耗、接口和安全余量。",
+  cooler: "散热器把处理器热量带走，影响持续性能和噪音。",
+  case: "机箱决定部件能否放下，也影响风道、扩展和外观。",
+};
+
 const SOURCE_SHORT: Record<string, string> = { seed: "种子", manual: "人工", buildcores: "BC" };
 
 function formatTime(iso: string | null): string {
@@ -77,6 +88,7 @@ export default function HardwarePage() {
   const [imports, setImports] = useState<ImportRun[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [searchCategory, setSearchCategory] = useState("cpu");
+  const [selectedCategory, setSelectedCategory] = useState("cpu");
   const [searchQuery, setSearchQuery] = useState("");
   const [hits, setHits] = useState<CatalogHit[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -119,14 +131,46 @@ export default function HardwarePage() {
   return (
     <main className="hw-page">
       <header className="hw-head">
-        <h1>硬件中心</h1>
+        <p className="hw-kicker">先了解，再选择</p>
+        <h1><span className="sr-only">硬件中心：</span>找到适合你方案的硬件</h1>
         <p className="hw-sub">
-          三层目录与导入审计。选件检索在
-          <Link href="/diy"> 高级 DIY </Link>工作台。
+          先按类别了解它在整机中的作用，再搜索具体型号。目录资料会显示来源和已核对的规格。
         </p>
       </header>
 
       {loadError && <p className="helper">目录总览加载失败，请确认开发服务器正在运行。</p>}
+
+      <section className="hw-guide" aria-labelledby="hardware-guide-title">
+        <div className="hw-sec-head">
+          <div>
+            <h2 id="hardware-guide-title">八类核心部件</h2>
+            <p className="hw-section-note">不确定从哪里开始？先从你的用途和预算出发，系统会在方案里帮你组合。</p>
+          </div>
+          <Link className="hw-inline-link" href="/">去描述你的目标 ↗</Link>
+        </div>
+        <div className="hw-category-tabs" role="tablist" aria-label="硬件类别">
+          {Object.entries(CATEGORY_LABELS).map(([category, label]) => (
+            <button
+              key={category}
+              type="button"
+              role="tab"
+              aria-selected={selectedCategory === category}
+              className={selectedCategory === category ? "active" : ""}
+              onClick={() => {
+                setSelectedCategory(category);
+                setSearchCategory(category);
+                setHits(null);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="hw-purpose" role="tabpanel">
+          <span className="hw-purpose-label">{CATEGORY_LABELS[selectedCategory]}</span>
+          <p>{CATEGORY_PURPOSE[selectedCategory]}</p>
+        </div>
+      </section>
 
       {overview && (
         <section className="sec">
@@ -203,7 +247,10 @@ export default function HardwarePage() {
 
       <section className="sec">
         <div className="hw-sec-head">
-          <h2>检索</h2>
+          <div>
+            <h2>查询型号</h2>
+            <p className="hw-section-note">输入你看到的型号或关键词，结果只来自当前目录。</p>
+          </div>
         </div>
         <div className="hw-searchbar">
           <select
@@ -259,7 +306,7 @@ export default function HardwarePage() {
               ))}
               {hits.length === 0 && (
                 <tr>
-                  <td colSpan={3}>无命中</td>
+              <td colSpan={3}>没有找到已核实的型号，可以换一个关键词或提交型号线索。</td>
                 </tr>
               )}
             </tbody>

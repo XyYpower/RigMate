@@ -1,0 +1,398 @@
+/* M34 工作台视觉层：结果优先，输入始终可达，过程按需展开。 */
+.home-page,
+.design-page {
+  position: relative;
+}
+
+.home-page::before,
+.design-page::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--rm-ink);
+  opacity: .9;
+}
+
+.home-page {
+  padding-top: clamp(64px, 9vw, 112px);
+}
+
+.home-intro h1,
+.design-header h1 {
+  text-wrap: balance;
+  letter-spacing: -0.03em;
+}
+
+.home-lede,
+.design-summary {
+  text-wrap: pretty;
+}
+
+.goal-composer {
+  position: relative;
+  max-width: 900px;
+  margin-top: 42px;
+  padding: 0 20px 16px;
+  border: 1px solid var(--rm-line-strong);
+  border-top: 3px solid var(--rm-ink);
+  background: color-mix(in srgb, var(--rm-surface) 78%, transparent);
+}
+
+.goal-composer textarea {
+  min-height: 134px;
+  padding: 19px 0 10px;
+  font-size: clamp(18px, 2.25vw, 25px);
+  line-height: 1.5;
+}
+
+.goal-composer:focus-within {
+  border-color: var(--rm-ink);
+  box-shadow: 8px 8px 0 color-mix(in srgb, var(--rm-accent) 18%, transparent);
+}
+
+.goal-suggestions {
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rm-line);
+}
+
+.goal-suggestion {
+  padding: 6px 9px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.home-shortcuts {
+  max-width: 900px;
+  padding-top: 2px;
+}
+
+.recent-designs {
+  max-width: 900px;
+  margin-top: 72px;
+}
+
+.design-page {
+  padding-top: 38px;
+}
+
+.design-header {
+  padding-bottom: 26px;
+}
+
+.design-kicker {
+  margin-bottom: 12px;
+}
+
+.design-grid {
+  grid-template-columns: minmax(0, 1.6fr) minmax(270px, .7fr);
+  gap: 46px;
+  padding-top: 28px;
+}
+
+.proposal-main {
+  min-width: 0;
+}
+
+.proposal-overview {
+  align-items: stretch;
+  padding: 18px 0 22px;
+}
+
+.compatibility-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.proposal-item {
+  grid-template-columns: 80px minmax(0, 1fr) 132px;
+  gap: 20px;
+  transition: background var(--rm-fast), padding var(--rm-fast);
+}
+
+.proposal-item:hover {
+  padding-left: 9px;
+  padding-right: 9px;
+  background: color-mix(in srgb, var(--rm-surface) 70%, transparent);
+}
+
+.proposal-item h3 {
+  text-wrap: balance;
+}
+
+.revision-composer {
+  margin-top: 34px;
+  border: 1px solid var(--rm-line-strong);
+  border-top: 3px solid var(--rm-accent);
+  background: var(--rm-surface);
+  padding: 17px 18px 14px;
+}
+
+.revision-composer-heading,
+.revision-composer-footer {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.revision-composer-heading h2 {
+  margin: 4px 0 0;
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.revision-version-note,
+.revision-composer-footer > span {
+  color: var(--rm-ink-faint);
+  font-size: 11px;
+}
+
+.revision-composer textarea {
+  display: block;
+  width: 100%;
+  min-height: 78px;
+  margin-top: 14px;
+  padding: 11px 12px;
+  resize: vertical;
+  border: 1px solid var(--rm-line);
+  border-bottom-color: var(--rm-line-strong);
+  background: var(--rm-surface-raised);
+  color: var(--rm-ink);
+  outline: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.revision-composer textarea::placeholder {
+  color: var(--rm-ink-faint);
+}
+
+.revision-composer textarea:focus {
+  border-color: var(--rm-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rm-accent) 16%, transparent);
+}
+
+.revision-composer-footer {
+  align-items: center;
+  margin-top: 9px;
+}
+
+.revision-composer-footer .button {
+  padding: 8px 14px;
+}
+
+.agent-activity {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding-left: 22px;
+  padding-bottom: 16px;
+}
+
+.agent-activity-heading span {
+  white-space: nowrap;
+}
+
+.agent-goal {
+  padding: 10px 12px;
+  border-left: 2px solid var(--rm-line-strong);
+  background: color-mix(in srgb, var(--rm-surface) 68%, transparent);
+}
+
+.agent-next-step {
+  margin-top: 22px;
+}
+
+.hw-page {
+  width: min(1040px, calc(100% - 64px));
+  padding-top: 48px;
+}
+
+.hw-kicker {
+  margin: 0 0 10px;
+  color: var(--rm-ink-faint);
+  font: 700 10px ui-monospace, Consolas, monospace;
+  letter-spacing: .12em;
+}
+
+.hw-head h1 {
+  max-width: 700px;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.12;
+  letter-spacing: -.03em;
+}
+
+.hw-head .hw-sub {
+  max-width: 640px;
+  margin-top: 14px;
+  color: var(--rm-ink-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.hw-guide {
+  margin-top: 42px;
+  padding: 20px 0 24px;
+  border-top: 1.5px solid var(--rm-ink);
+  border-bottom: 1px solid var(--rm-line-strong);
+}
+
+.hw-guide .hw-sec-head {
+  align-items: end;
+}
+
+.hw-section-note {
+  margin: 5px 0 0;
+  color: var(--rm-ink-faint);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.hw-inline-link {
+  color: var(--rm-ink);
+  font-size: 11.5px;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.hw-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 20px;
+}
+
+.hw-category-tabs button {
+  padding: 7px 11px;
+  border: 1px solid var(--rm-line-strong);
+  color: var(--rm-ink-muted);
+  font-size: 12px;
+  transition: color var(--rm-fast), border-color var(--rm-fast), background var(--rm-fast);
+}
+
+.hw-category-tabs button:hover,
+.hw-category-tabs button.active {
+  border-color: var(--rm-ink);
+  background: var(--rm-ink);
+  color: var(--rm-surface);
+}
+
+.hw-category-tabs button.active {
+  box-shadow: 3px 3px 0 var(--rm-accent);
+}
+
+.hw-purpose {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 13px 15px;
+  border-left: 3px solid var(--rm-accent);
+  background: var(--rm-surface);
+}
+
+.hw-purpose-label {
+  flex: none;
+  font: 700 12px ui-monospace, Consolas, monospace;
+}
+
+.hw-purpose p {
+  margin: 0;
+  color: var(--rm-ink-muted);
+  font-size: 13px;
+}
+
+.hw-page > .sec {
+  margin-top: 34px;
+}
+
+.hw-page > .sec:first-of-type {
+  margin-top: 0;
+}
+
+.proposal-actions {
+  padding-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .agent-activity {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-page {
+    padding-top: 52px;
+  }
+
+  .goal-composer {
+    margin-top: 30px;
+    padding-inline: 14px;
+  }
+
+  .goal-composer textarea {
+    min-height: 128px;
+    font-size: 18px;
+  }
+
+  .design-page {
+    padding-top: 28px;
+  }
+
+  .design-grid {
+    gap: 28px;
+  }
+
+  .revision-composer-heading,
+  .revision-composer-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .revision-composer-footer .button {
+    width: 100%;
+  }
+
+  .revision-version-note {
+    display: block;
+  }
+
+  .proposal-item:hover {
+    padding-left: 0;
+    padding-right: 0;
+    background: transparent;
+  }
+
+  .hw-page {
+    width: min(100% - 28px, 680px);
+    padding-top: 30px;
+  }
+
+  .hw-guide {
+    margin-top: 30px;
+  }
+
+  .hw-guide .hw-sec-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hw-inline-link {
+    margin-top: 10px;
+  }
+
+  .hw-purpose {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+}
