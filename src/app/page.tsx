@@ -16,6 +16,15 @@ function formatTime(value: string): string {
   return new Date(value).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
+/** 起步示例（借鉴 ai-elements 的 suggestion 模式）：点击填入，不直接提交 */
+const GOAL_SUGGESTIONS = [
+  "2 万预算，白色海景房，主要做视频剪辑和玩 3A 游戏",
+  "8 千预算，主要玩 2K 游戏，想要安静一点",
+  "1 万 5，写代码加虚拟机多开，不要灯效",
+];
+
+const GOAL_STEPS = ["理解目标", "检索目录", "搭配方案"];
+
 export default function Home() {
   const router = useRouter();
   const [goal, setGoal] = useState("");
@@ -92,6 +101,27 @@ export default function Home() {
             {busy ? "正在搭配…" : "生成装机方案"}<span aria-hidden>→</span>
           </button>
         </div>
+        {busy ? (
+          <div className="agent-progress" role="status" aria-label="方案生成中">
+            {GOAL_STEPS.map((step) => (
+              <span className="agent-step active" key={step}>{step}</span>
+            ))}
+          </div>
+        ) : (
+          <div className="goal-suggestions" aria-label="示例目标">
+            {GOAL_SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                className="goal-suggestion"
+                onClick={() => setGoal(suggestion)}
+                disabled={busy}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
         {message && <p className="form-feedback" role="status">{message}</p>}
       </form>
 

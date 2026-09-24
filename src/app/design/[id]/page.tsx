@@ -75,7 +75,17 @@ export default function DesignPage() {
     }
   }
 
-  if (loading) return <main className="design-page"><p className="design-loading">正在整理方案…</p></main>;
+  if (loading) {
+    return (
+      <main className="design-page">
+        <div className="agent-progress" role="status" aria-label="方案加载中">
+          <span className="agent-step active">读取目标</span>
+          <span className="agent-step active">整理方案</span>
+          <span className="agent-step active">汇总校验</span>
+        </div>
+      </main>
+    );
+  }
   if (loadError || !result) {
     return <main className="design-page"><h1>暂时无法打开这份方案</h1><p>它可能已过期，或者当前服务暂时不可用。</p><Link href="/">返回开始配置</Link></main>;
   }

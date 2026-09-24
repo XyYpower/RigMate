@@ -306,6 +306,7 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - **商品页链接**：`src/ui/product-link.ts`——refUrl 优先，缺失时按型号拼京东搜索链接兜底；硬件中心检索结果的型号名与方案审阅页每个配件均带"商品页 ↗"。
 - **数据红线修订**（业务规格 V2 §11.3 + 本文档 §9.4）：ZOL 等公开参数媒体允许离线限速导入决策字段（署名+时间+只补缺+不建新品）；电商平台绕反爬抓取继续禁止；价格不进规格库。
 - **测试**：catalog-db.test.ts 6 条（first-wins/来源排序/补缺不覆盖/未命中与坏补丁拒绝/查库加载/写入校验）+ migrate 表清单；**136 单测全绿**。
+- **UI 舒适度打磨（用户确认"不照搬 ZCode、借鉴 ai-elements"）**：首页目标输入加**起步示例条**（三条真实示例点击填入，借鉴 ai-elements 的 suggestion 模式）与生成中**步进指示器**（理解目标→检索目录→搭配方案，借鉴 loader 模式）；方案页加载态复用同一套 `.agent-progress` 语言。全部以 `--rm-*` token 手写实现，零新依赖，支持 prefers-reduced-motion。
 
 ## 5. 代码地图
 
@@ -431,6 +432,7 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-09-23 v3.9.1：UI 舒适度打磨——首页起步示例条 + 生成中步进指示器 + 方案页加载态（借鉴 Vercel ai-elements 模式，仪器白 token 实现，零依赖）；136 单测 + 17 E2E。
 - 2026-09-23 v3.9：M29 自有规格库落库——v7 迁移 canonical_products 表 + 仓储（first-wins 入库/补缺更新只填空位/双端 schema 校验）+ `npm run catalog:db` 初始化与 --update 补缺 CLI + 运行时查库优先/JSON 兜底 + 商品页链接（refUrl + 京东搜索兜底，只链不爬）+ 数据红线修订（ZOL 参数离线导入允许）；评估并否决整体套用 zai-org/ZCode（ADR §3.6），M30 组件候选锁定 Vercel ai-elements（Apache-2.0）；136 单测。
 - 2026-09-23 v3.8：M27 产品方向重校准 + M28 目标驱动垂直切片上线——业务规格 V2 / 布局规划 v2 / 视觉母版重写（文档层）；`/` 自然语言目标入口 + `/design/[id]` 审阅工作台 + v6 迁移五表（design_requests/proposals/items/agent_runs/events）+ 意图解析与预算分档生成（规则式，LLM 未接，界面如实标注"经验估算/本地目录按档位挑选"）+ 接受幂等与冲突 409 + 旧工作台迁 `/diy`；修复 IAB 受控输入不同步（FormData 原生提交兜底）；130 单测 + 17 E2E。
 - 2026-09-23 v3.7：M26 证据台账上线——v5 迁移 price_evidence 追加式价格快照表 + 领域 schema + 仓储（只增不改）+ GET/POST /api/evidence + /evidence 页（录入表单/台账表/类别过滤，导航转正）；126 单测 + 16 E2E。踩坑重申：改 migrate.ts 后必须重启 dev server。

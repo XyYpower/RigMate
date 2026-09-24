@@ -566,6 +566,30 @@ select {
 .home-shortcuts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 17px; color: var(--rm-ink-faint); font-size: 12px; }
 .home-shortcuts a, .home-section-heading a { color: var(--rm-ink); text-underline-offset: 3px; }
 .home-shortcuts a:hover, .home-section-heading a:hover { color: var(--rm-accent); }
+
+/* 步进进行中指示 + 起步示例（借鉴 Vercel ai-elements 的 loader/suggestion 模式，仪器白实现） */
+.agent-progress { display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 14px 0 2px; }
+.agent-step {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--rm-ink-faint); font-size: 11.5px; font-weight: 600;
+}
+.agent-step::before { content: ""; width: 7px; height: 7px; border: 1px solid var(--rm-line-strong); background: var(--rm-bg); }
+.agent-step.active { color: var(--rm-accent); }
+.agent-step.active::before {
+  border-color: var(--rm-accent);
+  animation: agent-step-pulse 1.2s ease-in-out infinite;
+}
+.agent-step:nth-child(2).active::before { animation-delay: .2s; }
+.agent-step:nth-child(3).active::before { animation-delay: .4s; }
+@keyframes agent-step-pulse { 50% { background: var(--rm-accent); } }
+
+.goal-suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0 2px; }
+.goal-suggestion {
+  border: 1px solid var(--rm-line-strong); background: transparent;
+  color: var(--rm-ink-muted); font-size: 11.5px; font-weight: 600; padding: 4px 10px;
+  transition: color var(--rm-fast), border-color var(--rm-fast);
+}
+.goal-suggestion:hover:not(:disabled) { color: var(--rm-accent); border-color: var(--rm-accent); }
 .recent-designs { max-width: 860px; margin-top: 88px; }
 .home-section-heading, .proposal-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--rm-ink); padding-bottom: 8px; }
 .home-section-heading h2, .proposal-section-heading h2 { margin: 0; font-size: 15px; }
@@ -630,7 +654,6 @@ select {
 .agent-next-step { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--rm-line); }
 .agent-next-step span { color: var(--rm-ink-faint); font-size: 10px; }
 .agent-next-step p { margin: 5px 0 0; color: var(--rm-ink-muted); font-size: 11.5px; line-height: 1.6; }
-.design-loading { color: var(--rm-ink-muted); }
 
 @media (max-width: 900px) {
   .home-page, .design-page { width: min(100% - 40px, 680px); }
