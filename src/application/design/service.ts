@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { designRequestInputSchema, type AgentEvent, type AgentRun, type DesignRequest, type DesignResult } from "@/contracts/design";
+import { designRequestInputSchema, designRevisionInputSchema, type AgentEvent, type AgentRun, type DesignRequest, type DesignResult, type StructuredIntent } from "@/contracts/design";
 import { loadSourcedCatalog } from "@/infra/catalog-import/load";
 import { resolveLlmConfigFromEnv } from "@/infra/llm/client";
-import { parseIntentWithLlm } from "./intent-llm";
+import { parseIntentWithLlm, reviseIntentWithLlm } from "./intent-llm";
 import { parseDesignIntent, intentNeedsInput } from "@/domain/design/intent";
+import { reviseIntentWithRules } from "@/domain/design/revision";
 import { generateDesignProposal } from "@/domain/design/proposal";
 import {
   findDesignRequest,
@@ -11,10 +12,13 @@ import {
   findProposal,
   findRunForRequest,
   markProposalAccepted,
+  markProposalsReplaced,
+  nextProposalVersion,
   appendAgentEvent,
   saveAgentRun,
   saveDesignProposal,
   saveDesignRequest,
+  updateDesignRequestIntent,
   updateDesignRequestStatus,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
@@ -150,4 +154,94 @@ export function acceptDesignProposal(proposalId: string, allowConflicts = false)
     appendAgentEvent(event(run.id, "accepted", "completed", "你已接受这套方案，正式项目和自动检查结果已保存。"));
   }
   return { buildId: checked.build.id, build: checked.build };
+}
+
+/**
+ * 自然语言修订（M31）：双轨理解——LLM 优先（改写完整意图），失败/未配走本地规则
+ * （预算调整 + 已有硬件两类）；都理解不了时创建"追问"运行并保留原方案，绝不硬猜。
+ * 每次成功修订生成新版本方案（旧版标记 replaced，已接受的不动），并自动重新校验。
+ */
+export async function reviseDesign(requestId: string, instructionInput: unknown): Promise<DesignResult> {
+  const { instruction } = designRevisionInputSchema.parse(instructionInput);
+  const request = findDesignRequest(requestId);
+  if (!request) throw new Error("DESIGN_REQUEST_NOT_FOUND");
+  const latest = findLatestProposal(requestId);
+  const { run, events } = createRun(requestId);
+
+  if (!latest) {
+    events.push(event(run.id, "question", "waiting", "还没有可调整的方案——先完成第一次生成再来调整。"));
+    run.status = "completed";
+    run.completedAt = now();
+    saveAgentRun(run);
+    return { request, proposal: null, run };
+  }
+
+  const llmConfig = resolveLlmConfigFromEnv();
+  let updatedIntent: StructuredIntent | null = null;
+  let note = "";
+  let fallbackReason = "";
+  if (llmConfig) {
+    const llmResult = await reviseIntentWithLlm({
+      currentIntent: request.intent,
+      instruction,
+      config: llmConfig,
+    });
+    if (llmResult.ok) {
+      updatedIntent = llmResult.data;
+      note = `大模型（${llmConfig.model}）已理解调整要求。`;
+    } else {
+      fallbackReason = llmResult.reason;
+    }
+  }
+  if (!updatedIntent) {
+    const rules = reviseIntentWithRules(request.intent, instruction);
+    if (rules.ok) {
+      updatedIntent = rules.intent;
+      note = note
+        ? `大模型不可用（${fallbackReason}），本地规则已理解调整：${rules.changes.join("；")}。`
+        : `已理解调整：${rules.changes.join("；")}。`;
+    }
+  }
+
+  if (!updatedIntent) {
+    const capability = llmConfig
+      ? `（大模型不可用：${fallbackReason}；本地规则只能处理预算和已有硬件类调整）`
+      : "（未配置大模型，本地规则只能处理预算和已有硬件类调整）";
+    events.push(event(run.id, "understanding", "started", "正在理解你的调整要求。"));
+    events.push(
+      event(
+        run.id,
+        "question",
+        "waiting",
+        `我没能理解这条调整："${instruction}"。${capability}你可以换个说法，或直接进入高级 DIY 修改。`,
+      ),
+    );
+    run.status = "completed";
+    run.completedAt = now();
+    saveAgentRun(run);
+    return { request, proposal: latest, run };
+  }
+
+  events.push(event(run.id, "understanding", "started", "正在理解你的调整要求。"));
+  events.push(event(run.id, "understanding", "completed", note));
+  events.push(event(run.id, "retrieving", "started", "正在检索目录和已核验规格。"));
+  const entries = loadSourcedCatalog().entries;
+  events.push(event(run.id, "retrieving", "completed", `本地目录就绪（${entries.length.toLocaleString("zh-CN")} 条），按预算档位挑选候选。`));
+  const version = nextProposalVersion(requestId);
+  events.push(event(run.id, "composing", "started", `正在组合第 ${version} 版方案。`));
+  const generated = generateDesignProposal({ requestId, intent: updatedIntent, entries, version });
+  events.push(event(run.id, "composing", "completed", `已生成第 ${version} 版，共 ${generated.proposal.items.length} 个核心配件候选。`));
+  events.push(event(run.id, "validating", "started", "正在自动检查主要硬件之间的兼容关系。"));
+  events.push(event(run.id, "validating", "completed", generated.proposal.compatibility.message));
+  events.push(event(run.id, "validating", "completed", "候选、价格与兼容事实由本地目录和规则引擎核验，模型不参与事实判断。"));
+  events.push(event(run.id, "completed", "completed", `第 ${version} 版已就绪：可继续调整、接受，或进入高级 DIY。`));
+
+  saveDesignProposal(generated.proposal);
+  markProposalsReplaced(requestId, generated.proposal.id);
+  run.proposalId = generated.proposal.id;
+  run.status = "completed";
+  run.completedAt = now();
+  saveAgentRun(run);
+  updateDesignRequestIntent(request.id, updatedIntent, "ready_to_review");
+  return { request: { ...request, intent: updatedIntent, status: "ready_to_review" as const }, proposal: generated.proposal, run };
 }

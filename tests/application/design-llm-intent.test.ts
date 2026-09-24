@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseIntentWithLlm } from "@/application/design/intent-llm";
+import { parseIntentWithLlm, reviseIntentWithLlm } from "@/application/design/intent-llm";
+import { parseDesignIntent } from "@/domain/design/intent";
 
 const config = {
   baseUrl: "https://gw.example.com/v1",
@@ -50,5 +51,34 @@ describe("LLM 意图解析", () => {
       fetchImpl: llmFetchWith('{"budgetYuan": "两万", "useCases": ["游戏"], "appearance": [], "existingParts": [], "constraints": [], "region": "中国大陆"}'),
     });
     expect(result).toEqual({ ok: false, reason: "模型回复不符合目标格式" });
+  });
+
+  it("LLM 修订：按指令改写意图（预算+外观），其余字段由模型保留", async () => {
+    const currentIntent = parseDesignIntent({ rawInput: "2 万预算，剪辑和游戏" });
+    const result = await reviseIntentWithLlm({
+      currentIntent,
+      instruction: "预算压到 1.8 万，显卡要白色的",
+      config,
+      fetchImpl: llmFetchWith(
+        '{"budgetYuan": 18000, "useCases": ["视频剪辑", "游戏"], "appearance": ["白色"], "existingParts": [], "constraints": [], "region": "中国大陆"}',
+      ),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.budgetCents).toBe(1_800_000);
+      expect(result.data.useCases).toEqual(["视频剪辑", "游戏"]);
+      expect(result.data.appearance).toEqual(["白色"]);
+    }
+  });
+
+  it("LLM 修订输出不合法 → ok:false，交由服务层降级到规则", async () => {
+    const currentIntent = parseDesignIntent({ rawInput: "2 万预算，剪辑和游戏" });
+    const result = await reviseIntentWithLlm({
+      currentIntent,
+      instruction: "预算压到 1.8 万",
+      config,
+      fetchImpl: llmFetchWith("我觉得可以"),
+    });
+    expect(result.ok).toBe(false);
   });
 });

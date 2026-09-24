@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import {
   agentEvents,
   agentRuns,
@@ -201,6 +201,44 @@ export function appendAgentEvent(event: AgentEvent): void {
 
 export function updateDesignRequestStatus(id: string, status: DesignRequest["status"]): void {
   ensureDatabase().update(designRequests).set({ status, updatedAt: new Date().toISOString() }).where(eq(designRequests.id, id)).run();
+}
+
+/** 修订后的意图回写：intent 与状态一起更新（M31） */
+export function updateDesignRequestIntent(
+  id: string,
+  intent: StructuredIntent,
+  status: DesignRequest["status"],
+): void {
+  ensureDatabase()
+    .update(designRequests)
+    .set({ intent: JSON.stringify(intent), status, updatedAt: new Date().toISOString() })
+    .where(eq(designRequests.id, id))
+    .run();
+}
+
+/** 下一版方案号：该请求下最大 version + 1（无方案时为 1） */
+export function nextProposalVersion(requestId: string): number {
+  const row = ensureDatabase()
+    .select({ maxVersion: sql<number>`max(version)` })
+    .from(designProposals)
+    .where(eq(designProposals.requestId, requestId))
+    .get();
+  return (row?.maxVersion ?? 0) + 1;
+}
+
+/** 新版本落库后，把同请求下其他未接受的方案标记为 replaced（已接受的保留不动） */
+export function markProposalsReplaced(requestId: string, exceptProposalId: string): void {
+  ensureDatabase()
+    .update(designProposals)
+    .set({ status: "replaced", updatedAt: new Date().toISOString() })
+    .where(
+      and(
+        eq(designProposals.requestId, requestId),
+        ne(designProposals.id, exceptProposalId),
+        ne(designProposals.status, "accepted"),
+      ),
+    )
+    .run();
 }
 
 export function markProposalAccepted(proposalId: string, buildId: string): void {

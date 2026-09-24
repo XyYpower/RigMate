@@ -52,22 +52,52 @@ export async function parseIntentWithLlm(input: {
     fetchImpl: input.fetchImpl,
   });
   if (!result.ok) return result;
-  const data = result.data;
+  return { ok: true, data: mapLlmIntent(result.data, input.explicitBudgetYuan) };
+}
+
+function mapLlmIntent(data: z.infer<typeof llmIntentOutputSchema>, explicitBudgetYuan: number | null): StructuredIntent {
   const budgetCents =
-    input.explicitBudgetYuan !== null
-      ? Math.round(input.explicitBudgetYuan * 100)
+    explicitBudgetYuan !== null
+      ? Math.round(explicitBudgetYuan * 100)
       : data.budgetYuan !== null
         ? Math.round(data.budgetYuan * 100)
         : null;
-  return {
-    ok: true,
-    data: structuredIntentSchema.parse({
-      budgetCents,
-      useCases: data.useCases,
-      appearance: data.appearance,
-      existingParts: data.existingParts,
-      constraints: data.constraints,
-      region: data.region,
-    }),
-  };
+  return structuredIntentSchema.parse({
+    budgetCents,
+    useCases: data.useCases,
+    appearance: data.appearance,
+    existingParts: data.existingParts,
+    constraints: data.constraints,
+    region: data.region,
+  });
+}
+
+export const REVISION_SYSTEM_PROMPT = `你是装机助手的方案调整器。给你当前方案的意图 JSON 和用户的调整要求，输出调整后的完整意图 JSON（字段与输入一致：budgetYuan/useCases/appearance/existingParts/constraints/region）。规则：
+- 只修改用户提到的字段，未提及的字段原样保留；
+- budgetYuan 用数字（元），"预算 1.8 万"=18000；用户没提预算就保持原值；
+- 用户说已有某硬件（如"我已有电源"）→ 在 existingParts 加入该类别名（如"电源"），表示方案不再包含该类购置；
+- 只输出 JSON，不要解释或代码围栏；绝不编造用户没提的偏好。`;
+
+export async function reviseIntentWithLlm(input: {
+  currentIntent: StructuredIntent;
+  instruction: string;
+  config: LlmConfig;
+  fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
+}): Promise<LlmJsonResult<StructuredIntent>> {
+  const result = await completeJson({
+    config: input.config,
+    system: REVISION_SYSTEM_PROMPT,
+    user: `当前意图：${JSON.stringify({
+      budgetYuan: input.currentIntent.budgetCents === null ? null : input.currentIntent.budgetCents / 100,
+      useCases: input.currentIntent.useCases,
+      appearance: input.currentIntent.appearance,
+      existingParts: input.currentIntent.existingParts,
+      constraints: input.currentIntent.constraints,
+      region: input.currentIntent.region,
+    })}\n调整要求：${input.instruction}`,
+    schema: llmIntentOutputSchema,
+    fetchImpl: input.fetchImpl,
+  });
+  if (!result.ok) return result;
+  return { ok: true, data: mapLlmIntent(result.data, null) };
 }

@@ -11,6 +11,7 @@ import {
   type StructuredIntent,
 } from "@/contracts/design";
 import { designTitle } from "./intent";
+import { existingPartCategories } from "./revision";
 
 const CATEGORY_ORDER: BuildItemCategory[] = [
   "cpu",
@@ -100,8 +101,13 @@ function chooseEntry(
   return categoryEntries[0];
 }
 
-function buildTransientItems(entries: CatalogEntry[], intent: StructuredIntent): BuildItem[] {
+function buildTransientItems(
+  entries: CatalogEntry[],
+  intent: StructuredIntent,
+  exclude: Set<BuildItemCategory>,
+): BuildItem[] {
   return CATEGORY_ORDER.flatMap((category) => {
+    if (exclude.has(category)) return [];
     const entry = chooseEntry(entries, category, intent);
     if (!entry) return [];
     const input = buildItemInputSchema.parse({
@@ -146,6 +152,17 @@ function summarizeCompatibility(findings: Finding[]): CompatibilitySummary {
   return { status: "ok", message: "主要硬件组合通过自动校验。", ...counts };
 }
 
+const CATEGORY_LABELS: Record<BuildItemCategory, string> = {
+  cpu: "处理器",
+  motherboard: "主板",
+  gpu: "显卡",
+  ram: "内存",
+  storage: "存储",
+  psu: "电源",
+  cooler: "散热器",
+  case: "机箱",
+};
+
 function proposalItem(entry: CatalogEntry, intent: StructuredIntent): ProposalItem {
   const [low, high] = ITEM_PRICE_ESTIMATES[entry.id] ?? PRICE_ESTIMATES[entry.category];
   const needsAppearanceConfirmation = intent.appearance.includes("白色") && ["gpu", "case"].includes(entry.category);
@@ -172,7 +189,10 @@ export function generateDesignProposal(input: {
   entries: CatalogEntry[];
   version?: number;
 }): { proposal: DesignProposal; findings: Finding[] } {
-  const transientItems = buildTransientItems(input.entries, input.intent);
+  // 已有硬件的类别不再生成购置候选（"我已有电源"→ 方案不含电源）
+  const exclude = new Set(existingPartCategories(input.intent.existingParts));
+  const excludedLabels = [...exclude].map((category) => CATEGORY_LABELS[category] ?? category);
+  const transientItems = buildTransientItems(input.entries, input.intent, exclude);
   const findings = runBuildChecks(transientItems);
   const items = transientItems.map((item) => {
     const entry = input.entries.find((candidate) => candidate.id === item.source?.slice("catalog:".length));
@@ -219,6 +239,9 @@ export function generateDesignProposal(input: {
       ...(input.intent.useCases.includes("游戏") ? ["游戏场景：显卡是主要预算与体验支点。"] : []),
       ...(input.intent.appearance.length > 0 ? [`外观方向：${input.intent.appearance.join("、")}。`] : []),
       ...(budgetFit ? [budgetFit] : []),
+      ...(excludedLabels.length > 0
+        ? [`已有硬件（${excludedLabels.join("、")}）未计入购置清单；建议在高级 DIY 中录入其型号以参与兼容检查。`]
+        : []),
     ],
     tradeoffs: [
       "方案先保证平台兼容和主要用途，再在外观、噪音与价格之间平衡。",

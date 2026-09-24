@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { productPageUrl } from "@/ui/product-link";
 import type { DesignProposal, DesignResult, ProposalItem } from "@/contracts/design";
 
@@ -34,6 +34,9 @@ export default function DesignPage() {
   const [loadError, setLoadError] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [message, setMessage] = useState("");
+  const [revision, setRevision] = useState("");
+  const [revising, setRevising] = useState(false);
+  const [revisionMessage, setRevisionMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +75,37 @@ export default function DesignPage() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "接受方案失败，请重试。");
       setAccepting(false);
+    }
+  }
+
+  async function submitRevision(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const instruction = String(new FormData(event.currentTarget).get("instruction") ?? "").trim();
+    if (!instruction || revising) return;
+    setRevising(true);
+    setRevisionMessage("");
+    try {
+      const response = await fetch(`/api/design/${result!.request.id}/revisions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction }),
+      });
+      const data = (await response.json()) as { result: DesignResult };
+      if (!response.ok) throw new Error((data as { error?: string }).error ?? "调整失败，请重试。");
+      setResult(data.result);
+      setRevision("");
+      const question = data.result.run.events.find((item) => item.type === "question");
+      setRevisionMessage(
+        question
+          ? question.message
+          : data.result.proposal
+            ? `已生成第 ${data.result.proposal.version} 版方案。`
+            : "调整已完成。",
+      );
+    } catch (error) {
+      setRevisionMessage(error instanceof Error ? error.message : "调整失败，请重试。");
+    } finally {
+      setRevising(false);
     }
   }
 
@@ -197,8 +231,24 @@ export default function DesignPage() {
           </ol>
           <div className="agent-next-step">
             <span>接下来</span>
-            <p>你可以接受这一版、进入 DIY 修改，或告诉我希望调整的方向。</p>
+            <p>你可以接受这一版、进入 DIY 修改，或直接告诉我希望调整的方向。</p>
           </div>
+          <form className="revision-row" onSubmit={(event) => void submitRevision(event)}>
+            <input
+              name="instruction"
+              value={revision}
+              onChange={(event) => setRevision(event.target.value)}
+              onInput={(event) => setRevision(event.currentTarget.value)}
+              placeholder="例如：预算压到 1.8 万 / 我已有电源"
+              aria-label="调整方案"
+              maxLength={500}
+              disabled={revising}
+            />
+            <button className="button secondary" type="submit" disabled={revising || revision.trim().length < 2}>
+              {revising ? "正在调整…" : "调整方案"}
+            </button>
+          </form>
+          {revisionMessage && <p className="revision-feedback" role="status">{revisionMessage}</p>}
         </aside>
       </div>
     </main>

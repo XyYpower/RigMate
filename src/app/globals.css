@@ -654,6 +654,17 @@ select {
 .agent-next-step { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--rm-line); }
 .agent-next-step span { color: var(--rm-ink-faint); font-size: 10px; }
 .agent-next-step p { margin: 5px 0 0; color: var(--rm-ink-muted); font-size: 11.5px; line-height: 1.6; }
+.revision-row { display: flex; gap: 10px; margin-top: 14px; }
+.revision-row input {
+  flex: 1; min-width: 0; border: 0; border-bottom: 1px solid var(--rm-line-strong); background: transparent;
+  color: var(--rm-ink); font-size: 12px; padding: 5px 0 6px; outline: none;
+  transition: border-color var(--rm-fast);
+}
+.revision-row input::placeholder { color: var(--rm-ink-faint); }
+.revision-row input:focus { border-bottom-color: var(--rm-accent); }
+.revision-row .button { flex: none; padding: 6px 12px; }
+.revision-feedback { margin: 10px 0 0; color: var(--rm-ink-muted); font-size: 11.5px; line-height: 1.6; }
+.revision-feedback:first-letter { color: var(--rm-accent); }
 
 @media (max-width: 900px) {
   .home-page, .design-page { width: min(100% - 40px, 680px); }

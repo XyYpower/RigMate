@@ -45,6 +45,10 @@ export const designRequestInputSchema = z.object({
   region: z.string().trim().min(1).max(40).default("中国大陆"),
 });
 
+export const designRevisionInputSchema = z.object({
+  instruction: z.string().trim().min(2).max(500),
+});
+
 export const structuredIntentSchema = z.object({
   budgetCents: z.number().int().positive().nullable(),
   useCases: z.array(z.string().trim().min(1).max(40)).max(8),
