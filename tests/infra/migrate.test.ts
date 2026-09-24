@@ -82,6 +82,7 @@ describe("数据库迁移版本检测（M18）", () => {
       "findings",
       "schema_version",
       "catalog_import_runs",
+      "canonical_products",
     ]) {
       expect(tables).toContain(table);
     }

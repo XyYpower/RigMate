@@ -602,6 +602,8 @@ select {
 .proposal-confirmation { color: var(--rm-warn) !important; font-weight: 700; }
 .proposal-item-price { text-align: right; font: 12px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
 .proposal-item-price small { display: block; margin-top: 4px; color: var(--rm-ink-faint); font: 10px "Segoe UI", sans-serif; }
+.proposal-item-price a { display: inline-block; margin-top: 6px; color: var(--rm-ink-muted); font: 11px "Segoe UI", sans-serif; text-underline-offset: 3px; }
+.proposal-item-price a:hover { color: var(--rm-accent); }
 .proposal-notes { margin-top: 28px; }
 .proposal-notes h2, .proposal-evidence summary { margin: 0 0 8px; font-size: 13px; font-weight: 800; }
 .proposal-notes ul, .proposal-evidence ul { margin: 0; padding-left: 18px; color: var(--rm-ink-muted); font-size: 12px; }

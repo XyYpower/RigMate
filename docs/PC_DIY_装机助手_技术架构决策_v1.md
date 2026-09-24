@@ -148,6 +148,18 @@ LLM 是可替换的理解和建议能力，不是事实数据库，不是兼容�
 
 **结论：V1 不以这些平台作为应用底座。未来确实出现复杂模型流程时，可以在边界模块局部引入，而不是从平台反向设计产品。**
 
+### 3.6 ZCode 等开源 Agent 工作台（2026-09-23 补充）
+
+仓库：`zai-org/ZCode`（Apache-2.0；社区分支 `Zcode-CE`）。曾评估"整体套用并改造其 UI"：
+
+- **产品对象不匹配**：它是 AI 编程工作台（Electron 桌面 + Web + TUI + Agent CLI），UI 与交互全部长在编程场景上——文件树、diff、终端、测试结果、工具审批、checkpoint。装机决策台的核心画面（目标 → 方案 → 校验 → DIY）没有对应物，套用等于把方案审阅压扁成聊天流，正是 V2 明确不做的"通用 AI 壳"。
+- **集成重量失控**：pnpm monorepo + Node ≥24 + Electron + RPC/provider 层 + SSH/WSL 远程 + SEA 打包。整体引入等于从"维护一个 Next.js 单体"变成"维护别人的基础设施子集"，与 §3.5 拒绝平台底座是同一条理由，且规模更大。
+- **UI 优势不成立**：其深色 IDE/终端视觉正是用户 2026-09-20 已否决的"黑色大众 AI 面板"路线；整体换皮后 UI 价值归零、架构债务全留下。仪器白体系是三轮用户定向的差异化资产，不可放弃。
+- **决策**：不整体套用。允许按许可证**逐件拆用**：
+  - `ai-elements` 对话组件（Vercel 出品，Apache-2.0，npm 独立包，代码进自己仓库的模式）——M30+ 副驾抽屉可挑选 conversation / message / confirmation / tool 等组件 reskin 为仪器白，不必经过 ZCode；
+  - 其 LLM 层使用 Vercel AI SDK（OpenAI-compatible provider）——印证 M30 计划：`infra/llm` 以 SDK 为库，而非自研 fetch，更不引入其框架；
+  - 工具审批卡 / 事件流 / checkpoint 等交互概念已由 M28 的领域对象（确认卡、AgentEvent、方案版本）实现，方向自证，无需移植。
+
 ---
 
 ## 4. 从零自建与开源改造的比较
@@ -411,6 +423,12 @@ pc-diy/
 - `product_aliases`：中文标题、厂商别名、常见缩写；
 - `catalog_sources`：规格来源、来源 URL、采集时间、许可证和版本；
 - `catalog_import_runs`：一次导入的上游提交、导入结果和错误。
+
+> 2026-09-23 落地注记（M29）：以单表 `canonical_products` 起步（id / 类别 / 名称 / 别名 JSON /
+> 决策规格 JSON / 来源 / ref_url），`product_aliases`、`product_specs`、`catalog_sources`
+> 的拆表推迟到检索升级为 SQL/FTS 时再做——当前检索是进程内 substring 匹配，拆表没有消费方，
+> 别名与规格的校验仍由类别 Zod schema 在读写两端承担。审计复用 `catalog_import_runs`。
+> 数据来源边界（ZOL 参数离线补缺允许、电商平台抓取禁止、价格不进规格库）见业务规格 V2 §11.3。
 
 BuildCores 记录进入这个层之前必须经过：
 

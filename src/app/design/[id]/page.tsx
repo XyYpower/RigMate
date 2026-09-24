@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { productPageUrl } from "@/ui/product-link";
 import type { DesignProposal, DesignResult, ProposalItem } from "@/contracts/design";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -137,6 +138,7 @@ export default function DesignPage() {
                 <div className="proposal-item-price">
                   <span>{itemRange(item)}</span>
                   <small>经验估算</small>
+                  <a href={productPageUrl(item.label)} target="_blank" rel="noreferrer">商品页 ↗</a>
                 </div>
               </article>
             ))}

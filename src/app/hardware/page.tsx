@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CATEGORY_META, type ItemSpec } from "@/ui/category-form";
+import { productPageUrl } from "@/ui/product-link";
 
 type SourceInfo = {
   key: string;
@@ -43,6 +44,7 @@ type CatalogHit = {
   name: string;
   spec: ItemSpec;
   source: string;
+  refUrl?: string;
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -240,7 +242,17 @@ export default function HardwarePage() {
             <tbody>
               {hits.map((hit) => (
                 <tr key={hit.id}>
-                  <td>{hit.name}</td>
+                  <td>
+                    <a
+                      className="pj-open"
+                      href={productPageUrl(hit.name, hit.refUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="查看商品页（京东搜索）"
+                    >
+                      {hit.name}
+                    </a>
+                  </td>
                   <td>{SOURCE_SHORT[hit.source] ?? hit.source}</td>
                   <td className="hw-spec">{specSummary(hit.category, hit.spec)}</td>
                 </tr>

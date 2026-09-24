@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { designRequestInputSchema, type AgentEvent, type AgentRun, type DesignRequest, type DesignResult } from "@/contracts/design";
-import { CATALOG } from "@/domain/catalog/seed";
-import { mergedCatalogEntries } from "@/infra/catalog-import/load";
+import { loadSourcedCatalog } from "@/infra/catalog-import/load";
 import { parseDesignIntent, intentNeedsInput } from "@/domain/design/intent";
 import { generateDesignProposal } from "@/domain/design/proposal";
 import {
@@ -69,7 +68,7 @@ export function createDesignRequest(input: unknown): DesignResult {
     return { request, proposal: null, run };
   }
   events.push(event(run.id, "retrieving", "started", "正在检索目录和已核验规格。"));
-  const entries = mergedCatalogEntries(CATALOG);
+  const entries = loadSourcedCatalog().entries;
   events.push(event(run.id, "retrieving", "completed", `本地目录就绪（${entries.length.toLocaleString("zh-CN")} 条），按预算档位挑选候选。`));
   events.push(event(run.id, "composing", "started", "正在组合一套兼顾用途、预算和外观的方案。"));
   const generated = generateDesignProposal({ requestId, intent, entries });

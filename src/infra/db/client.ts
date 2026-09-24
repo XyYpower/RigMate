@@ -134,6 +134,19 @@ export const agentEvents = sqliteTable("agent_events", {
   createdAt: text("created_at").notNull(),
 });
 
+/** 自有规格库（M29，ADR §8.1 canonical_products 的落地表）：八类配件决策字段，导入时校验 */
+export const canonicalProducts = sqliteTable("canonical_products", {
+  id: text("id").primaryKey(),
+  category: text("category").notNull(),
+  name: text("name").notNull(),
+  aliases: text("aliases").notNull().default("[]"),
+  spec: text("spec").notNull().default("{}"),
+  source: text("source").notNull(),
+  refUrl: text("ref_url"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 export type RigmateDatabase = BetterSQLite3Database<Record<string, never>>;
 
 type DatabaseStore = {

@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 6;
+export const LATEST_SCHEMA_VERSION = 7;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -215,6 +215,25 @@ export const MIGRATIONS: Migration[] = [
       if (!columns.some((column) => column.name === "accepted_build_id")) {
         db.run(sql`ALTER TABLE design_proposals ADD COLUMN accepted_build_id text`);
       }
+    },
+  },
+  {
+    version: 7,
+    name: "自有规格库 canonical_products（ADR §8.1：决策字段 + 来源 + 商品页链接）",
+    up: (db) => {
+      db.run(sql`CREATE TABLE IF NOT EXISTS canonical_products (
+        id text PRIMARY KEY NOT NULL,
+        category text NOT NULL,
+        name text NOT NULL,
+        aliases text NOT NULL DEFAULT '[]',
+        spec text NOT NULL DEFAULT '{}',
+        source text NOT NULL,
+        ref_url text,
+        created_at text NOT NULL,
+        updated_at text NOT NULL
+      )`);
+      db.run(sql`CREATE INDEX IF NOT EXISTS idx_canonical_products_category
+        ON canonical_products(category)`);
     },
   },
 ];

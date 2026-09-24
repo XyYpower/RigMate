@@ -17,6 +17,8 @@ export type CatalogEntry = {
   name: string;
   aliases: string[];
   spec: Record<string, unknown>;
+  /** 商品页链接（可选）；缺失时前端按型号拼京东搜索链接兜底 */
+  refUrl?: string;
 };
 
 type RawEntry = Omit<CatalogEntry, "spec"> & { spec: Record<string, unknown> };

@@ -3,7 +3,8 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { specSchemaByCategory } from "@/domain/build/specs";
 import { buildItemCategorySchema } from "@/domain/build/types";
-import type { CatalogEntry } from "@/domain/catalog/seed";
+import { CATALOG as CATALOG_SEED, type CatalogEntry } from "@/domain/catalog/seed";
+import { loadCatalogEntries, resetCatalogDbCacheForTests } from "@/infra/db/repositories/catalog-repository";
 import { manualCatalogFileSchema } from "./manual-csv";
 
 /**
@@ -122,7 +123,30 @@ export function mergedCatalogEntries(seed: CatalogEntry[]): CatalogEntry[] {
   return [...seed, ...(manual?.entries ?? []), ...(imported?.entries ?? [])];
 }
 
+/**
+ * 统一目录入口（M29）：自有规格库（canonical_products 表）优先；
+ * 库为空（未跑过入库/全新 e2e 库）时回退到 JSON 三层合并，行为与历史版本一致。
+ */
+export function loadSourcedCatalog(): {
+  entries: (CatalogEntry & { source: "seed" | "manual" | "buildcores" | "zol" })[];
+  dbBacked: boolean;
+} {
+  const dbEntries = loadCatalogEntries();
+  if (dbEntries.length > 0) return { entries: dbEntries, dbBacked: true };
+  const manual = loadManualCatalog();
+  const buildcores = loadBuildcoresCatalog();
+  return {
+    entries: [
+      ...CATALOG_SEED.map((entry) => ({ ...entry, source: "seed" as const })),
+      ...(manual?.entries ?? []).map((entry) => ({ ...entry, source: "manual" as const })),
+      ...(buildcores?.entries ?? []).map((entry) => ({ ...entry, source: "buildcores" as const })),
+    ],
+    dbBacked: false,
+  };
+}
+
 export function resetBuildcoresCatalogCacheForTests(): void {
   cache = undefined;
   manualCache = undefined;
+  resetCatalogDbCacheForTests();
 }
