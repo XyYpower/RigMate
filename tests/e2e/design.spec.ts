@@ -64,6 +64,24 @@ test("M34 方案主区可直接表达修改并保留版本变化", async ({ page
   await expect(page.getByRole("heading", { name: "相对第 1 版的变化" })).toBeVisible();
 });
 
+test("M35 可以切换查看历史方案并展开单件依据", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("2 万预算，剪辑和游戏");
+  await page.getByRole("button", { name: "生成装机方案" }).click();
+  await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
+  await page.getByRole("textbox", { name: /继续调整方案/ }).fill("预算压到 1.2 万");
+  await page.getByRole("button", { name: /提交修改/ }).click();
+  await expect(page.getByText("方案草稿 · 第 2 版")).toBeVisible();
+
+  const versionPicker = page.getByRole("combobox", { name: "方案版本" });
+  await expect(versionPicker).toBeVisible();
+  await versionPicker.selectOption("1");
+  await expect(page.getByText("方案草稿 · 第 1 版")).toBeVisible();
+  await expect(page.getByText("当前查看的是历史版本")).toBeVisible();
+  await page.getByText("查看依据", { exact: true }).first().click();
+  await expect(page.getByText(/已核目录|型号 ID/).first()).toBeVisible();
+});
+
 test("M31 无法理解的调整：诚实追问而不是硬猜，保留原方案", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("8000 预算，玩游戏");

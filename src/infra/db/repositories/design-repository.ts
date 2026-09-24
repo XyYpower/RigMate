@@ -172,6 +172,20 @@ export function findProposal(id: string): DesignProposal | undefined {
   return mapProposal(row, rows);
 }
 
+export function findProposals(requestId: string): DesignProposal[] {
+  const db = ensureDatabase();
+  const rows = db
+    .select()
+    .from(designProposals)
+    .where(eq(designProposals.requestId, requestId))
+    .orderBy(designProposals.version)
+    .all();
+  return rows.map((row) => {
+    const items = db.select().from(proposalItems).where(eq(proposalItems.proposalId, row.id)).all();
+    return mapProposal(row, items);
+  });
+}
+
 /** 版本差异用：该请求下 version 之下最近的一版（M32） */
 export function findPreviousProposal(requestId: string, belowVersion: number): DesignProposal | undefined {
   const db = ensureDatabase();

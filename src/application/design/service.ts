@@ -10,6 +10,7 @@ import { generateDesignProposal } from "@/domain/design/proposal";
 import {
   findDesignRequest,
   findLatestProposal,
+  findProposals,
   findProposal,
   findRunForRequest,
   markProposalAccepted,
@@ -92,7 +93,7 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
-    return { request, proposal: null, run, changes: [] };
+    return { request, proposal: null, run, changes: [], versions: [] };
   }
   events.push(event(run.id, "retrieving", "started", "正在检索目录和已核验规格。"));
   const entries = loadSourcedCatalog().entries;
@@ -113,7 +114,7 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
   request.status = "ready_to_review";
   request.updatedAt = now();
   updateDesignRequestStatus(request.id, request.status);
-  return { request, proposal: generated.proposal, run, changes: [] };
+  return { request, proposal: generated.proposal, run, changes: [], versions: [generated.proposal] };
 }
 
 export function getDesignResult(requestId: string): DesignResult | null {
@@ -125,7 +126,7 @@ export function getDesignResult(requestId: string): DesignResult | null {
   const changes = proposal
     ? diffProposals(findPreviousProposal(requestId, proposal.version) ?? null, proposal)
     : [];
-  return { request, proposal, run, changes };
+  return { request, proposal, run, changes, versions: findProposals(requestId) };
 }
 
 export function acceptDesignProposal(proposalId: string, allowConflicts = false): { buildId: string; build: ReturnType<typeof getBuild> } {
@@ -178,7 +179,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
-    return { request, proposal: null, run, changes: [] };
+    return { request, proposal: null, run, changes: [], versions: [] };
   }
 
   const llmConfig = resolveLlmConfigFromEnv();
@@ -224,7 +225,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
-    return { request, proposal: latest, run, changes: [] };
+    return { request, proposal: latest, run, changes: [], versions: findProposals(requestId) };
   }
 
   events.push(event(run.id, "understanding", "started", "正在理解你的调整要求。"));
@@ -253,5 +254,6 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     proposal: generated.proposal,
     run,
     changes: diffProposals(latest, generated.proposal),
+    versions: findProposals(requestId),
   };
 }

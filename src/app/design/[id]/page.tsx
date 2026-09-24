@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { productPageUrl } from "@/ui/product-link";
 import type { DesignProposal, DesignResult, ProposalItem } from "@/contracts/design";
+import { diffProposals } from "@/domain/design/diff";
 
 const CATEGORY_LABELS: Record<string, string> = {
   cpu: "处理器",
@@ -37,6 +38,7 @@ export default function DesignPage() {
   const [revision, setRevision] = useState("");
   const [revising, setRevising] = useState(false);
   const [revisionMessage, setRevisionMessage] = useState("");
+  const [viewedVersion, setViewedVersion] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +46,10 @@ export default function DesignPage() {
       if (response.status === 404) throw new Error("not-found");
       if (!response.ok) throw new Error("load-failed");
       const data = await response.json();
-      if (!cancelled) setResult(data.result);
+      if (!cancelled) {
+        setResult(data.result);
+        setViewedVersion(data.result.proposal?.version ?? null);
+      }
     }).catch(() => {
       if (!cancelled) setLoadError(true);
     }).finally(() => {
@@ -54,11 +59,19 @@ export default function DesignPage() {
   }, [id]);
 
   const proposal: DesignProposal | null = result?.proposal ?? null;
-  const changes = result?.changes ?? [];
+  const viewedProposal = result && viewedVersion !== null
+    ? result.versions.find((version) => version.version === viewedVersion) ?? proposal
+    : proposal;
+  const isHistoryView = Boolean(viewedProposal && proposal && viewedProposal.id !== proposal.id);
+  const changes = viewedProposal
+    ? (isHistoryView
+      ? diffProposals(result?.versions.find((version) => version.version === viewedProposal.version - 1) ?? null, viewedProposal)
+      : (result?.changes ?? []))
+    : [];
   const estimateLabel = useMemo(() => {
-    if (!proposal || proposal.estimatedLowCents === null || proposal.estimatedHighCents === null) return "暂无足够资料估算总价";
-    return `${formatYuan(proposal.estimatedLowCents)}–${formatYuan(proposal.estimatedHighCents)}`;
-  }, [proposal]);
+    if (!viewedProposal || viewedProposal.estimatedLowCents === null || viewedProposal.estimatedHighCents === null) return "暂无足够资料估算总价";
+    return `${formatYuan(viewedProposal.estimatedLowCents)}–${formatYuan(viewedProposal.estimatedHighCents)}`;
+  }, [viewedProposal]);
 
   async function acceptProposal(openDiy = false) {
     if (!proposal) return;
@@ -94,6 +107,7 @@ export default function DesignPage() {
       const data = (await response.json()) as { result: DesignResult };
       if (!response.ok) throw new Error((data as { error?: string }).error ?? "调整失败，请重试。");
       setResult(data.result);
+      setViewedVersion(data.result.proposal?.version ?? null);
       setRevision("");
       const question = data.result.run.events.find((item) => item.type === "question");
       setRevisionMessage(
@@ -124,7 +138,7 @@ export default function DesignPage() {
   if (loadError || !result) {
     return <main className="design-page"><h1>暂时无法打开这份方案</h1><p>它可能已过期，或者当前服务暂时不可用。</p><Link href="/">返回开始配置</Link></main>;
   }
-  if (!proposal) {
+  if (!proposal || !viewedProposal) {
     return (
       <main className="design-page">
         <p className="design-kicker">目标已收到</p>
@@ -140,17 +154,33 @@ export default function DesignPage() {
     attention: "有取舍需要留意",
     conflict: "存在兼容冲突",
     unknown: "有资料需要确认",
-  }[proposal.compatibility.status];
+  }[viewedProposal.compatibility.status];
 
   return (
     <main className="design-page">
       <header className="design-header">
         <div>
-          <p className="design-kicker">方案草稿 · 第 {proposal.version} 版</p>
-          <h1>{proposal.title}</h1>
-          <p className="design-summary">{proposal.summary}</p>
+          <p className="design-kicker">方案草稿 · 第 {viewedProposal.version} 版</p>
+          <h1>{viewedProposal.title}</h1>
+          <p className="design-summary">{viewedProposal.summary}</p>
         </div>
-        <Link className="design-back" href="/projects">我的方案</Link>
+        <div className="design-header-actions">
+          <label className="version-picker">
+            <span>方案版本</span>
+            <select
+              aria-label="方案版本"
+              value={String(viewedProposal.version)}
+              onChange={(event) => setViewedVersion(Number(event.target.value))}
+            >
+              {result.versions.slice().reverse().map((version) => (
+                <option key={version.id} value={version.version}>
+                  第 {version.version} 版{version.id === proposal.id ? " · 最新" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Link className="design-back" href="/projects">我的方案</Link>
+        </div>
       </header>
 
       <div className="design-grid">
@@ -172,13 +202,19 @@ export default function DesignPage() {
             <span>{proposal.items.length} 个核心配件</span>
           </div>
           <div className="proposal-items">
-            {proposal.items.map((item) => (
+            {viewedProposal.items.map((item) => (
               <article className="proposal-item" key={`${item.category}-${item.catalogId ?? item.label}`}>
                 <div className="proposal-category">{CATEGORY_LABELS[item.category] ?? item.category}</div>
                 <div className="proposal-item-main">
                   <h3>{item.label}</h3>
                   <p>{item.rationale}</p>
                   {item.confirmationRequired && <p className="proposal-confirmation">需要确认：{item.confirmationReason}</p>}
+                  <details className="proposal-item-evidence">
+                    <summary>查看依据</summary>
+                    <p>{item.sourceLevel === "verified_catalog" ? "已核目录型号" : `来源：${item.sourceLevel}`}</p>
+                    {item.catalogId && <p>型号 ID：<span className="mono">{item.catalogId}</span></p>}
+                    <p>价格：{item.priceBasis === "experience_estimate" ? "经验估算，非实时成交价" : item.priceBasis}</p>
+                  </details>
                 </div>
                 <div className="proposal-item-price">
                   <span>{itemRange(item)}</span>
@@ -189,9 +225,9 @@ export default function DesignPage() {
             ))}
           </div>
 
-          {proposal.version > 1 && changes.length > 0 && (
+          {viewedProposal.version > 1 && changes.length > 0 && (
             <section className="proposal-diff" aria-labelledby="diff-title">
-              <h2 id="diff-title">相对第 {proposal.version - 1} 版的变化</h2>
+              <h2 id="diff-title">相对第 {viewedProposal.version - 1} 版的变化</h2>
               <ul>
                 {changes.map((change) => (
                   <li key={change.category}>
@@ -207,21 +243,21 @@ export default function DesignPage() {
 
           <section className="proposal-notes">
             <h2>为什么这样搭配</h2>
-            <ul>{proposal.fitNotes.map((note) => <li key={note}>{note}</li>)}</ul>
+            <ul>{viewedProposal.fitNotes.map((note) => <li key={note}>{note}</li>)}</ul>
           </section>
           <section className="proposal-notes">
             <h2>取舍说明</h2>
-            <ul>{proposal.tradeoffs.map((note) => <li key={note}>{note}</li>)}</ul>
+            <ul>{viewedProposal.tradeoffs.map((note) => <li key={note}>{note}</li>)}</ul>
           </section>
-          {proposal.unknowns.length > 0 && (
+          {viewedProposal.unknowns.length > 0 && (
             <details className="proposal-evidence">
               <summary>查看需要核实的资料与依据</summary>
-              <ul>{proposal.unknowns.map((item) => <li key={item}>{item}</li>)}</ul>
+              <ul>{viewedProposal.unknowns.map((item) => <li key={item}>{item}</li>)}</ul>
               <p>兼容性检查结果、缺失字段和规则编号会在正式 DIY 与报告中完整保留。</p>
             </details>
           )}
 
-          <section className="revision-composer" aria-labelledby="revision-title">
+          {!isHistoryView && <section className="revision-composer" aria-labelledby="revision-title">
             <div className="revision-composer-heading">
               <div>
                 <span className="overview-label">继续调整</span>
@@ -251,13 +287,15 @@ export default function DesignPage() {
               </div>
             </form>
             {revisionMessage && <p className="revision-feedback" role="status">{revisionMessage}</p>}
-          </section>
+          </section>}
+
+          {isHistoryView && <p className="history-banner" role="status">当前查看的是历史版本。切回最新版本后可以继续修改或接受方案。</p>}
 
           <div className="proposal-actions">
-            <button className="button primary" onClick={() => void acceptProposal()} disabled={accepting || proposal.compatibility.status === "conflict"}>
+            <button className="button primary" onClick={() => void acceptProposal()} disabled={isHistoryView || accepting || viewedProposal.compatibility.status === "conflict"}>
               {accepting ? "正在保存并检查…" : "接受方案，进入 DIY"}<span aria-hidden>→</span>
             </button>
-            <button className="button secondary" onClick={() => void acceptProposal(true)} disabled={accepting}>
+            <button className="button secondary" onClick={() => void acceptProposal(true)} disabled={isHistoryView || accepting}>
               自己调整配置
             </button>
             {message && <p className="form-feedback" role="status">{message}</p>}

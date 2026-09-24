@@ -154,6 +154,8 @@ export type DesignResult = {
   run: AgentRun;
   /** 相对上一版本的按类别差异（第 1 版或信息不足时为空） */
   changes: ProposalChange[];
+  /** 当前请求下按版本升序排列的全部方案，供历史只读查看 */
+  versions: DesignProposal[];
 };
 
 export function publicFindingStatus(status: z.infer<typeof findingStatusSchema>): string {
