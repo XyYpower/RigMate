@@ -76,6 +76,7 @@ function chooseEntry(
   entries: CatalogEntry[],
   category: BuildItemCategory,
   intent: StructuredIntent,
+  preferredIds?: Partial<Record<BuildItemCategory, string>>,
 ): CatalogEntry | undefined {
   const budget = intent.budgetCents ?? 2_000_000;
   const cpuId = budget < 1_400_000 ? "cpu-9600x" : "cpu-9800x3d";
@@ -91,7 +92,7 @@ function chooseEntry(
     case: "case-gt502",
   };
   const categoryEntries = entries.filter((entry) => entry.category === category);
-  const preferredId = selectedIds[category];
+  const preferredId = preferredIds?.[category] ?? selectedIds[category];
   const preferred = preferredId ? categoryEntries.find((entry) => entry.id === preferredId) : undefined;
   if (preferred) return preferred;
   for (const id of PREFERRED_IDS[category]) {
@@ -105,10 +106,11 @@ function buildTransientItems(
   entries: CatalogEntry[],
   intent: StructuredIntent,
   exclude: Set<BuildItemCategory>,
+  preferredIds?: Partial<Record<BuildItemCategory, string>>,
 ): BuildItem[] {
   return CATEGORY_ORDER.flatMap((category) => {
     if (exclude.has(category)) return [];
-    const entry = chooseEntry(entries, category, intent);
+    const entry = chooseEntry(entries, category, intent, preferredIds);
     if (!entry) return [];
     const input = buildItemInputSchema.parse({
       category,
@@ -163,7 +165,7 @@ const CATEGORY_LABELS: Record<BuildItemCategory, string> = {
   case: "机箱",
 };
 
-function proposalItem(entry: CatalogEntry, intent: StructuredIntent): ProposalItem {
+function proposalItem(entry: CatalogEntry, intent: StructuredIntent, rationaleOverride?: string): ProposalItem {
   const [low, high] = ITEM_PRICE_ESTIMATES[entry.id] ?? PRICE_ESTIMATES[entry.category];
   const needsAppearanceConfirmation = intent.appearance.includes("白色") && ["gpu", "case"].includes(entry.category);
   return {
@@ -175,7 +177,7 @@ function proposalItem(entry: CatalogEntry, intent: StructuredIntent): ProposalIt
     priceEstimateLowCents: low,
     priceEstimateHighCents: high,
     priceBasis: "experience_estimate",
-    rationale: RATIONALE[entry.category],
+    rationale: rationaleOverride ?? RATIONALE[entry.category],
     confirmationRequired: needsAppearanceConfirmation,
     ...(needsAppearanceConfirmation
       ? { confirmationReason: "目录当前没有完整的外观颜色字段，建议确认白色版本或在高级 DIY 中替换。" }
@@ -188,15 +190,17 @@ export function generateDesignProposal(input: {
   intent: StructuredIntent;
   entries: CatalogEntry[];
   version?: number;
+  preferredIds?: Partial<Record<BuildItemCategory, string>>;
+  rationaleByCategory?: Partial<Record<BuildItemCategory, string>>;
 }): { proposal: DesignProposal; findings: Finding[] } {
   // 已有硬件的类别不再生成购置候选（"我已有电源"→ 方案不含电源）
   const exclude = new Set(existingPartCategories(input.intent.existingParts));
   const excludedLabels = [...exclude].map((category) => CATEGORY_LABELS[category] ?? category);
-  const transientItems = buildTransientItems(input.entries, input.intent, exclude);
+  const transientItems = buildTransientItems(input.entries, input.intent, exclude, input.preferredIds);
   const findings = runBuildChecks(transientItems);
   const items = transientItems.map((item) => {
     const entry = input.entries.find((candidate) => candidate.id === item.source?.slice("catalog:".length));
-    return entry ? proposalItem(entry, input.intent) : null;
+    return entry ? proposalItem(entry, input.intent, input.rationaleByCategory?.[entry.category]) : null;
   }).filter((item): item is ProposalItem => item !== null);
   const ranges = items.reduce(
     (total, item) => ({

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { structuredIntentSchema, type StructuredIntent } from "@/contracts/design";
 import { completeJson, type LlmConfig, type LlmJsonResult } from "@/infra/llm/client";
+import type { CatalogEntry } from "@/domain/catalog/seed";
+import type { BuildItemCategory } from "@/domain/build/types";
 
 /**
  * LLM 意图解析（M30）：模型只负责把自然语言目标整理成结构化偏好；
@@ -100,4 +102,63 @@ export async function reviseIntentWithLlm(input: {
   });
   if (!result.ok) return result;
   return { ok: true, data: mapLlmIntent(result.data, null) };
+}
+
+const llmSelectionOutputSchema = z.object({
+  selections: z.array(z.object({
+    category: z.string().trim().min(1).max(40),
+    catalogId: z.string().trim().min(1).max(120),
+    reason: z.string().trim().min(1).max(300),
+  })).max(8).default([]),
+});
+
+export type CatalogSelection = {
+  selectedIds: Partial<Record<BuildItemCategory, string>>;
+  rationaleByCategory: Partial<Record<BuildItemCategory, string>>;
+};
+
+const CATEGORIES: BuildItemCategory[] = ["cpu", "motherboard", "gpu", "ram", "storage", "psu", "cooler", "case"];
+
+export const CATALOG_SELECTION_SYSTEM_PROMPT = `你是受约束的装机候选选择器。你只能从用户提供的 catalogId 中选择，不能创造型号、规格、价格或新的 ID。只输出 JSON：{"selections":[{"category":"cpu","catalogId":"已有 ID","reason":"一句选择理由"}]}。每个类别最多选一个，缺少合适候选时不要选择。`;
+
+export function renderCatalogSelectionPrompt(input: {
+  intent: StructuredIntent;
+  candidates: CatalogEntry[];
+}): string {
+  return `用户意图：${JSON.stringify(input.intent)}\n可选目录候选：${JSON.stringify(input.candidates.map((entry) => ({
+    id: entry.id,
+    category: entry.category,
+    name: entry.name,
+    aliases: entry.aliases,
+    spec: entry.spec,
+  })))}\n请只在这些候选中选择。`;
+}
+
+export async function selectCatalogCandidatesWithLlm(input: {
+  intent: StructuredIntent;
+  candidates: CatalogEntry[];
+  config: LlmConfig;
+  fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
+}): Promise<LlmJsonResult<CatalogSelection>> {
+  const result = await completeJson({
+    config: input.config,
+    system: CATALOG_SELECTION_SYSTEM_PROMPT,
+    user: renderCatalogSelectionPrompt(input),
+    schema: llmSelectionOutputSchema,
+    fetchImpl: input.fetchImpl,
+  });
+  if (!result.ok) return result;
+  const allowed = new Map(input.candidates.map((entry) => [entry.id, entry]));
+  const selectedIds: Partial<Record<BuildItemCategory, string>> = {};
+  const rationaleByCategory: Partial<Record<BuildItemCategory, string>> = {};
+  for (const selection of result.data.selections) {
+    if (!CATEGORIES.includes(selection.category as BuildItemCategory)) continue;
+    const entry = allowed.get(selection.catalogId);
+    if (!entry || entry.category !== selection.category) return { ok: false, reason: "模型选择了不存在的目录型号" };
+    const category = entry.category;
+    if (selectedIds[category]) continue;
+    selectedIds[category] = entry.id;
+    rationaleByCategory[category] = selection.reason;
+  }
+  return { ok: true, data: { selectedIds, rationaleByCategory } };
 }

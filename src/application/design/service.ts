@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { designRequestInputSchema, designRevisionInputSchema, type AgentEvent, type AgentRun, type DesignRequest, type DesignResult, type StructuredIntent } from "@/contracts/design";
 import { loadSourcedCatalog } from "@/infra/catalog-import/load";
 import { resolveLlmConfigFromEnv } from "@/infra/llm/client";
-import { parseIntentWithLlm, reviseIntentWithLlm } from "./intent-llm";
+import { parseIntentWithLlm, reviseIntentWithLlm, selectCatalogCandidatesWithLlm } from "./intent-llm";
 import { parseDesignIntent, intentNeedsInput } from "@/domain/design/intent";
 import { reviseIntentWithRules } from "@/domain/design/revision";
 import { diffProposals } from "@/domain/design/diff";
@@ -25,6 +25,7 @@ import {
   findPreviousProposal,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
+import type { BuildItemCategory } from "@/domain/build/types";
 
 function now(): string {
   return new Date().toISOString();
@@ -99,7 +100,19 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
   const entries = loadSourcedCatalog().entries;
   events.push(event(run.id, "retrieving", "completed", `本地目录就绪（${entries.length.toLocaleString("zh-CN")} 条），按预算档位挑选候选。`));
   events.push(event(run.id, "composing", "started", "正在组合一套兼顾用途、预算和外观的方案。"));
-  const generated = generateDesignProposal({ requestId, intent, entries });
+  let preferredIds;
+  let rationaleByCategory;
+  if (llmConfig) {
+    const selection = await selectCatalogCandidatesWithLlm({ intent, candidates: candidatePool(entries), config: llmConfig });
+    if (selection.ok) {
+      preferredIds = selection.data.selectedIds;
+      rationaleByCategory = selection.data.rationaleByCategory;
+      events.push(event(run.id, "composing", "completed", `大模型只在 ${Object.keys(preferredIds).length} 个已核目录类别中提出选择，规格和兼容性仍由系统核验。`));
+    } else {
+      events.push(event(run.id, "composing", "waiting", `大模型选件不可用（${selection.reason}），已回退到本地规则式候选。`));
+    }
+  }
+  const generated = generateDesignProposal({ requestId, intent, entries, preferredIds, rationaleByCategory });
   events.push(event(run.id, "composing", "completed", `已生成 ${generated.proposal.items.length} 个核心配件候选。`));
   events.push(event(run.id, "validating", "started", "正在自动检查主要硬件之间的兼容关系。"));
   events.push(event(run.id, "validating", "completed", generated.proposal.compatibility.message));
@@ -127,6 +140,13 @@ export function getDesignResult(requestId: string): DesignResult | null {
     ? diffProposals(findPreviousProposal(requestId, proposal.version) ?? null, proposal)
     : [];
   return { request, proposal, run, changes, versions: findProposals(requestId) };
+}
+
+const CANDIDATE_CATEGORIES: BuildItemCategory[] = ["cpu", "motherboard", "gpu", "ram", "storage", "psu", "cooler", "case"];
+
+function candidatePool(entries: ReturnType<typeof loadSourcedCatalog>["entries"]) {
+  if (entries.length <= 96) return entries;
+  return CANDIDATE_CATEGORIES.flatMap((category) => entries.filter((entry) => entry.category === category).slice(0, 12));
 }
 
 export function acceptDesignProposal(proposalId: string, allowConflicts = false): { buildId: string; build: ReturnType<typeof getBuild> } {
@@ -235,7 +255,19 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   events.push(event(run.id, "retrieving", "completed", `本地目录就绪（${entries.length.toLocaleString("zh-CN")} 条），按预算档位挑选候选。`));
   const version = nextProposalVersion(requestId);
   events.push(event(run.id, "composing", "started", `正在组合第 ${version} 版方案。`));
-  const generated = generateDesignProposal({ requestId, intent: updatedIntent, entries, version });
+  let preferredIds;
+  let rationaleByCategory;
+  if (llmConfig) {
+    const selection = await selectCatalogCandidatesWithLlm({ intent: updatedIntent, candidates: candidatePool(entries), config: llmConfig });
+    if (selection.ok) {
+      preferredIds = selection.data.selectedIds;
+      rationaleByCategory = selection.data.rationaleByCategory;
+      events.push(event(run.id, "composing", "completed", `大模型只在已核目录候选中调整第 ${version} 版，系统会重新检查全部兼容关系。`));
+    } else {
+      events.push(event(run.id, "composing", "waiting", `大模型选件不可用（${selection.reason}），已回退到本地规则式候选。`));
+    }
+  }
+  const generated = generateDesignProposal({ requestId, intent: updatedIntent, entries, version, preferredIds, rationaleByCategory });
   events.push(event(run.id, "composing", "completed", `已生成第 ${version} 版，共 ${generated.proposal.items.length} 个核心配件候选。`));
   events.push(event(run.id, "validating", "started", "正在自动检查主要硬件之间的兼容关系。"));
   events.push(event(run.id, "validating", "completed", generated.proposal.compatibility.message));
