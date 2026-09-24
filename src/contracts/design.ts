@@ -110,6 +110,12 @@ export const agentEventSchema = z.object({
   createdAt: z.string().datetime(),
 });
 
+export const proposalChangeSchema = z.object({
+  category: buildItemCategorySchema,
+  fromLabel: z.string().nullable(),
+  toLabel: z.string().nullable(),
+});
+
 export type DesignRequestInput = z.infer<typeof designRequestInputSchema>;
 export type DesignRequestStatus = z.infer<typeof designRequestStatusSchema>;
 export type StructuredIntent = z.infer<typeof structuredIntentSchema>;
@@ -120,6 +126,7 @@ export type AgentRunStatus = z.infer<typeof agentRunStatusSchema>;
 export type AgentEvent = z.infer<typeof agentEventSchema>;
 export type AgentEventType = z.infer<typeof agentEventTypeSchema>;
 export type SourceLevel = z.infer<typeof sourceLevelSchema>;
+export type ProposalChange = z.infer<typeof proposalChangeSchema>;
 export type CompatibilitySummary = z.infer<typeof compatibilitySummarySchema>;
 
 export type DesignRequest = {
@@ -145,6 +152,8 @@ export type DesignResult = {
   request: DesignRequest;
   proposal: DesignProposal | null;
   run: AgentRun;
+  /** 相对上一版本的按类别差异（第 1 版或信息不足时为空） */
+  changes: ProposalChange[];
 };
 
 export function publicFindingStatus(status: z.infer<typeof findingStatusSchema>): string {

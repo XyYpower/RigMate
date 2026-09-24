@@ -5,6 +5,7 @@ import { resolveLlmConfigFromEnv } from "@/infra/llm/client";
 import { parseIntentWithLlm, reviseIntentWithLlm } from "./intent-llm";
 import { parseDesignIntent, intentNeedsInput } from "@/domain/design/intent";
 import { reviseIntentWithRules } from "@/domain/design/revision";
+import { diffProposals } from "@/domain/design/diff";
 import { generateDesignProposal } from "@/domain/design/proposal";
 import {
   findDesignRequest,
@@ -20,6 +21,7 @@ import {
   saveDesignRequest,
   updateDesignRequestIntent,
   updateDesignRequestStatus,
+  findPreviousProposal,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
 
@@ -90,7 +92,7 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
-    return { request, proposal: null, run };
+    return { request, proposal: null, run, changes: [] };
   }
   events.push(event(run.id, "retrieving", "started", "正在检索目录和已核验规格。"));
   const entries = loadSourcedCatalog().entries;
@@ -111,7 +113,7 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
   request.status = "ready_to_review";
   request.updatedAt = now();
   updateDesignRequestStatus(request.id, request.status);
-  return { request, proposal: generated.proposal, run };
+  return { request, proposal: generated.proposal, run, changes: [] };
 }
 
 export function getDesignResult(requestId: string): DesignResult | null {
@@ -120,7 +122,10 @@ export function getDesignResult(requestId: string): DesignResult | null {
   const proposal = findLatestProposal(requestId) ?? null;
   const run = findRunForRequest(requestId);
   if (!run) return null;
-  return { request, proposal, run };
+  const changes = proposal
+    ? diffProposals(findPreviousProposal(requestId, proposal.version) ?? null, proposal)
+    : [];
+  return { request, proposal, run, changes };
 }
 
 export function acceptDesignProposal(proposalId: string, allowConflicts = false): { buildId: string; build: ReturnType<typeof getBuild> } {
@@ -173,7 +178,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
-    return { request, proposal: null, run };
+    return { request, proposal: null, run, changes: [] };
   }
 
   const llmConfig = resolveLlmConfigFromEnv();
@@ -219,7 +224,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
-    return { request, proposal: latest, run };
+    return { request, proposal: latest, run, changes: [] };
   }
 
   events.push(event(run.id, "understanding", "started", "正在理解你的调整要求。"));
@@ -243,5 +248,10 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   run.completedAt = now();
   saveAgentRun(run);
   updateDesignRequestIntent(request.id, updatedIntent, "ready_to_review");
-  return { request: { ...request, intent: updatedIntent, status: "ready_to_review" as const }, proposal: generated.proposal, run };
+  return {
+    request: { ...request, intent: updatedIntent, status: "ready_to_review" as const },
+    proposal: generated.proposal,
+    run,
+    changes: diffProposals(latest, generated.proposal),
+  };
 }

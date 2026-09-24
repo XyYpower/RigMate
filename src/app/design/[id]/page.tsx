@@ -54,6 +54,7 @@ export default function DesignPage() {
   }, [id]);
 
   const proposal: DesignProposal | null = result?.proposal ?? null;
+  const changes = result?.changes ?? [];
   const estimateLabel = useMemo(() => {
     if (!proposal || proposal.estimatedLowCents === null || proposal.estimatedHighCents === null) return "暂无足够资料估算总价";
     return `${formatYuan(proposal.estimatedLowCents)}–${formatYuan(proposal.estimatedHighCents)}`;
@@ -187,6 +188,22 @@ export default function DesignPage() {
               </article>
             ))}
           </div>
+
+          {proposal.version > 1 && changes.length > 0 && (
+            <section className="proposal-diff" aria-labelledby="diff-title">
+              <h2 id="diff-title">相对第 {proposal.version - 1} 版的变化</h2>
+              <ul>
+                {changes.map((change) => (
+                  <li key={change.category}>
+                    <span className="diff-category">{CATEGORY_LABELS[change.category] ?? change.category}</span>
+                    {change.fromLabel ? <s>{change.fromLabel}</s> : <em className="diff-tag">新增</em>}
+                    <span className="diff-arrow" aria-hidden>→</span>
+                    {change.toLabel ? <strong>{change.toLabel}</strong> : <em className="diff-tag removed">不再购置</em>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="proposal-notes">
             <h2>为什么这样搭配</h2>

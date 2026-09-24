@@ -207,6 +207,17 @@ export default function Home() {
     return result;
   }, [findings]);
 
+  // 渐进披露（M32）：有问题时通过项折叠成一行；全部通过时照常展开（干净结果不需要藏）
+  const problemFindings = useMemo(
+    () => findings.filter((finding) => finding.status !== "pass"),
+    [findings],
+  );
+  const passedFindings = useMemo(
+    () => findings.filter((finding) => finding.status === "pass"),
+    [findings],
+  );
+  const collapsePasses = problemFindings.length > 0 && passedFindings.length > 0;
+
   function switchProject(id: string) {
     const target = projects.find((project) => project.id === id);
     if (!target || target.id === build?.id) return;
@@ -847,9 +858,19 @@ export default function Home() {
             </div>
             {findings.length ? (
               <div className="findings">
-                {findings.map((finding) => (
+                {problemFindings.map((finding) => (
                   <FindingCard key={finding.ruleId} finding={finding} />
                 ))}
+                {collapsePasses && (
+                  <details className="findings-passed">
+                    <summary>通过 {passedFindings.length} 项 · 无需处理的结论已折叠</summary>
+                    {passedFindings.map((finding) => (
+                      <FindingCard key={finding.ruleId} finding={finding} />
+                    ))}
+                  </details>
+                )}
+                {!collapsePasses &&
+                  passedFindings.map((finding) => <FindingCard key={finding.ruleId} finding={finding} />)}
               </div>
             ) : (
               <p className="empty-line">

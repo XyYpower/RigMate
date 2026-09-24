@@ -1,4 +1,4 @@
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, lt, ne, sql } from "drizzle-orm";
 import {
   agentEvents,
   agentRuns,
@@ -169,6 +169,21 @@ export function findProposal(id: string): DesignProposal | undefined {
   const row = db.select().from(designProposals).where(eq(designProposals.id, id)).get();
   if (!row) return undefined;
   const rows = db.select().from(proposalItems).where(eq(proposalItems.proposalId, id)).all();
+  return mapProposal(row, rows);
+}
+
+/** 版本差异用：该请求下 version 之下最近的一版（M32） */
+export function findPreviousProposal(requestId: string, belowVersion: number): DesignProposal | undefined {
+  const db = ensureDatabase();
+  const row = db
+    .select()
+    .from(designProposals)
+    .where(and(eq(designProposals.requestId, requestId), lt(designProposals.version, belowVersion)))
+    .orderBy(desc(designProposals.version))
+    .limit(1)
+    .get();
+  if (!row) return undefined;
+  const rows = db.select().from(proposalItems).where(eq(proposalItems.proposalId, row.id)).all();
   return mapProposal(row, rows);
 }
 

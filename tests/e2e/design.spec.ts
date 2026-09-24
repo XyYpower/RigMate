@@ -30,19 +30,24 @@ test("M27 目标信息不足：不硬凑方案而是提出最小追问", async (
   await expect(page.getByText(/缺少预算或用途/)).toBeVisible();
 });
 
-test("M31 自然语言修订：预算调整生成第 2 版", async ({ page }) => {
+test("M31 自然语言修订：预算跨档位生成第 2 版并显示差异", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("2 万预算，白色海景房，剪辑和游戏");
   await page.getByRole("button", { name: "生成装机方案" }).click();
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
   await expect(page.getByText("方案草稿 · 第 1 版")).toBeVisible();
 
-  await page.getByRole("textbox", { name: "调整方案" }).fill("预算压到 1.8 万");
+  await page.getByRole("textbox", { name: "调整方案" }).fill("预算压到 1.2 万");
   await page.getByRole("button", { name: "调整方案" }).click();
 
-  await expect(page.getByText(/已理解调整：预算调整为 18,000 元/)).toBeVisible();
+  await expect(page.getByText(/已理解调整：预算调整为 12,000 元/)).toBeVisible();
   await expect(page.getByText("方案草稿 · 第 2 版")).toBeVisible();
   await expect(page.getByText(/第 2 版已就绪/)).toBeVisible();
+  // 版本差异区：预算跌破档位线，CPU/显卡/电源应出现 旧件→新件 的变化
+  const diff = page.locator(".proposal-diff");
+  await expect(diff.getByRole("heading", { name: "相对第 1 版的变化" })).toBeVisible();
+  await expect(diff).toContainText("4070 SUPER");
+  await expect(diff).toContainText("RTX 4060");
 });
 
 test("M31 无法理解的调整：诚实追问而不是硬猜，保留原方案", async ({ page }) => {
