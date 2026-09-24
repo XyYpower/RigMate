@@ -49,3 +49,4 @@ next-env.d.ts
 
 # AI 工具运行时状态
 .superpowers/
+.worktrees/
