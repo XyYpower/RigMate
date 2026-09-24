@@ -13,6 +13,7 @@ import {
 import { FindingCard } from "@/ui/components/finding-card";
 import { StatusChip } from "@/ui/components/status-chip";
 import type { BudgetSummary, Finding, FindingStatus } from "@/domain/build/types";
+import type { CheckRunSummary } from "@/infra/db/repositories/build-repository";
 
 type Category = keyof typeof CATEGORY_META;
 
@@ -91,6 +92,17 @@ export default function Home() {
   const [catalogProvenance, setCatalogProvenance] = useState<CatalogProvenance | null>(null);
   const [message, setMessage] = useState("正在加载你的历史项目…");
   const [busy, setBusy] = useState(false);
+  const [checkHistory, setCheckHistory] = useState<CheckRunSummary[]>([]);
+
+  function loadCheckHistory(buildId: string) {
+    void fetch(`/api/builds/${buildId}/check/history`)
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = await response.json();
+        setCheckHistory(data.runs ?? []);
+      })
+      .catch(() => undefined);
+  }
 
   const meta = CATEGORY_META[itemCategory];
   const draft = drafts[itemCategory] ?? EMPTY_DRAFT;
@@ -112,6 +124,7 @@ export default function Home() {
         const latest = requested ?? builds[0];
         if (latest) {
           setBuild(latest);
+          loadCheckHistory(latest.id);
           setMessage(
             requested
               ? `已从方案库打开「${latest.name}」，共 ${latest.items.length} 个配件。`
@@ -222,6 +235,7 @@ export default function Home() {
     const target = projects.find((project) => project.id === id);
     if (!target || target.id === build?.id) return;
     setBuild(target);
+    loadCheckHistory(target.id);
     setFindings([]);
     setResultMeta(null);
     setConfirmDelete(false);
@@ -470,6 +484,7 @@ export default function Home() {
       setProjects((prev) => prev.map((project) => (project.id === updated.id ? updated : project)));
       setFindings(data.findings);
       setResultMeta({ time: "刚刚更新", stale: false });
+      loadCheckHistory(updated.id);
       setMessage(
         data.findings.some((finding: Finding) => finding.status === "block")
           ? "检查完成：存在阻断问题，请先处理。"
@@ -876,6 +891,22 @@ export default function Home() {
               <p className="empty-line">
                 尚无检查结果。录入配件后点右上角「运行兼容性检查 ↗」，结论会按阻断、待补充、警告、通过排列。
               </p>
+            )}
+            {checkHistory.length > 0 && (
+              <details className="check-history">
+                <summary>检查历史 · {checkHistory.length} 次</summary>
+                <ul>
+                  {checkHistory.map((run) => (
+                    <li key={run.id}>
+                      <time>{formatTime(run.createdAt)}</time>
+                      <span>
+                        阻断 {run.counts.block} · 待补充 {run.counts.unknown} · 警告 {run.counts.warn} · 通过{" "}
+                        {run.counts.pass}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             )}
           </section>
         </div>

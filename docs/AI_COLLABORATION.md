@@ -3,16 +3,16 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-23 ｜ 当前阶段：**M32 版本差异 + DIY 渐进披露已上线**——修订后的方案页直接显示"相对上一版改了哪些件"（换件/新增/不再购置），高级 DIY 诊断在有问题时把通过项折叠成一行（全通过时照常展开）。此前 M27-M31：目标驱动垂直切片 + 自有规格库 + LLM 意图解析 + 自然语言修订。下一步 M33 产品化收口。
+> 最后更新：2026-09-24 ｜ 当前阶段：**M33 产品化收口完成**——检查历史时间线、品牌 favicon（脚手架 SVG 已清）、路由级 loading/error/404、Dockerfile 部署准备、真实浏览器多状态视觉验收（修复窄屏导航竖排折行 bug）。V2 主链路完整：目标 → 方案 → 对话式修订（版本差异）→ 接受 → DIY（渐进披露）→ 报告。
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
 ---
 
-## 0. 交接快照（2026-09-23 M28 垂直切片上线后状态，新窗口先读这节）
+## 0. 交接快照（2026-09-24 M33 产品化收口后状态，新窗口先读这节）
 
-- **Git**：工作树干净（M27+M28 已提交推送）；远程 main 同步。
-- **测试基线**：166 单测 + 19 E2E 全绿；lint / typecheck / build 通过。
+- **Git**：工作树干净（M27-M33 全部提交）；远程 main 同步。
+- **测试基线**：166 单测 + 19 E2E 全绿（含检查历史断言）；lint / typecheck / build 通过；8 状态截图视觉验收通过（桌面 1280 + 窄屏 390，截图目录 D:/tmp/rigmate-shots2/）。
 - **本机注意事项**：
   - E2E 需 `RIGMATE_E2E_EXECUTABLE_PATH`（见 §6）；**E2E 必须在"静默机器"上跑**——若同机还有 dev server/构建在跑，会出现 5 倍耗时与超时雪崩（2026-09-22 实证，两个假失败由此而来，清场重跑即绿）；
   - E2E webServer 是 `next dev`（3100 端口，`reuseExistingServer: true`），**新路由首次访问有编译延迟**，断言默认 5s 超时；
@@ -29,7 +29,7 @@
 - **数据现状（M29 后）**：自有规格库 `canonical_products` 表（v7 迁移）为运行时首选——`npm run catalog:db` 一键把 种子 34 + 人工 49 + BuildCores 26,121 清洗入库（幂等，同 id 先到先得）；库为空时自动回退 JSON 三层合并（历史行为）。ZOL 补缺走 `npm run catalog:db -- --update <file>`（只填缺失字段、不覆盖已核值、不允许静默创建新品）。字段纪律 = 只存决策字段（specs.ts 每类 2-8 个）+ 可选 refUrl；商品页链接缺失时前端按型号拼京东搜索链接兜底（只链不爬）。上游克隆在 `data/buildcores-open-db/`；规格查证剩余字段等搜索配额 2026-09-28 重置后补查。
 - **架构决策（2026-09-23）**：评估并否决"整体套用 zai-org/ZCode 开源工作台改造 UI"——产品对象不匹配/集成重量失控/深色 IDE 风是已否决路线（ADR §3.6）；允许逐件拆用 Vercel `ai-elements`（Apache-2.0，npm 独立包）做 M30+ 副驾组件。
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
-- **下一项工作（M33）**：产品化收口——检查历史时间线（check_runs 已落库只缺界面）、品牌资产（logo/favicon，清掉 public/ 脚手架 SVG）、路由级 loading/error 态、真实浏览器多状态视觉验收（桌面+窄屏）、部署准备（Dockerfile）。
+- **下一项工作**：V2 已完成第一轮闭环（M27-M33）。候选方向：① 部署实测（Dockerfile 已备未实测——本机无 Docker）；② 修订历史版本切换查看（旧版方案已全量落库）；③ 国产目录扩充（ZOL 补缺通道已就绪，等配额/样本）；④ 副驾自由对话（ai-elements 组件 + M30 适配器已就位）；⑤ 20 份样本收集收尾 + 用户访谈。
 - **前端所有权**：归 AI 窗口（全栈）。
 
 ## 1. 一分钟了解项目
@@ -332,6 +332,14 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - **DIY 渐进披露**：诊断区把 findings 拆为问题（阻断/待补充/警告）与通过两组——**有问题时**通过项折叠进 `<details>`（"通过 N 项 · 无需处理的结论已折叠"，点开查看）；**全部通过时**照常展开（干净结果不需要藏，也保住 E2E 对通过结论的断言语义）。计数章（阻断 N / 通过 N）始终完整可见。
 - **测试**：design-diff 3 条（换件/移除与新增/首版为空）+ design-service 断言升级（跨档位修订 diff 含 4060、仅预算未跨档 diff 为空——"没变化就不造变化"、已有硬件 diff 标记不再购置）+ design.spec 修订用例升级（断言差异区含 4070 SUPER→RTX 4060）；**166 单测 + 19 E2E 全绿**。踩坑：diff 列表按 cpu→case 类别序，`.first()` 断言别假设显卡在前。
 
+### M33（2026-09-24）产品化收口（本窗口）
+- **检查历史时间线**：仓储 `listCheckRunSummaries`（最近 8 次检查的状态计数摘要，不带完整 findings）+ GET /api/builds/[id]/check/history + 服务 `getCheckHistory`；DIY 诊断区底部折叠区"检查历史 · N 次"（默认收起，时间 + 阻断/待补充/警告/通过计数），创建/切换/运行检查三处时机刷新；E2E 补断言（展开含"阻断 1"）。
+- **品牌资产**：`src/app/icon.svg`（墨黑底 + 白色等宽 R + 仪器橙角标，Next 自动作 favicon）；删除 public/ 全部脚手架 SVG（file/globe/next/vercel/window），留 .gitkeep。
+- **路由级状态页**：app/loading.tsx（quiet 步进指示）、error.tsx（重试 + 回首页，client）、not-found.tsx（回首页）；样式 .route-loading 体系。
+- **部署准备**：Dockerfile（node:24-slim 两阶段，builder 含 better-sqlite3 原生编译工具链，VOLUME /app/data，RIGMATE_DB_PATH 指向卷）+ .dockerignore。**诚实注记：本机无 Docker 未实测构建，首次部署按需调试**。
+- **真实浏览器视觉验收（8 状态，Playwright 截图人工比对）**：首页桌面/窄屏、方案 v1/v2-diff 桌面+窄屏、DIY 桌面/窄屏、方案库、404。**发现并修复真 bug：390px 窄屏导航文字竖排折行**（nav-shell 无移动端处理）——修复：导航允许换行平铺 + white-space: nowrap。
+- **踩坑（环境非产品）**：临时脚本直接 playwright.launch 时页面客户端 fetch 挂起（SSR 正常、无 JS 错误、HMR ws 报 ERR_INVALID_HTTP_RESPONSE，疑与临时浏览器网络环境有关）；改用验证过的 Playwright Test 基建截图即正常——**视觉验收一律走 E2E 基建**。另：Git Bash curl 发中文 JSON 会 GBK 乱码（服务端正确收到乱码并诚实 needs_input），测试中文接口用 node fetch 或浏览器。
+
 ## 5. 代码地图
 
 ```text
@@ -456,6 +464,7 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-09-24 v3.13：M33 产品化收口——检查历史时间线（仓储摘要 + /check/history + DIY 折叠区）+ 品牌 favicon（icon.svg，脚手架 SVG 清理）+ 路由级 loading/error/404 + Dockerfile/.dockerignore（未实测，注记诚实）+ 8 状态截图视觉验收（修复窄屏导航竖排折行真 bug）；166 单测 + 19 E2E。
 - 2026-09-23 v3.12：M32 版本差异对比 + DIY 渐进披露——diffProposals 按类别对比相邻版本（无上一版返回空）+ DesignResult.changes 全路径装配 + 方案页"相对上一版的变化"区（换件/新增/不再购置）+ DIY 诊断通过项折叠（问题存在时收起、全通过时展开）；166 单测 + 19 E2E。
 - 2026-09-23 v3.11：M31 自然语言修订方案上线——规则式修订（预算/已有硬件两类，歧义不猜）+ LLM 修订（改写完整意图）+ 双轨降级 + 诚实追问 + 方案版本化（version 递增/旧版标记 replaced）+ 生成器支持排除已有硬件类别 + 方案页侧栏调整输入；162 单测 + 19 E2E。
 - 2026-09-23 v3.10：M30 可插拔 LLM 意图解析上线——src/infra/llm OpenAI 兼容适配器（结构化输出+超时+无 key 关闭）+ LLM 意图解析（显式预算优先、Zod 校验、失败降级规则解析）+ createDesignRequest 异步化 + 活动流如实标注理解模式与事实纪律；150 单测 + 17 E2E。

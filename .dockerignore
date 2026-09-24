@@ -1,0 +1,11 @@
+node_modules
+.next
+.next-e2e
+.git
+data
+test-results
+docs
+samples
+*.md
+.env
+.env.local

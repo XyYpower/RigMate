@@ -17,11 +17,13 @@ import {
   findBuildById,
   findAllBuilds,
   findLatestCheckRun,
+  listCheckRunSummaries,
   saveBuild,
   saveBuildItem,
   saveCheckRun,
   setBuildStatus,
   updateBuildItemRow,
+  type CheckRunSummary,
 } from "@/infra/db/repositories/build-repository";
 
 function now(): string {
@@ -133,6 +135,12 @@ export function getLatestCheck(buildId: string): LatestCheck | null {
 
 export function deleteBuild(id: string): void {
   deleteBuildRow(id);
+}
+
+/** 检查历史时间线（M33）：最近 N 次检查的状态计数摘要 */
+export function getCheckHistory(buildId: string): CheckRunSummary[] {
+  if (!findBuildById(buildId)) throw new Error("BUILD_NOT_FOUND");
+  return listCheckRunSummaries(buildId);
 }
 
 export const buildIdSchema = z.string().uuid();

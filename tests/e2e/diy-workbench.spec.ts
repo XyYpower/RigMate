@@ -25,6 +25,10 @@ test("DIY 清单可以检查 CPU 与主板插槽冲突", async ({ page }) => {
   await expect(page.getByText("CPU 插槽 AM5 与主板插槽 LGA1700 不匹配。")).toBeVisible();
   await expect(page.getByText("R-CPU-MB-001")).toBeVisible();
   await expect(page.getByText("阻断 1", { exact: true })).toBeVisible();
+
+  // 检查历史时间线（M33）：默认折叠，展开可见本次检查的计数摘要
+  await page.locator(".check-history summary").click();
+  await expect(page.locator(".check-history li").first()).toContainText("阻断 1");
 });
 
 test("DIY 清单可以检查内存代际冲突", async ({ page }) => {

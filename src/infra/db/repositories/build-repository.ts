@@ -7,6 +7,7 @@ import {
   type BuildItem,
   type BuildStatus,
   type Finding,
+  type FindingStatus,
 } from "@/domain/build/types";
 import { buildItems, builds, checkRuns, ensureDatabase, findings } from "../client";
 
@@ -170,4 +171,40 @@ export function deleteBuildRow(id: string): void {
   db.run(sql`DELETE FROM check_runs WHERE build_id = ${id}`);
   db.run(sql`DELETE FROM build_items WHERE build_id = ${id}`);
   db.run(sql`DELETE FROM builds WHERE id = ${id}`);
+}
+
+export type CheckRunSummary = {
+  id: string;
+  createdAt: string;
+  counts: Record<FindingStatus, number>;
+};
+
+/** 检查历史时间线（M33）：最近 N 次检查的按状态计数摘要，不携带完整 findings */
+export function listCheckRunSummaries(buildId: string, limit = 8): CheckRunSummary[] {
+  const db = ensureDatabase();
+  const runs = db
+    .select({ id: checkRuns.id, createdAt: checkRuns.createdAt })
+    .from(checkRuns)
+    .where(eq(checkRuns.buildId, buildId))
+    .orderBy(desc(checkRuns.createdAt))
+    .limit(limit)
+    .all();
+  return runs.map((run) => {
+    const rows = db
+      .select({ status: findings.status })
+      .from(findings)
+      .where(eq(findings.checkRunId, run.id))
+      .all();
+    const counts: Record<FindingStatus, number> = {
+      pass: 0,
+      block: 0,
+      warn: 0,
+      unknown: 0,
+      not_applicable: 0,
+    };
+    for (const row of rows) {
+      if (row.status in counts) counts[row.status as FindingStatus] += 1;
+    }
+    return { id: run.id, createdAt: run.createdAt, counts };
+  });
 }
