@@ -3,7 +3,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-23 ｜ 当前阶段：**自有规格库落库（M29）**——`canonical_products` 表上线，存量三层目录清洗入库，运行时查库优先/JSON 兜底；ZOL 补缺更新通道与商品页链接就绪。此前 M27+M28 完成产品方向重校准与目标驱动垂直切片。下一步 M30 接可插拔 LLM。
+> 最后更新：2026-09-23 ｜ 当前阶段：**M30 LLM 意图解析已上线**——`src/infra/llm/` OpenAI 兼容适配器就绪（配 `RIGMATE_LLM_API_KEY` 即启用，不配/失败自动降级本地规则），编排层异步化，活动流如实标注理解模式与"事实由规则引擎核验"。此前 M27-M29：目标驱动垂直切片 + 自有规格库落库。下一步 M31 自然语言修订方案。
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
@@ -12,7 +12,7 @@
 ## 0. 交接快照（2026-09-23 M28 垂直切片上线后状态，新窗口先读这节）
 
 - **Git**：工作树干净（M27+M28 已提交推送）；远程 main 同步。
-- **测试基线**：136 单测 + 17 E2E 全绿；lint / typecheck / build 通过。
+- **测试基线**：150 单测 + 17 E2E 全绿；lint / typecheck / build 通过。
 - **本机注意事项**：
   - E2E 需 `RIGMATE_E2E_EXECUTABLE_PATH`（见 §6）；**E2E 必须在"静默机器"上跑**——若同机还有 dev server/构建在跑，会出现 5 倍耗时与超时雪崩（2026-09-22 实证，两个假失败由此而来，清场重跑即绿）；
   - E2E webServer 是 `next dev`（3100 端口，`reuseExistingServer: true`），**新路由首次访问有编译延迟**，断言默认 5s 超时；
@@ -29,7 +29,7 @@
 - **数据现状（M29 后）**：自有规格库 `canonical_products` 表（v7 迁移）为运行时首选——`npm run catalog:db` 一键把 种子 34 + 人工 49 + BuildCores 26,121 清洗入库（幂等，同 id 先到先得）；库为空时自动回退 JSON 三层合并（历史行为）。ZOL 补缺走 `npm run catalog:db -- --update <file>`（只填缺失字段、不覆盖已核值、不允许静默创建新品）。字段纪律 = 只存决策字段（specs.ts 每类 2-8 个）+ 可选 refUrl；商品页链接缺失时前端按型号拼京东搜索链接兜底（只链不爬）。上游克隆在 `data/buildcores-open-db/`；规格查证剩余字段等搜索配额 2026-09-28 重置后补查。
 - **架构决策（2026-09-23）**：评估并否决"整体套用 zai-org/ZCode 开源工作台改造 UI"——产品对象不匹配/集成重量失控/深色 IDE 风是已否决路线（ADR §3.6）；允许逐件拆用 Vercel `ai-elements`（Apache-2.0，npm 独立包）做 M30+ 副驾组件。
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
-- **下一项工作（M30）**：`src/infra/llm/` OpenAI-compatible adapter（建议直接用 Vercel AI SDK 作库；结构化输出 + Zod 校验 + 超时 + 无 key 降级到规则式生成），`src/application/design/` 编排接入意图解析与候选解释；副驾对话组件可从 `ai-elements`（Apache-2.0）逐件挑选 reskin 为仪器白。之后 M31 自然语言修订、M32 DIY 信息渐进披露。
+- **下一项工作（M31）**：自然语言修订方案——用户说"显卡换白色/预算压到 1.8 万/我已有电源"，Agent 生成方案新版本（修订走 LLM 建议 + 规则校验 + 版本对比），方案页展示版本差异；之后 M32 DIY 信息渐进披露、M33 产品化收口。
 - **前端所有权**：归 AI 窗口（全栈）。
 
 ## 1. 一分钟了解项目
@@ -308,6 +308,15 @@ CSS 变量与语义色不变（`--rm-*` 体系延续）；`finding-card` / `stat
 - **测试**：catalog-db.test.ts 6 条（first-wins/来源排序/补缺不覆盖/未命中与坏补丁拒绝/查库加载/写入校验）+ migrate 表清单；**136 单测全绿**。
 - **UI 舒适度打磨（用户确认"不照搬 ZCode、借鉴 ai-elements"）**：首页目标输入加**起步示例条**（三条真实示例点击填入，借鉴 ai-elements 的 suggestion 模式）与生成中**步进指示器**（理解目标→检索目录→搭配方案，借鉴 loader 模式）；方案页加载态复用同一套 `.agent-progress` 语言。全部以 `--rm-*` token 手写实现，零新依赖，支持 prefers-reduced-motion。
 
+### M30（2026-09-23）可插拔 LLM 意图解析（本窗口）
+"模型只理解目标，事实仍归规则引擎"——LLM 的第一块正式职责：
+
+- **适配器** `src/infra/llm/client.ts`：OpenAI 兼容 `/chat/completions`；`resolveLlmConfigFromEnv`（无 `RIGMATE_LLM_API_KEY` = 关闭）；`completeJson` 结构化输出（剥代码围栏 + Zod 校验，不合格按失败）；AbortController 超时（默认 12s）；失败不重试（快速降级优于等待）；错误信息永不含密钥。
+- **LLM 意图解析** `src/application/design/intent-llm.ts`：中文提示词约束只回 JSON；输出 schema（budgetYuan/useCases/appearance/existingParts/constraints/region）；**表单显式预算优先于模型提取**；解析结果映射为 `StructuredIntent`（cents）。
+- **编排接入**：`createDesignRequest` 异步化（API route 已 await）——配 key 走模型、失败/没配自动落回 `parseDesignIntent` 规则解析；活动流如实标注：`大模型（model）已解析预算、用途与偏好` / `大模型不可用（原因），已用本地规则理解目标` / `本地规则理解目标（未配置大模型）`；新增事实纪律事件 `候选、价格与兼容事实由本地目录和规则引擎核验，模型不参与事实判断`。
+- **配置**：`.env.example` 新增 `RIGMATE_LLM_API_KEY / BASE_URL / MODEL / TIMEOUT_MS`（任何 OpenAI 兼容端点可用，含网关/中转）。
+- **测试**：llm-client 9 条（配置默认值/剥围栏/服务报错/schema 拒绝/网络失败/超时中断/错误不含密钥）+ design-llm-intent 3 条（中文解析、显式预算优先、编造字段拒绝）+ design-service 2 条（无 LLM 全链路回归、接受幂等）；**150 单测全绿**。
+
 ## 5. 代码地图
 
 ```text
@@ -432,6 +441,7 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-09-23 v3.10：M30 可插拔 LLM 意图解析上线——src/infra/llm OpenAI 兼容适配器（结构化输出+超时+无 key 关闭）+ LLM 意图解析（显式预算优先、Zod 校验、失败降级规则解析）+ createDesignRequest 异步化 + 活动流如实标注理解模式与事实纪律；150 单测 + 17 E2E。
 - 2026-09-23 v3.9.1：UI 舒适度打磨——首页起步示例条 + 生成中步进指示器 + 方案页加载态（借鉴 Vercel ai-elements 模式，仪器白 token 实现，零依赖）；136 单测 + 17 E2E。
 - 2026-09-23 v3.9：M29 自有规格库落库——v7 迁移 canonical_products 表 + 仓储（first-wins 入库/补缺更新只填空位/双端 schema 校验）+ `npm run catalog:db` 初始化与 --update 补缺 CLI + 运行时查库优先/JSON 兜底 + 商品页链接（refUrl + 京东搜索兜底，只链不爬）+ 数据红线修订（ZOL 参数离线导入允许）；评估并否决整体套用 zai-org/ZCode（ADR §3.6），M30 组件候选锁定 Vercel ai-elements（Apache-2.0）；136 单测。
 - 2026-09-23 v3.8：M27 产品方向重校准 + M28 目标驱动垂直切片上线——业务规格 V2 / 布局规划 v2 / 视觉母版重写（文档层）；`/` 自然语言目标入口 + `/design/[id]` 审阅工作台 + v6 迁移五表（design_requests/proposals/items/agent_runs/events）+ 意图解析与预算分档生成（规则式，LLM 未接，界面如实标注"经验估算/本地目录按档位挑选"）+ 接受幂等与冲突 409 + 旧工作台迁 `/diy`；修复 IAB 受控输入不同步（FormData 原生提交兜底）；130 单测 + 17 E2E。

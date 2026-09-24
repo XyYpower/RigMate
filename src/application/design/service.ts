@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { designRequestInputSchema, type AgentEvent, type AgentRun, type DesignRequest, type DesignResult } from "@/contracts/design";
 import { loadSourcedCatalog } from "@/infra/catalog-import/load";
+import { resolveLlmConfigFromEnv } from "@/infra/llm/client";
+import { parseIntentWithLlm } from "./intent-llm";
 import { parseDesignIntent, intentNeedsInput } from "@/domain/design/intent";
 import { generateDesignProposal } from "@/domain/design/proposal";
 import {
@@ -42,11 +44,30 @@ function createRun(requestId: string): { run: AgentRun; events: AgentEvent[] } {
   };
 }
 
-export function createDesignRequest(input: unknown): DesignResult {
+export async function createDesignRequest(input: unknown): Promise<DesignResult> {
   const data = designRequestInputSchema.parse(input);
   const requestId = randomUUID();
   const timestamp = now();
-  const intent = parseDesignIntent(data);
+  // 意图理解：配了 LLM 用模型（失败自动降级），没配直接走本地规则——两条路都如实告知用户
+  const llmConfig = resolveLlmConfigFromEnv();
+  let intent;
+  let intentNote = "本地规则理解目标（未配置大模型）。";
+  if (llmConfig) {
+    const llmResult = await parseIntentWithLlm({
+      rawInput: data.rawInput,
+      explicitBudgetYuan: data.budgetCents !== null && data.budgetCents !== undefined ? data.budgetCents / 100 : null,
+      config: llmConfig,
+    });
+    if (llmResult.ok) {
+      intent = llmResult.data;
+      intentNote = `大模型（${llmConfig.model}）已解析预算、用途与偏好。`;
+    } else {
+      intent = parseDesignIntent(data);
+      intentNote = `大模型不可用（${llmResult.reason}），已用本地规则理解目标。`;
+    }
+  } else {
+    intent = parseDesignIntent(data);
+  }
   const request: DesignRequest = {
     id: requestId,
     rawInput: data.rawInput,
@@ -59,7 +80,7 @@ export function createDesignRequest(input: unknown): DesignResult {
 
   const { run, events } = createRun(requestId);
   events.push(event(run.id, "understanding", "started", "正在理解预算、用途和外观偏好。"));
-  events.push(event(run.id, "understanding", "completed", "已整理目标和主要取舍。"));
+  events.push(event(run.id, "understanding", "completed", intentNote));
   if (intentNeedsInput(intent)) {
     events.push(event(run.id, "question", "waiting", "还缺少预算或用途，补充一句目标后我才能开始搭配。"));
     run.status = "completed";
@@ -75,6 +96,7 @@ export function createDesignRequest(input: unknown): DesignResult {
   events.push(event(run.id, "composing", "completed", `已生成 ${generated.proposal.items.length} 个核心配件候选。`));
   events.push(event(run.id, "validating", "started", "正在自动检查主要硬件之间的兼容关系。"));
   events.push(event(run.id, "validating", "completed", generated.proposal.compatibility.message));
+  events.push(event(run.id, "validating", "completed", "候选、价格与兼容事实由本地目录和规则引擎核验，模型不参与事实判断。"));
   events.push(event(run.id, "completed", "completed", "方案已准备好，可以接受、调整或进入高级 DIY。"));
 
   saveDesignProposal(generated.proposal);
