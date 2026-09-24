@@ -49,6 +49,7 @@ npm run test:e2e
 - [系统布局规划 V2](./docs/design/10-系统布局规划.md)
 - [视觉母版索引](./docs/design/README.md)
 - [AI 协同开发报告](./docs/AI_COLLABORATION.md)
+- [V2 产品成型设计与阶段路线](./docs/superpowers/specs/2026-09-24-v2-product-design.md)
 
 ## 产品边界
 
