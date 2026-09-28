@@ -10,6 +10,8 @@
 - 产品业务边界：docs/PC_DIY_装机助手_业务逻辑规格_v1.md
 - Agent 技术设计：docs/AGENT_TECHNICAL_DESIGN.md
 - 数据来源与质量体系：docs/DATA_PROVENANCE_AND_QUALITY.md
+- 数据运营与审核手册：docs/DATA_OPERATIONS_PLAYBOOK.md
+- 数据质量实施计划：docs/superpowers/plans/2026-09-28-data-quality-implementation.md
 - Agent 平台执行计划：docs/superpowers/plans/2026-09-28-rigmate-agent-platform.md
 - Agent 详细设计索引：docs/agent/README.md
 - Agent 详细实现计划：docs/superpowers/plans/2026-09-28-agent-detailed-implementation.md
