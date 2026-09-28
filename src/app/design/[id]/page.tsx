@@ -3,8 +3,15 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { productPageUrl } from "@/ui/product-link";
-import type { DesignProposal, DesignResult, ProposalItem } from "@/contracts/design";
+import { AgentProgressCard, toTimelineSteps } from "@/ui/workbench/agent-progress-card";
+import { BuildPartsTable } from "@/ui/workbench/build-parts-table";
+import { BuildSummaryCard } from "@/ui/workbench/build-summary-card";
+import { DecisionBanner } from "@/ui/workbench/decision-banner";
+import { RequirementCard } from "@/ui/workbench/requirement-card";
+import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
+import { formatYuanParts } from "@/ui/workbench/format";
+import type { DesignResult } from "@/contracts/design";
+import { workspaceStatusOf } from "@/ui/workbench/types";
 import { diffProposals } from "@/domain/design/diff";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -14,18 +21,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   ram: "内存",
   storage: "存储",
   psu: "电源",
-  cooler: "散热",
+  cooler: "散热器",
   case: "机箱",
 };
-
-function formatYuan(cents: number | null): string {
-  return cents === null ? "待估" : `¥${(cents / 100).toLocaleString("zh-CN", { maximumFractionDigits: 0 })}`;
-}
-
-function itemRange(item: ProposalItem): string {
-  if (item.priceEstimateLowCents === null || item.priceEstimateHighCents === null) return "价格待确认";
-  return `${formatYuan(item.priceEstimateLowCents)}–${formatYuan(item.priceEstimateHighCents)}`;
-}
 
 export default function DesignPage() {
   const router = useRouter();
@@ -58,7 +56,7 @@ export default function DesignPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  const proposal: DesignProposal | null = result?.proposal ?? null;
+  const proposal = result?.proposal ?? null;
   const viewedProposal = result && viewedVersion !== null
     ? result.versions.find((version) => version.version === viewedVersion) ?? proposal
     : proposal;
@@ -68,9 +66,10 @@ export default function DesignPage() {
       ? diffProposals(result?.versions.find((version) => version.version === viewedProposal.version - 1) ?? null, viewedProposal)
       : (result?.changes ?? []))
     : [];
-  const estimateLabel = useMemo(() => {
-    if (!viewedProposal || viewedProposal.estimatedLowCents === null || viewedProposal.estimatedHighCents === null) return "暂无足够资料估算总价";
-    return `${formatYuan(viewedProposal.estimatedLowCents)}–${formatYuan(viewedProposal.estimatedHighCents)}`;
+  const compatibility = viewedProposal?.compatibility;
+  const estimateMidpoint = useMemo(() => {
+    if (!viewedProposal || viewedProposal.estimatedLowCents === null || viewedProposal.estimatedHighCents === null) return null;
+    return Math.round((viewedProposal.estimatedLowCents + viewedProposal.estimatedHighCents) / 2);
   }, [viewedProposal]);
 
   async function acceptProposal(openDiy = false) {
@@ -85,7 +84,7 @@ export default function DesignPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "接受方案失败。");
-      router.push(openDiy ? `/diy?project=${data.buildId}` : `/diy?project=${data.buildId}`);
+      router.push(`/diy?project=${data.buildId}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "接受方案失败，请重试。");
       setAccepting(false);
@@ -94,7 +93,7 @@ export default function DesignPage() {
 
   async function submitRevision(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const instruction = String(new FormData(event.currentTarget).get("instruction") ?? "").trim();
+    const instruction = revision.trim();
     if (!instruction || revising) return;
     setRevising(true);
     setRevisionMessage("");
@@ -141,32 +140,56 @@ export default function DesignPage() {
   if (!proposal || !viewedProposal) {
     return (
       <main className="design-page">
-        <p className="design-kicker">目标已收到</p>
         <h1>还差一点信息</h1>
-        <p className="design-summary">{result.run.events.find((event) => event.type === "question")?.message ?? "请补充预算或主要用途，我就能开始搭配。"}</p>
+        <p>{result.run.events.find((event) => event.type === "question")?.message ?? "请补充预算或主要用途，我就能开始搭配。"}</p>
         <Link className="button secondary" href="/">补充目标</Link>
       </main>
     );
   }
 
-  const statusLabel = {
-    ok: "主要硬件可行",
-    attention: "有取舍需要留意",
-    conflict: "存在兼容冲突",
-    unknown: "有资料需要确认",
-  }[viewedProposal.compatibility.status];
+  const status = workspaceStatusOf(viewedProposal);
+  const pendingItems = viewedProposal.items.filter((item) => item.confirmationRequired);
+  const revisionForm = (
+    <form className="header-revision" onSubmit={(event) => void submitRevision(event)}>
+      <label className="sr-only" htmlFor="header-revision-input">继续调整这套方案</label>
+      <input
+        id="header-revision-input"
+        name="instruction"
+        value={revision}
+        onChange={(event) => setRevision(event.target.value)}
+        onInput={(event) => setRevision(event.currentTarget.value)}
+        placeholder="继续调整这套方案，例如：换成白色显卡，预算不要超过 2 万"
+        maxLength={500}
+        disabled={revising || isHistoryView}
+      />
+      <button className="button primary header-revision-submit" type="submit" disabled={revising || revision.trim().length < 2} aria-label="提交修改">
+        {revising ? "…" : <span aria-hidden>→</span>}
+      </button>
+    </form>
+  );
+
+  const requirementItems = [
+    { label: "预算", value: viewedProposal.budgetCents !== null ? `${formatYuanParts(viewedProposal.budgetCents)} 以内` : "从描述中识别" },
+    { label: "主要用途", value: result.request.intent.useCases.join(" / ") || "未指定" },
+    {
+      label: "外观偏好",
+      value: result.request.intent.appearance.join(" / ") || "未指定",
+    },
+    {
+      label: "特殊要求",
+      value: [...result.request.intent.existingParts, ...result.request.intent.constraints].join(" / ") || "兼容性好，稳定耐用",
+    },
+  ];
 
   return (
     <main className="design-page">
-      <header className="design-header">
-        <div>
-          <p className="design-kicker">方案草稿 · 第 {viewedProposal.version} 版</p>
-          <h1>{viewedProposal.title}</h1>
-          <p className="design-summary">{viewedProposal.summary}</p>
-        </div>
-        <div className="design-header-actions">
+      <WorkspaceHeader
+        title={<>{viewedProposal.title} <span className="header-title-version">· 方案 v{viewedProposal.version}{isHistoryView ? " · 历史版本" : ""}</span></>}
+        status={status}
+        center={!isHistoryView ? revisionForm : <span className="history-banner">正在查看历史版本，切回最新版后可继续修改</span>}
+        actions={
           <label className="version-picker">
-            <span>方案版本</span>
+            <span className="sr-only">方案版本</span>
             <select
               aria-label="方案版本"
               value={String(viewedProposal.version)}
@@ -179,54 +202,23 @@ export default function DesignPage() {
               ))}
             </select>
           </label>
-          <Link className="design-back" href="/projects">我的方案</Link>
-        </div>
-      </header>
+        }
+      />
 
-      <div className="design-grid">
-        <section className="proposal-main" aria-labelledby="proposal-title">
-          <div className="proposal-overview">
-            <div>
-              <span className="overview-label">预算估算</span>
-              <strong className="proposal-range">{estimateLabel}</strong>
-              <span className="estimate-note">经验估算，非实时成交价</span>
-            </div>
-            <div className={`compatibility-state ${viewedProposal.compatibility.status}`}>
-              <span>{statusLabel}</span>
-              <p>{viewedProposal.compatibility.message}</p>
-            </div>
-          </div>
+      <div className="page-grid">
+        <div className="page-main">
+          <BuildSummaryCard proposal={viewedProposal} />
 
-          <div className="proposal-section-heading">
-            <h2 id="proposal-title">建议配置</h2>
-            <span>{viewedProposal.items.length} 个核心配件</span>
-          </div>
-          <div className="proposal-items">
-            {viewedProposal.items.map((item) => (
-              <article className="proposal-item" key={`${item.category}-${item.catalogId ?? item.label}`}>
-                <div className="proposal-category">{CATEGORY_LABELS[item.category] ?? item.category}</div>
-                <div className="proposal-item-main">
-                  <h3>{item.label}</h3>
-                  <p>{item.rationale}</p>
-                  {item.confirmationRequired && <p className="proposal-confirmation">需要确认：{item.confirmationReason}</p>}
-                  <details className="proposal-item-evidence">
-                    <summary>查看依据</summary>
-                    <p>{item.sourceLevel === "verified_catalog" ? "已核目录型号" : `来源：${item.sourceLevel}`}</p>
-                    {item.catalogId && <p>型号 ID：<span className="mono">{item.catalogId}</span></p>}
-                    <p>价格：{item.priceBasis === "experience_estimate" ? "经验估算，非实时成交价" : item.priceBasis}</p>
-                  </details>
-                </div>
-                <div className="proposal-item-price">
-                  <span>{itemRange(item)}</span>
-                  <small>经验估算</small>
-                  <a href={productPageUrl(item.label)} target="_blank" rel="noreferrer">商品页 ↗</a>
-                </div>
-              </article>
-            ))}
-          </div>
+          <section className="wb-panel build-parts-section" aria-labelledby="parts-title">
+            <div className="build-parts-section-head">
+              <h2 id="parts-title">配置清单</h2>
+              <span>可展开调整</span>
+            </div>
+            <BuildPartsTable items={viewedProposal.items} />
+          </section>
 
           {viewedProposal.version > 1 && changes.length > 0 && (
-            <section className="proposal-diff" aria-labelledby="diff-title">
+            <section className="wb-panel proposal-diff" aria-labelledby="diff-title">
               <h2 id="diff-title">相对第 {viewedProposal.version - 1} 版的变化</h2>
               <ul>
                 {changes.map((change) => (
@@ -241,85 +233,76 @@ export default function DesignPage() {
             </section>
           )}
 
-          <section className="proposal-notes">
-            <h2>为什么这样搭配</h2>
-            <ul>{viewedProposal.fitNotes.map((note) => <li key={note}>{note}</li>)}</ul>
-          </section>
-          <section className="proposal-notes">
-            <h2>取舍说明</h2>
-            <ul>{viewedProposal.tradeoffs.map((note) => <li key={note}>{note}</li>)}</ul>
-          </section>
-          {viewedProposal.unknowns.length > 0 && (
-            <details className="proposal-evidence">
-              <summary>查看需要核实的资料与依据</summary>
-              <ul>{viewedProposal.unknowns.map((item) => <li key={item}>{item}</li>)}</ul>
-              <p>兼容性检查结果、缺失字段和规则编号会在正式 DIY 与报告中完整保留。</p>
-            </details>
+          {!isHistoryView && pendingItems.length > 0 && (
+            <DecisionBanner
+              title={pendingItems[0]!.confirmationReason ?? "有配置项需要你确认"}
+              description={`涉及：${pendingItems.map((item) => CATEGORY_LABELS[item.category] ?? item.category).join("、")}。确认后即可接受方案，或在高级 DIY 中更换。`}
+              actions={
+                <>
+                  <button className="button primary" onClick={() => void acceptProposal()} disabled={accepting || compatibility?.status === "conflict"}>
+                    保留当前配置并接受
+                  </button>
+                  <button className="button secondary" onClick={() => void acceptProposal(true)} disabled={accepting}>
+                    进入 DIY 更换
+                  </button>
+                </>
+              }
+            />
           )}
 
-          {!isHistoryView && <section className="revision-composer" aria-labelledby="revision-title">
-            <div className="revision-composer-heading">
-              <div>
-                <span className="overview-label">继续调整</span>
-                <h2 id="revision-title">想改哪里，直接告诉我</h2>
-              </div>
-              <span className="revision-version-note">每次提交都会保留一个新版本</span>
-            </div>
-            <form onSubmit={(event) => void submitRevision(event)}>
-              <label className="sr-only" htmlFor="revision-instruction">继续调整方案</label>
-              <textarea
-                id="revision-instruction"
-                name="instruction"
-                value={revision}
-                onChange={(event) => setRevision(event.target.value)}
-                onInput={(event) => setRevision(event.currentTarget.value)}
-                placeholder="例如：预算压到 1.8 万；我已有电源；更重视剪辑性能……"
-                aria-label="继续调整方案；调整方案"
-                maxLength={500}
-                rows={3}
-                disabled={revising}
-              />
-              <div className="revision-composer-footer">
-                <span>可以继续补充预算、用途、外观或已有硬件</span>
-                <button className="button primary" type="submit" disabled={revising || revision.trim().length < 2}>
-                  {revising ? "正在理解…" : "提交修改"}<span className="sr-only">调整方案</span><span aria-hidden>→</span>
-                </button>
-              </div>
-            </form>
-            {revisionMessage && <p className="revision-feedback" role="status">{revisionMessage}</p>}
-          </section>}
-
-          {isHistoryView && <p className="history-banner" role="status">当前查看的是历史版本。切回最新版本后可以继续修改或接受方案。</p>}
+          <section className="wb-panel design-notes" aria-label="搭配说明与依据">
+            <details>
+              <summary>为什么这样搭配 / 取舍说明</summary>
+              <h3>为什么这样搭配</h3>
+              <ul>{viewedProposal.fitNotes.map((note) => <li key={note}>{note}</li>)}</ul>
+              <h3>取舍说明</h3>
+              <ul>{viewedProposal.tradeoffs.map((note) => <li key={note}>{note}</li>)}</ul>
+              {viewedProposal.unknowns.length > 0 && (
+                <>
+                  <h3>需要核实的资料</h3>
+                  <ul>{viewedProposal.unknowns.map((item) => <li key={item}>{item}</li>)}</ul>
+                </>
+              )}
+            </details>
+          </section>
 
           <div className="proposal-actions">
-            <button className="button primary" onClick={() => void acceptProposal()} disabled={isHistoryView || accepting || viewedProposal.compatibility.status === "conflict"}>
-              {accepting ? "正在保存并检查…" : "接受方案，进入 DIY"}<span aria-hidden>→</span>
-            </button>
-            <button className="button secondary" onClick={() => void acceptProposal(true)} disabled={isHistoryView || accepting}>
-              自己调整配置
-            </button>
+            {!isHistoryView && (
+              <>
+                <button className="button primary" onClick={() => void acceptProposal()} disabled={accepting || compatibility?.status === "conflict"}>
+                  {accepting ? "正在保存并检查…" : "接受这一版"}<span aria-hidden>→</span>
+                </button>
+                <Link className="button secondary" href={`/diy`}>进入高级 DIY</Link>
+              </>
+            )}
             {message && <p className="form-feedback" role="status">{message}</p>}
+            {revisionMessage && <p className="revision-feedback" role="status">{revisionMessage}</p>}
           </div>
-        </section>
+        </div>
 
-        <aside className="agent-activity" aria-labelledby="agent-activity-title">
-          <div className="agent-activity-heading">
-            <h2 id="agent-activity-title">装机助手</h2>
-            <span><i aria-hidden />已完成</span>
-          </div>
-          <p className="agent-goal">“{result.request.rawInput}”</p>
-          <ol>
-            {result.run.events.map((event) => (
-              <li key={event.id} className={`agent-event ${event.status}`}>
-                <span className="agent-event-mark" aria-hidden />
-                <div><p>{event.message}</p><time>{new Date(event.createdAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</time></div>
-              </li>
-            ))}
-          </ol>
-          <div className="agent-next-step">
-            <span>接下来</span>
-            <p>这里记录了这次方案的处理过程。需要查看依据时再展开对应条目。</p>
-          </div>
+        <aside className="workbench-aside page-level">
+          <AgentProgressCard steps={toTimelineSteps(result.run.events)} />
+          <RequirementCard items={requirementItems} />
+          <section className="wb-panel design-status-strip" aria-label="方案状态">
+            <div>
+              <span>预算总价</span>
+              <strong>{estimateMidpoint !== null ? formatYuanParts(estimateMidpoint) : "待估"}</strong>
+            </div>
+            <div>
+              <span>配置件数</span>
+              <strong>{viewedProposal.items.length}</strong>
+            </div>
+            <div>
+              <span>兼容性检查</span>
+              <strong className="design-status-compat">
+                {compatibility ? (
+                  <>
+                    <em className="pass">{compatibility.passCount} 通过</em> · <em className="warn">{compatibility.warnCount + compatibility.unknownCount} 待留意</em> · <em className="block">{compatibility.blockCount} 阻断</em>
+                  </>
+                ) : "—"}
+              </strong>
+            </div>
+          </section>
         </aside>
       </div>
     </main>
