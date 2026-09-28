@@ -1,39 +1,63 @@
 /*
- * RigMate 设计 tokens ——「仪器白」主题
+ * RigMate 设计 tokens ——「三栏工作台」主题（DESIGN.md §2，2026-09-28 定稿）
  *
- * 用户定向（2026-09-20）：亮色、克制、去大众化——不做黑底发光的通用 AI 面板。
- * 方向：精密测量仪器 / 工程规格书（Teenage Engineering 式工业语言）：
- * 暖白面板 + 发丝线 + 墨黑数字 + 仪器橙单一强调色 + 刻度与等宽数字。
- *
- * - --rm- 前缀命名空间；语义色是全站唯一语义色系（诊断卡 / 计数章 / 预算余量计共用）：
- *   pass 绿 · block 红 · warn 琥珀 · unknown 灰（虚线幽灵）· not_applicable 淡灰。
- * - 本文件只定义变量；组件样式在 globals.css，组件内联色全部引用这里的变量。
+ * 视觉事实源：docs/design/reference/*.png；契约：根目录 DESIGN.md。
+ * --wb-* 是新体系（浅灰白画布 + 纯白面板 + 蓝灰墨 + 仪器橙唯一强调）；
+ * --rm-* 保留为兼容别名，逐页面切换到 --wb-* 后删除。
  */
 :root {
-  /* 仪器白基底 */
-  --rm-bg: #e8e6df;
-  --rm-surface: #f7f6f1;
-  --rm-surface-raised: #fffefb;
-  --rm-line: #d6d3c8;
-  --rm-line-strong: #b9b5a7;
-  --rm-ink: #191b19;
-  --rm-ink-muted: #5c615b;
-  --rm-ink-faint: #979c93;
-  --rm-accent: #f4581c; /* 仪器橙：全站唯一强调色 */
+  /* 三栏工作台基底 */
+  --wb-canvas: #f4f5f6;
+  --wb-surface: #ffffff;
+  --wb-surface-subtle: #f8f9fa;
+  --wb-hairline: #e5e7eb;
+  --wb-hairline-strong: #d1d5db;
+  --wb-ink: #111827;
+  --wb-ink-muted: #6b7280;
+  --wb-ink-faint: #9ca3af;
 
-  /* 语义色（实色 + 柔和底） */
-  --rm-pass: #2b8a3e;
-  --rm-pass-soft: rgba(43, 138, 62, 0.1);
-  --rm-block: #d64545;
-  --rm-block-soft: rgba(214, 69, 69, 0.09);
-  --rm-warn: #c77700;
-  --rm-warn-soft: rgba(199, 119, 0, 0.1);
-  --rm-unknown: #7c8288;
-  --rm-unknown-soft: rgba(124, 130, 136, 0.1);
-  --rm-na: #a6a89f;
-  --rm-na-soft: rgba(166, 168, 159, 0.14);
+  /* 仪器橙：唯一主动作色 */
+  --wb-accent: #f4581c;
+  --wb-accent-hover: #e14e12;
+  --wb-accent-soft: #fdeee5;
 
-  /* 动效时长：日常克制，仪式动画单独定义；消费方须响应 prefers-reduced-motion */
-  --rm-fast: 150ms;
-  --rm-slow: 450ms;
+  /* 语义色（实色 + 徽章底）：只表达真实状态 */
+  --wb-pass: #16a34a;
+  --wb-pass-soft: #ecfdf3;
+  --wb-warn: #d97706;
+  --wb-warn-soft: #fffaeb;
+  --wb-block: #dc2626;
+  --wb-block-soft: #fef3f2;
+  --wb-unknown: #6b7280;
+  --wb-unknown-soft: #f3f4f6;
+
+  /* 形状 / 阴影 / 动效 */
+  --wb-radius-panel: 12px;
+  --wb-radius-control: 8px;
+  --wb-shadow-panel: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --wb-fast: 150ms;
+  --wb-slow: 250ms;
+
+  /* ---- 旧「仪器白」兼容别名（消费方迁移到 --wb-* 后删除） ---- */
+  --rm-bg: var(--wb-canvas);
+  --rm-surface: var(--wb-surface);
+  --rm-surface-raised: var(--wb-surface);
+  --rm-line: var(--wb-hairline);
+  --rm-line-strong: var(--wb-hairline-strong);
+  --rm-ink: var(--wb-ink);
+  --rm-ink-muted: var(--wb-ink-muted);
+  --rm-ink-faint: var(--wb-ink-faint);
+  --rm-accent: var(--wb-accent);
+  --rm-pass: var(--wb-pass);
+  --rm-pass-soft: var(--wb-pass-soft);
+  --rm-block: var(--wb-block);
+  --rm-block-soft: var(--wb-block-soft);
+  --rm-warn: var(--wb-warn);
+  --rm-warn-soft: var(--wb-warn-soft);
+  --rm-unknown: var(--wb-unknown);
+  --rm-unknown-soft: var(--wb-unknown-soft);
+  --rm-na: var(--wb-ink-faint);
+  --rm-na-soft: var(--wb-unknown-soft);
+  --rm-fast: var(--wb-fast);
+  --rm-slow: var(--wb-slow);
 }

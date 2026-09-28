@@ -1,13 +1,14 @@
 import { test, expect } from "@playwright/test";
 
-test("M27 产品导航：目标入口、方案库、高级 DIY 与资料区可达", async ({ page }) => {
+test("M35 三栏工作台导航：六区可达", async ({ page }) => {
   await page.goto("/");
   const nav = page.getByRole("navigation");
   await expect(nav.getByRole("link", { name: "开始配置" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "装机方案" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "硬件资料" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "我的方案" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "高级 DIY" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "硬件资料" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "价格证据" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "证据台账" })).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "你想配置一台什么样的电脑？" })).toBeVisible();
   await nav.getByRole("link", { name: "高级 DIY" }).click();
@@ -16,8 +17,11 @@ test("M27 产品导航：目标入口、方案库、高级 DIY 与资料区可�
   await nav.getByRole("link", { name: "硬件资料" }).click();
   await expect(page.getByRole("heading", { name: "硬件中心" })).toBeVisible();
 
-  await nav.getByRole("link", { name: "价格证据" }).click();
+  await nav.getByRole("link", { name: "证据台账" }).click();
   await expect(page.getByRole("heading", { name: "证据台账" })).toBeVisible();
+
+  await nav.getByRole("link", { name: "我的方案" }).click();
+  await expect(page.getByRole("heading", { name: "方案库" })).toBeVisible();
 });
 
 test("M34 硬件资料：先理解类别，再检索具体型号", async ({ page }) => {

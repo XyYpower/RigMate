@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { NavShell } from "@/ui/components/nav-shell";
+import { WorkbenchShell } from "@/ui/workbench/workbench-shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,8 +11,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-CN">
       <body>
-        <NavShell />
-        {children}
+        <WorkbenchShell>{children}</WorkbenchShell>
       </body>
     </html>
   );

@@ -572,3 +572,110 @@
     gap: 5px;
   }
 }
+
+/* ============================================================================
+   Task 3（2026-09-28 基线）：首页参考图视觉——主区面板化 + 页面级右栏
+   覆盖上方 M34 过渡段；契约见根目录 DESIGN.md。
+   ========================================================================== */
+
+/* 页面级两列：主区 + 右上下文栏（<1200px 单列） */
+.page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+  padding: 28px clamp(16px, 3vw, 32px) 48px;
+}
+.page-main { min-width: 0; }
+.workbench-aside.page-level {
+  position: static;
+  height: auto;
+  padding: 0;
+  border-left: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+/* 首页画布重置：不再用 M34 的顶部墨线与巨型留白 */
+.home-page::before { display: none; }
+.home-page { padding-top: 0; }
+.home-intro { display: block; margin-top: 8px; }
+.home-intro-aside { display: none; }
+
+/* 输入区面板化：白面板 + 发丝线 + 轻阴影 + 橙焦点 */
+.goal-composer.wb-panel {
+  max-width: none;
+  margin-top: 26px;
+  padding: 8px 20px 16px;
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  background: var(--wb-surface);
+  box-shadow: var(--wb-shadow-panel);
+  transition: border-color var(--wb-fast), box-shadow var(--wb-fast);
+}
+.goal-composer.wb-panel:focus-within {
+  border-color: var(--wb-accent);
+  box-shadow: 0 0 0 3px var(--wb-accent-soft);
+}
+.goal-composer.wb-panel textarea { min-height: 118px; font-size: clamp(17px, 2vw, 21px); }
+
+.goal-composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.goal-budget-group { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.goal-budget { display: flex; align-items: center; gap: 9px; color: var(--wb-ink-faint); font-size: 12px; }
+.goal-budget input { width: 130px; padding: 5px 10px; border: 1px solid var(--wb-hairline-strong); border-radius: var(--wb-radius-control); background: var(--wb-surface); font-weight: 600; }
+.goal-budget input:focus { border-color: var(--wb-accent); }
+.goal-budget-presets { display: flex; gap: 6px; }
+.goal-budget-preset {
+  padding: 5px 11px; border: 1px solid var(--wb-hairline); border-radius: 999px;
+  background: var(--wb-surface); color: var(--wb-ink-muted);
+  font-size: 11.5px; font-weight: 600;
+  transition: color var(--wb-fast), border-color var(--wb-fast), background var(--wb-fast);
+}
+.goal-budget-preset:hover:not(:disabled) { color: var(--wb-accent); border-color: var(--wb-accent); }
+.goal-budget-preset.active { color: var(--wb-accent); border-color: var(--wb-accent); background: var(--wb-accent-soft); }
+.goal-submit { padding: 10px 20px; font-size: 13px; border-radius: var(--wb-radius-control); }
+.goal-submit:hover:not(:disabled) { background: var(--wb-accent-hover) !important; }
+
+.goal-suggestions { border-top: 1px solid var(--wb-hairline); }
+.goal-suggestion { border-color: var(--wb-hairline); color: var(--wb-ink-muted); border-radius: 999px; }
+.goal-suggestion:hover:not(:disabled) { color: var(--wb-accent); border-color: var(--wb-accent); }
+
+.home-shortcuts { max-width: none; color: var(--wb-ink-faint); font-size: 12px; }
+.home-shortcuts a { color: var(--wb-ink); font-weight: 600; }
+.home-shortcuts a:hover { color: var(--wb-accent); }
+
+/* 右栏：工作方式时间线 + 最近方案 */
+.home-how h2, .recent-designs h2 { margin: 0; font-size: 14px; font-weight: 700; color: var(--wb-ink); }
+.home-how-steps { list-style: none; margin: 14px 0 0; padding: 0; }
+.home-how-steps li { position: relative; padding: 0 0 16px 22px; }
+.home-how-steps li::before {
+  content: ""; position: absolute; left: 0; top: 4px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--wb-accent);
+}
+.home-how-steps li:not(:last-child)::after {
+  content: ""; position: absolute; left: 4px; top: 15px; bottom: 0;
+  width: 1px; background: var(--wb-hairline);
+}
+.home-how-steps strong { font-size: 13px; color: var(--wb-ink); }
+.home-how-steps p { margin: 3px 0 0; color: var(--wb-ink-muted); font-size: 12px; line-height: 1.6; }
+.home-how-note { margin: 2px 0 0; padding-top: 12px; border-top: 1px solid var(--wb-hairline); color: var(--wb-ink-faint); font-size: 11.5px; }
+
+.recent-designs { max-width: none; margin-top: 0; }
+.recent-designs .home-section-heading { border-bottom: 0; padding-bottom: 2px; }
+.recent-designs .home-section-heading h2 { font-size: 14px; }
+.recent-designs .home-section-heading a { color: var(--wb-ink-faint); font-size: 11px; font-weight: 600; }
+.recent-designs ul { list-style: none; margin: 4px 0 0; padding: 0; }
+.recent-designs li { border-bottom: 1px solid var(--wb-hairline); }
+.recent-designs li:last-child { border-bottom: 0; }
+.recent-designs li a {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 10px 0; color: var(--wb-ink); text-decoration: none; font-weight: 600; font-size: 13px;
+}
+.recent-designs li a:hover { color: var(--wb-accent); }
+.recent-meta { color: var(--wb-ink-faint); font: 400 11px ui-monospace, Consolas, monospace; }
+
+@media (max-width: 1199px) {
+  .page-grid { grid-template-columns: minmax(0, 1fr); }
+  .workbench-aside.page-level { border-top: 1px solid var(--wb-hairline); padding-top: 18px; }
+}

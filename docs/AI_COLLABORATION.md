@@ -5,7 +5,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-24 ｜ 当前阶段：**M35 完成，M37 受约束选件开始接入**——工作台已支持历史版本只读切换与逐件依据；LLM 现在只能从系统候选目录返回已有 `catalogId`，非法型号会拒绝并回退规则式候选。22 E2E + 166 单测基线全绿；真实样本评测尚未完成。路线见 `docs/superpowers/specs/2026-09-24-v2-product-design.md`。
+> 最后更新：2026-09-28 ｜ 当前阶段：**UI 重构进行中（2026-09-28 参考图基线）**——Task 1-3 已落地：`DESIGN.md` 设计契约 + `--wb-*` token + 三栏壳（六区导航）+ 首页重做；Task 4-8（方案页/DIY/项目资料页/响应式验收/契约确认）待续。设计契约 = 根目录 `DESIGN.md`，参考图 = `docs/design/reference/`；执行计划 = `docs/superpowers/plans/2026-09-28-rigmate-ui-redesign.md`。路线见 `docs/superpowers/specs/2026-09-24-v2-product-design.md`。
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
@@ -469,6 +469,7 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-09-28 v4.3：**UI 重构 Task 1-3（参考图三栏工作台）**——用户以两张 image2 参考图拍板新视觉；删除旧"技术规格单"体系（boards/ 母版、前端UI设计_v1.md 深色草案、tmp/imagegen 过程文件、已完成的 M34 过程计划）；参考图落位 `docs/design/reference/`；**新增根目录 `DESIGN.md` 设计契约**（awesome-design-md 方法：token/布局/组件/状态/动效/文案，AI 会话的视觉单一事实源）；theme.css 切 `--wb-*` token（`--rm-*` 保留兼容别名）；新增三栏壳 `src/ui/workbench/`（BrandSidebar 六区导航 / WorkspaceHeader / WorkbenchShell + workbench.css），layout 接线，nav-shell 退役；首页按参考图重做（主区输入面板 + 预算快捷 chips + 页面级右栏"怎么工作/最近方案"）；主按钮全站切橙；ESLint 忽略 `.worktrees/**`（修复 Codex worktree 构建产物导致的 1669 lint errors）。168 单测 + 22 E2E + build 全绿；1440/390 截图验收（D:/tmp/rigmate-m35/）。Task 4-8（方案页/DIY/资料页/响应式/契约确认）待续。
 - 2026-09-24 v3.13：M33 产品化收口——检查历史时间线（仓储摘要 + /check/history + DIY 折叠区）+ 品牌 favicon（icon.svg，脚手架 SVG 清理）+ 路由级 loading/error/404 + Dockerfile/.dockerignore（未实测，注记诚实）+ 8 状态截图视觉验收（修复窄屏导航竖排折行真 bug）；166 单测 + 19 E2E。
 - 2026-09-23 v3.12：M32 版本差异对比 + DIY 渐进披露——diffProposals 按类别对比相邻版本（无上一版返回空）+ DesignResult.changes 全路径装配 + 方案页"相对上一版的变化"区（换件/新增/不再购置）+ DIY 诊断通过项折叠（问题存在时收起、全通过时展开）；166 单测 + 19 E2E。
 - 2026-09-23 v3.11：M31 自然语言修订方案上线——规则式修订（预算/已有硬件两类，歧义不猜）+ LLM 修订（改写完整意图）+ 双轨降级 + 诚实追问 + 方案版本化（version 递增/旧版标记 replaced）+ 生成器支持排除已有硬件类别 + 方案页侧栏调整输入；162 单测 + 19 E2E。

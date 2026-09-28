@@ -1,25 +1,23 @@
 @import "tailwindcss";
 @import "../ui/theme.css";
+@import "../ui/workbench/workbench.css";
 @import "../ui/v2-workspace.css";
 
 /* ============================================================================
-   RigMate 版式 v3「技术规格单」
-   方向（2026-09-20 第三轮，用户反馈"AI 味仍重"）：
-   - 去卡片化：全部改用发丝线分区，像印刷的规格单 / 检验报告，而不是面板堆叠；
-   - 数字与数据一律等宽（--rm-mono）并右对齐——去 AI 味最强的信号；
-   - 删除全部 micro-caps 英文小标签与装饰性图标；类别选择改下划线标签页；
-   - 诊断结果改为报告式条款：左侧状态词 + 右侧内容（行间批注结构）；
-   - 空状态收成一行安静的文字，不用图标 + 虚线框。
+   RigMate 版式——三栏工作台（2026-09-28 基线）
+   设计契约：根目录 DESIGN.md；视觉事实源：docs/design/reference/*.png。
+   页面画布 = 浅灰白 --wb-canvas；内容面板 = 纯白 + 发丝线 + 轻阴影。
+   旧「技术规格单」版式段随页面迁移逐步替换；--rm-* 为兼容别名。
    ========================================================================== */
 
 * { box-sizing: border-box; }
 
-html { background: var(--rm-bg); }
+html { background: var(--wb-canvas); }
 
 body {
   margin: 0;
-  background: var(--rm-bg);
-  color: var(--rm-ink);
+  background: var(--wb-canvas);
+  color: var(--wb-ink);
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.55;
@@ -111,8 +109,8 @@ select {
   transition: background var(--rm-fast), color var(--rm-fast), border-color var(--rm-fast);
 }
 .button span { font-size: 13px; line-height: 0; }
-.button.primary { background: var(--rm-ink); color: #fff; }
-.button.primary:hover:not(:disabled) { background: var(--rm-accent); }
+.button.primary { background: var(--wb-accent); color: #fff; }
+.button.primary:hover:not(:disabled) { background: var(--wb-accent-hover); }
 .button.secondary { border-color: var(--rm-ink); background: transparent; color: var(--rm-ink); }
 .button.secondary:hover:not(:disabled) { border-color: var(--rm-accent); color: var(--rm-accent); }
 .button.ghost { border-color: var(--rm-line-strong); color: var(--rm-ink-muted); }

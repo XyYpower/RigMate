@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local git worktrees (codex/v2-product) and their build artifacts
+    ".worktrees/**",
   ]),
 ]);
 
