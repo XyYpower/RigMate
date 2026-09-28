@@ -191,15 +191,15 @@ export default function DesignPage() {
               <strong className="proposal-range">{estimateLabel}</strong>
               <span className="estimate-note">经验估算，非实时成交价</span>
             </div>
-            <div className={`compatibility-state ${proposal.compatibility.status}`}>
+            <div className={`compatibility-state ${viewedProposal.compatibility.status}`}>
               <span>{statusLabel}</span>
-              <p>{proposal.compatibility.message}</p>
+              <p>{viewedProposal.compatibility.message}</p>
             </div>
           </div>
 
           <div className="proposal-section-heading">
             <h2 id="proposal-title">建议配置</h2>
-            <span>{proposal.items.length} 个核心配件</span>
+            <span>{viewedProposal.items.length} 个核心配件</span>
           </div>
           <div className="proposal-items">
             {viewedProposal.items.map((item) => (

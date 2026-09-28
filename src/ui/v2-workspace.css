@@ -18,6 +18,38 @@
   padding-top: clamp(64px, 9vw, 112px);
 }
 
+.home-intro {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 56px;
+}
+
+.home-intro-copy {
+  min-width: 0;
+}
+
+.home-intro-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 210px;
+  flex: none;
+  padding: 13px 0 0 16px;
+  border-left: 2px solid var(--rm-accent);
+}
+
+.home-intro-aside span,
+.home-intro-aside small {
+  color: var(--rm-ink-faint);
+  font-size: 11px;
+}
+
+.home-intro-aside strong {
+  font: 700 13px ui-monospace, Consolas, monospace;
+  letter-spacing: -.02em;
+}
+
 .home-intro h1,
 .design-header h1 {
   text-wrap: balance;
@@ -75,12 +107,64 @@
   margin-top: 72px;
 }
 
+.home-principles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 900px;
+  margin-top: 62px;
+  border-top: 1px solid var(--rm-line-strong);
+}
+
+.home-principles > div {
+  min-height: 118px;
+  padding: 15px 18px 10px 0;
+  border-right: 1px solid var(--rm-line);
+}
+
+.home-principles > div + div {
+  padding-left: 18px;
+}
+
+.home-principles > div:last-child {
+  border-right: 0;
+}
+
+.home-principles span {
+  display: block;
+  color: var(--rm-accent);
+  font: 11px ui-monospace, Consolas, monospace;
+}
+
+.home-principles strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.home-principles p {
+  margin: 5px 0 0;
+  color: var(--rm-ink-muted);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
 .design-page {
   padding-top: 38px;
 }
 
 .design-header {
   padding-bottom: 26px;
+}
+
+.design-header::after {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 3px;
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  background: var(--rm-accent);
 }
 
 .design-header-actions {
@@ -384,6 +468,15 @@
     padding-top: 52px;
   }
 
+  .home-intro {
+    display: block;
+  }
+
+  .home-intro-aside {
+    width: auto;
+    margin-top: 24px;
+  }
+
   .goal-composer {
     margin-top: 30px;
     padding-inline: 14px;
@@ -392,6 +485,23 @@
   .goal-composer textarea {
     min-height: 128px;
     font-size: 18px;
+  }
+
+  .home-principles {
+    display: block;
+    margin-top: 44px;
+  }
+
+  .home-principles > div,
+  .home-principles > div + div {
+    min-height: 0;
+    padding: 13px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--rm-line);
+  }
+
+  .home-principles > div:last-child {
+    border-bottom: 0;
   }
 
   .design-page {

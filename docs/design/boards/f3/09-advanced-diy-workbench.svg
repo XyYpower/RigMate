@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <title>RigMate 高级 DIY 工作台</title>
+  <desc>浅色工程规格单风格的 RigMate 高级 DIY 三栏硬件编辑工作台。</desc>
+  <style>
+    :root {
+      --bg: #f7f7f4;
+      --surface: #ffffff;
+      --surface-warm: #fbfaf7;
+      --ink: #182027;
+      --muted: #66727b;
+      --faint: #9aa3a8;
+      --line: #e3e5e3;
+      --line-strong: #cbd0cf;
+      --accent: #ff681c;
+      --accent-soft: #fff2ea;
+      --block: #c95235;
+      --unknown: #af6c12;
+      --pass: #2b8a62;
+      --blueprint: #5f6b72;
+    }
+    text { font-family: "Microsoft YaHei", "Segoe UI", sans-serif; fill: var(--ink); }
+    .mono { font-family: "Cascadia Mono", Consolas, monospace; }
+    .label { font-size: 11px; fill: var(--faint); letter-spacing: .08em; }
+    .small { font-size: 12px; fill: var(--muted); }
+    .body { font-size: 13px; }
+    .strong { font-weight: 700; }
+    .title { font-size: 20px; font-weight: 700; }
+    .section { font-size: 16px; font-weight: 700; }
+    .rule { stroke: var(--line); stroke-width: 1; }
+    .rule-strong { stroke: var(--line-strong); stroke-width: 1; }
+  </style>
+
+  <rect width="1440" height="900" fill="var(--bg)"/>
+  <rect x="0" y="0" width="220" height="900" fill="#fbfbf9"/>
+  <line x1="220" y1="0" x2="220" y2="900" stroke="var(--line)"/>
+
+  <!-- Brand -->
+  <polygon points="26,28 42,19 58,28 58,47 42,56 26,47" fill="var(--accent)"/>
+  <path d="M35 32 L42 28 L49 32 L49 43 L42 47 L35 43 Z" fill="none" stroke="#fff" stroke-width="2"/>
+  <path d="M38 35 L42 33 L46 35 L46 41 L42 43 L38 41 Z" fill="#fff" opacity=".95"/>
+  <text x="72" y="37" font-size="19" font-weight="700">RigMate</text>
+  <text x="72" y="55" font-size="10" fill="var(--muted)">PC 装机与 Agent 工作台</text>
+
+  <!-- Navigation -->
+  <g>
+    <text x="28" y="112" font-size="13" fill="var(--muted)">⌂</text>
+    <text x="57" y="114" font-size="14" fill="var(--muted)">开始配置</text>
+    <text x="28" y="164" font-size="13" fill="var(--muted)">▣</text>
+    <text x="57" y="166" font-size="14" fill="var(--muted)">装机方案</text>
+    <text x="28" y="214" font-size="13" fill="var(--muted)">▤</text>
+    <text x="57" y="216" font-size="14" fill="var(--muted)">硬件资料</text>
+    <text x="28" y="264" font-size="13" fill="var(--muted)">◇</text>
+    <text x="57" y="266" font-size="14" fill="var(--muted)">我的方案</text>
+    <rect x="0" y="292" width="220" height="48" fill="var(--accent-soft)"/>
+    <rect x="0" y="292" width="3" height="48" fill="var(--accent)"/>
+    <text x="28" y="322" font-size="13" fill="var(--accent)">⌘</text>
+    <text x="57" y="324" font-size="14" font-weight="700" fill="var(--ink)">高级 DIY</text>
+  </g>
+  <text x="28" y="842" font-size="11" fill="var(--faint)">RigMate · 规格优先</text>
+
+  <!-- Top bar -->
+  <text x="256" y="39" class="title">白色静音剪辑主机 · 高级 DIY</text>
+  <circle cx="592" cy="33" r="4" fill="var(--pass)"/>
+  <text x="605" y="38" class="small">自动检查已开启</text>
+  <rect x="1236" y="17" width="116" height="34" rx="6" fill="var(--accent)"/>
+  <text x="1294" y="39" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">重新检查</text>
+  <line x1="256" y1="76" x2="1380" y2="76" class="rule-strong"/>
+  <text x="256" y="101" class="label">高级 DIY / 组件编辑</text>
+  <text x="1380" y="101" class="label mono" text-anchor="end">CHECK #12 · 14:02</text>
+
+  <!-- Three-column frame -->
+  <rect x="256" y="124" width="214" height="594" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+  <rect x="486" y="124" width="484" height="594" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+  <rect x="986" y="124" width="394" height="594" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+
+  <!-- Left hardware navigation -->
+  <text x="282" y="159" class="section">硬件分类</text>
+  <text x="444" y="159" class="label mono" text-anchor="end">8 类</text>
+  <line x1="282" y1="176" x2="444" y2="176" class="rule"/>
+  <g font-size="14">
+    <text x="282" y="215" fill="var(--muted)">CPU</text><text x="442" y="215" class="small mono" text-anchor="end">已确认</text>
+    <line x1="282" y1="232" x2="444" y2="232" class="rule"/>
+    <text x="282" y="264" fill="var(--muted)">主板</text><text x="442" y="264" class="small mono" text-anchor="end">已确认</text>
+    <line x1="282" y1="281" x2="444" y2="281" class="rule"/>
+    <rect x="274" y="295" width="178" height="45" rx="5" fill="var(--accent-soft)"/>
+    <rect x="274" y="295" width="3" height="45" fill="var(--accent)"/>
+    <text x="292" y="323" font-weight="700">显卡</text><text x="442" y="323" fill="var(--accent)" font-size="12" class="mono" text-anchor="end">编辑中</text>
+    <line x1="282" y1="357" x2="444" y2="357" class="rule"/>
+    <text x="282" y="389" fill="var(--muted)">内存</text><text x="442" y="389" class="small mono" text-anchor="end">已确认</text>
+    <line x1="282" y1="406" x2="444" y2="406" class="rule"/>
+    <text x="282" y="438" fill="var(--muted)">存储</text><text x="442" y="438" class="small mono" text-anchor="end">已确认</text>
+    <line x1="282" y1="455" x2="444" y2="455" class="rule"/>
+    <text x="282" y="487" fill="var(--muted)">电源</text><text x="442" y="487" class="small mono" text-anchor="end">待补充</text>
+    <line x1="282" y1="504" x2="444" y2="504" class="rule"/>
+    <text x="282" y="536" fill="var(--muted)">散热器</text><text x="442" y="536" class="small mono" text-anchor="end">已确认</text>
+    <line x1="282" y1="553" x2="444" y2="553" class="rule"/>
+    <text x="282" y="585" fill="var(--muted)">机箱</text><text x="442" y="585" class="small mono" text-anchor="end">已确认</text>
+  </g>
+  <line x1="282" y1="638" x2="444" y2="638" class="rule-strong"/>
+  <text x="282" y="665" class="small">修改后自动刷新诊断结果</text>
+  <circle cx="285" cy="688" r="4" fill="var(--pass)"/>
+  <text x="297" y="692" class="small">规则引擎在线</text>
+
+  <!-- Middle editor -->
+  <text x="512" y="159" class="section">显卡规格</text>
+  <text x="944" y="159" fill="var(--accent)" font-size="12" class="mono" text-anchor="end">保存后立即检查</text>
+  <line x1="512" y1="176" x2="944" y2="176" class="rule-strong"/>
+  <text x="512" y="203" class="label">字段</text><text x="730" y="203" class="label">当前值</text><text x="944" y="203" class="label" text-anchor="end">单位 / 备注</text>
+  <line x1="512" y1="214" x2="944" y2="214" class="rule"/>
+  <g>
+    <text x="512" y="244" class="small">型号</text><text x="730" y="244" class="body strong">MSI GeForce RTX 4080 SUPER</text><text x="944" y="244" class="small" text-anchor="end">Ventus 3X OC</text>
+    <line x1="512" y1="260" x2="944" y2="260" class="rule"/>
+    <text x="512" y="290" class="small">显卡长度</text><text x="730" y="290" class="body strong" fill="var(--block)">336</text><text x="944" y="290" class="small" text-anchor="end">mm · 超出限长</text>
+    <line x1="512" y1="306" x2="944" y2="306" class="rule"/>
+    <text x="512" y="336" class="small">功耗</text><text x="730" y="336" class="body strong">320</text><text x="944" y="336" class="small" text-anchor="end">W · 额定</text>
+    <line x1="512" y1="352" x2="944" y2="352" class="rule"/>
+    <text x="512" y="382" class="small">接口</text><text x="730" y="382" class="body strong">3 × 8-pin</text><text x="944" y="382" class="small" text-anchor="end">供电接口</text>
+    <line x1="512" y1="398" x2="944" y2="398" class="rule"/>
+    <text x="512" y="428" class="small">显存</text><text x="730" y="428" class="body strong">16 GB GDDR6X</text><text x="944" y="428" class="small" text-anchor="end">规格</text>
+    <line x1="512" y1="444" x2="944" y2="444" class="rule"/>
+    <text x="512" y="474" class="small">颜色</text><text x="730" y="474" class="body strong">白色</text><text x="944" y="474" class="small" text-anchor="end">外观</text>
+    <line x1="512" y1="490" x2="944" y2="490" class="rule"/>
+    <text x="512" y="520" class="small">参考价格</text><text x="730" y="520" class="body strong">¥ 7,499</text><text x="944" y="520" class="small" text-anchor="end">最近记录</text>
+  </g>
+
+  <!-- Blueprint -->
+  <line x1="512" y1="548" x2="944" y2="548" class="rule-strong"/>
+  <text x="512" y="575" class="section">尺寸关系预览</text>
+  <text x="944" y="575" fill="var(--block)" font-size="12" class="mono" text-anchor="end">336 mm &gt; 320 mm</text>
+  <rect x="530" y="597" width="264" height="94" fill="none" stroke="var(--blueprint)" stroke-width="1.5"/>
+  <rect x="555" y="620" width="204" height="48" fill="#f4f5f3" stroke="var(--blueprint)" stroke-width="1.5"/>
+  <line x1="555" y1="632" x2="759" y2="632" stroke="var(--blueprint)" stroke-width="1"/>
+  <circle cx="574" cy="644" r="8" fill="none" stroke="var(--blueprint)"/>
+  <circle cx="740" cy="644" r="8" fill="none" stroke="var(--blueprint)"/>
+  <rect x="735" y="612" width="100" height="64" fill="none" stroke="var(--block)" stroke-width="2"/>
+  <line x1="759" y1="606" x2="835" y2="606" stroke="var(--block)" stroke-width="1"/>
+  <line x1="759" y1="601" x2="759" y2="611" stroke="var(--block)" stroke-width="1"/>
+  <line x1="835" y1="601" x2="835" y2="611" stroke="var(--block)" stroke-width="1"/>
+  <text x="797" y="597" fill="var(--block)" font-size="10" class="mono" text-anchor="middle">超出 16mm</text>
+  <text x="852" y="628" class="small">机箱侧视</text>
+  <text x="852" y="648" class="small">红线 = 显卡越界</text>
+  <text x="852" y="668" class="small">黑灰线 = 规格比例</text>
+
+  <!-- Diagnostics -->
+  <text x="1012" y="159" class="section">兼容性诊断</text>
+  <text x="1354" y="159" class="label mono" text-anchor="end">1 阻断 · 1 待补充 · 6 通过</text>
+  <line x1="1012" y1="176" x2="1354" y2="176" class="rule-strong"/>
+  <rect x="1012" y="195" width="342" height="142" rx="6" fill="#fff9f7" stroke="#e7c7bf"/>
+  <rect x="1012" y="195" width="3" height="142" fill="var(--block)"/>
+  <text x="1030" y="223" fill="var(--block)" font-size="11" font-weight="700">阻断</text>
+  <text x="1030" y="250" font-size="14" font-weight="700">显卡长度 336mm 超过机箱限长 320mm</text>
+  <text x="1030" y="276" class="small">显卡规格记录 336mm；机箱限长记录 320mm</text>
+  <text x="1030" y="298" fill="var(--accent)" font-size="12" font-weight="700">建议动作：更换 ≤320mm 显卡或更大机箱</text>
+  <text x="1338" y="223" fill="var(--block)" font-size="11" class="mono" text-anchor="end">R-GPU-CASE-001</text>
+
+  <rect x="1012" y="356" width="342" height="124" rx="6" fill="#fffcf5" stroke="#eadab8"/>
+  <rect x="1012" y="356" width="3" height="124" fill="var(--unknown)"/>
+  <text x="1030" y="384" fill="var(--unknown)" font-size="11" font-weight="700">待补充</text>
+  <text x="1030" y="411" font-size="14" font-weight="700">暂时无法判断电源余量</text>
+  <text x="1030" y="437" class="small">电源额定功率和显卡余量字段尚未完整</text>
+  <text x="1030" y="459" fill="var(--accent)" font-size="12" font-weight="700">建议动作：补充额定功率、12V 输出</text>
+  <text x="1338" y="384" fill="var(--unknown)" font-size="11" class="mono" text-anchor="end">R-PSU-001</text>
+
+  <rect x="1012" y="499" width="342" height="78" rx="6" fill="#fbfdfb" stroke="#d7e6dc"/>
+  <rect x="1012" y="499" width="3" height="78" fill="var(--pass)"/>
+  <text x="1030" y="528" fill="var(--pass)" font-size="11" font-weight="700">通过</text>
+  <text x="1030" y="553" font-size="14" font-weight="700">主板板型与机箱兼容</text>
+  <text x="1338" y="528" fill="var(--pass)" font-size="11" class="mono" text-anchor="end">R-MB-CASE-001</text>
+  <text x="1030" y="573" class="small">ATX / mATX 安装位匹配 · 点击查看依据</text>
+
+  <line x1="1012" y1="614" x2="1354" y2="614" class="rule"/>
+  <text x="1012" y="643" class="small">通过项已折叠，优先处理阻断与待补充。</text>
+  <text x="1012" y="670" class="small">每次保存修改都会重新计算受影响规则。</text>
+
+  <!-- Bottom action bar -->
+  <line x1="256" y1="752" x2="1380" y2="752" class="rule-strong"/>
+  <text x="256" y="784" class="section">检查历史</text>
+  <text x="360" y="784" class="body strong mono">#12</text>
+  <text x="400" y="784" class="body">· 今日 14:02</text>
+  <text x="515" y="784" fill="var(--block)" class="body strong">· 1 项阻断</text>
+  <text x="630" y="784" fill="var(--unknown)" class="body strong">· 1 项待补充</text>
+  <text x="760" y="784" fill="var(--pass)" class="body strong">· 6 项通过</text>
+  <text x="256" y="812" class="small">基于当前规格快照 · 修改不会覆盖历史结论</text>
+  <rect x="1110" y="772" width="110" height="38" rx="6" fill="var(--surface)" stroke="var(--line-strong)"/>
+  <text x="1165" y="797" font-size="13" font-weight="700" text-anchor="middle">查看报告</text>
+  <rect x="1234" y="772" width="116" height="38" rx="6" fill="var(--accent)"/>
+  <text x="1292" y="797" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">保存修改</text>
+  <text x="1380" y="850" class="label mono" text-anchor="end">RIGMATE / ADVANCED DIY</text>
+</svg>

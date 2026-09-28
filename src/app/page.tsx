@@ -74,9 +74,16 @@ export default function Home() {
   return (
     <main className="home-page">
       <section className="home-intro">
-        <p className="home-kicker">RIGMATE · PC 装机决策工作台</p>
-        <h1>你想配置一台什么样的电脑？</h1>
-        <p className="home-lede">说说预算、用途和偏好。RigMate 会先给出一套方案，再由你决定怎么调整。</p>
+        <div className="home-intro-copy">
+          <p className="home-kicker">RIGMATE · PC 装机决策工作台</p>
+          <h1>你想配置一台什么样的电脑？</h1>
+          <p className="home-lede">说说预算、用途和偏好。RigMate 会先给出一套方案，再由你决定怎么调整。</p>
+        </div>
+        <div className="home-intro-aside" aria-label="RigMate 工作方式">
+          <span>一个清晰的起点</span>
+          <strong>目标 → 方案 → 检查</strong>
+          <small>每个结论都能回到硬件资料和规则。</small>
+        </div>
       </section>
 
       <form className="goal-composer" onSubmit={(event) => void startDesign(event)}>
@@ -133,6 +140,12 @@ export default function Home() {
         <span aria-hidden>·</span>
         <Link href="/diy">直接进入自由 DIY</Link>
       </div>
+
+      <section className="home-principles" aria-label="RigMate 工作方式">
+        <div><span>01</span><strong>先说目标</strong><p>不用先填写八类硬件，想到什么说什么。</p></div>
+        <div><span>02</span><strong>再看方案</strong><p>预算、用途和取舍会在同一页说清楚。</p></div>
+        <div><span>03</span><strong>最后核对</strong><p>规格来源和兼容检查随时可以展开。</p></div>
+      </section>
 
       {builds.length > 0 && (
         <section className="recent-designs" aria-labelledby="recent-title">
