@@ -8,6 +8,8 @@
 相关文档：
 
 - 产品业务边界：docs/PC_DIY_装机助手_业务逻辑规格_v1.md
+- Agent 技术设计：docs/AGENT_TECHNICAL_DESIGN.md
+- Agent 平台执行计划：docs/superpowers/plans/2026-09-28-rigmate-agent-platform.md
 - 技术架构决策：docs/PC_DIY_装机助手_技术架构决策_v1.md
 - 系统信息架构：docs/design/10-系统布局规划.md
 - 视觉系统：docs/design/00-visual-system.md
