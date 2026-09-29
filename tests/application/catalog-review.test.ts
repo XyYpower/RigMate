@@ -238,6 +238,32 @@ describe("目录审核服务", () => {
     expect(listQualityEvents("gpu-dup").some((event) => event.eventType === "deprecated")).toBe(true);
   });
 
+  it("证据更正：官网精确值覆盖旧聚合约值，全字段一致时不产生更正", () => {
+    repo.upsertCatalogEntries([
+      { id: "gpu-correct-1", category: "gpu", name: "更正测试卡", aliases: [], spec: { tdpWatts: 220, lengthMm: 287 }, source: "manual" },
+    ]);
+    const source = service.addReviewSource({
+      canonicalProductId: "gpu-correct-1", sourceType: "manufacturer", tier: "S1",
+      sourceUrl: "https://example.com/correct-spec", sourceTitle: "官网规格页",
+      contentHash: "d1b2c3d4e5f7", reviewer: "reviewer-a",
+    });
+    service.addReviewEvidence({ canonicalProductId: "gpu-correct-1", fieldPath: "spec.lengthMm", sourceId: source.id, value: 288, excerpt: "官网 L=288", identityMatch: "mpn_exact", reviewer: "reviewer-a" });
+
+    const { corrections } = service.correctProductFromEvidence({
+      canonicalProductId: "gpu-correct-1", reviewer: "reviewer-b", reason: "官网精确值取代聚合约值",
+    });
+    expect(corrections).toEqual([{ field: "lengthMm", before: 287, after: 288 }]);
+    const record = repo.listCatalogRecords({ category: "gpu" }).find((row) => row.id === "gpu-correct-1");
+    expect(record?.spec.lengthMm).toBe(288);
+    const corrected = listQualityEvents("gpu-correct-1").find((event) => event.eventType === "corrected");
+    expect(corrected?.actor).toBe("reviewer:reviewer-b");
+
+    // 再跑一次：无差异不产生更正、不落事件
+    const again = service.correctProductFromEvidence({ canonicalProductId: "gpu-correct-1", reviewer: "reviewer-b", reason: "重复" });
+    expect(again.corrections).toEqual([]);
+    expect(() => service.correctProductFromEvidence({ canonicalProductId: "gpu-correct-1", reviewer: "reviewer-b", reason: "" })).toThrow(/原因/);
+  });
+
   it("非法合并被拒绝：跨类别、自合并、无原因", () => {
     repo.upsertCatalogEntries([
       { id: "cpu-keep", category: "cpu", name: "CPU 保留", aliases: [], spec: { socket: "AM5" }, source: "manual" },

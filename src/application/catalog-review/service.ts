@@ -174,6 +174,8 @@ export type AddReviewEvidenceInput = {
   excerpt: string;
   identityMatch: IdentityMatch;
   confidence?: "high" | "medium" | "low";
+  /** 本条证据取代的旧证据 id（来源升级链：官网一手取代聚合转载） */
+  supersedesId?: string | null;
   reviewer: string;
 };
 
@@ -196,7 +198,7 @@ export function addReviewEvidence(input: AddReviewEvidenceInput): {
     confidence: input.confidence ?? "medium",
     verifiedAt: null,
     verifiedBy: null,
-    supersedesId: null,
+    supersedesId: input.supersedesId ?? null,
   });
   const after = computeProductFieldStatuses(input.canonicalProductId);
   appendQualityEvent({
@@ -330,6 +332,48 @@ export function publishProduct(input: {
     actor: `reviewer:${reviewer}`,
   });
   return report;
+}
+
+/**
+ * 证据更正：按当前证据链重算，把「判定干净（无未解决冲突）且可用」的字段值**覆盖**写入 spec。
+ * 与 publish 的补缺相对：publish 只填空位，本操作用于"已有值与更高等级证据不一致"的纠错
+ * （如聚合约值被官网精确值取代）。更正前后全部留痕（eventType=corrected），复核兜底走人工盖章。
+ */
+export function correctProductFromEvidence(input: {
+  canonicalProductId: string;
+  reviewer: string;
+  reason: string;
+}): { report: ProductFieldStatusReport; corrections: Array<{ field: string; before: unknown; after: unknown }> } {
+  const reviewer = requireReviewer(input.reviewer);
+  const snapshot = requireLiveProduct(input.canonicalProductId);
+  if (!input.reason.trim()) throw new CatalogReviewError("证据更正必须说明原因");
+  const report = computeProductFieldStatuses(snapshot.id);
+  const nextSpec: Record<string, unknown> = { ...snapshot.spec };
+  const corrections: Array<{ field: string; before: unknown; after: unknown }> = [];
+  for (const [field, result] of Object.entries(report.fields)) {
+    if (
+      result.conflict !== "unresolved" &&
+      isRuleUsable(result.status) &&
+      result.value !== undefined &&
+      JSON.stringify(nextSpec[field]) !== JSON.stringify(result.value)
+    ) {
+      corrections.push({ field, before: nextSpec[field] ?? null, after: result.value });
+      nextSpec[field] = result.value;
+    }
+  }
+  if (corrections.length === 0) {
+    return { report, corrections };
+  }
+  writeCatalogMerge(snapshot.id, nextSpec, report.productStatus, null);
+  appendQualityEvent({
+    canonicalProductId: snapshot.id,
+    eventType: "corrected",
+    beforeJson: { spec: snapshot.spec },
+    afterJson: { spec: nextSpec, corrections },
+    reason: input.reason,
+    actor: `reviewer:${reviewer}`,
+  });
+  return { report, corrections };
 }
 
 /** 合并去重：证据与来源改挂保留条目 → 补缺 → 重算状态 → 旧 id 记 merged_into（可解析，不进候选） */
