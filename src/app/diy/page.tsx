@@ -547,18 +547,6 @@ export default function Home() {
 
   return (
     <main className="shell">
-      <header className="masthead">
-        <div className="masthead-brand">
-          <span className="brand-mark">R</span>
-          <span className="masthead-title">装机清单工作台</span>
-          <span className="masthead-sub">先确认能装，再决定买什么。</span>
-        </div>
-        <div className="masthead-meta">
-          <span><span className="live-dot" />规则引擎在线 · 12 条规则</span>
-          {build && <span>清单 {build.items.length} 件</span>}
-        </div>
-      </header>
-
       <section className="projbar">
         {projects.length > 0 && (
           <label className="field">
@@ -598,20 +586,23 @@ export default function Home() {
 
       <section className="titleline">
         <div className="titleline-main">
-          <h2>{build ? build.name : "还没有活动项目"}</h2>
+          <h2>{build ? build.name : "高级 DIY"}</h2>
           <p className="titleline-sub">
             {build
               ? `用途 ${build.useCase ?? "未设置"} · 更新于 ${formatTime(build.updatedAt)}`
               : "在上方填写项目名称并新建，数据会实时保存到 SQLite"}
           </p>
+          {build && findings.length > 0 && (
+            <span className="diy-autocheck-badge"><i aria-hidden />自动检查已开启</span>
+          )}
         </div>
         <div className="titleline-actions">
           <button
-            className="button check-button"
+            className="button primary check-button"
             onClick={runCheck}
             disabled={!build || build.items.length === 0 || busy}
           >
-            运行兼容性检查 <span>↗</span>
+            重新检查 <span aria-hidden>↻</span>
           </button>
         </div>
       </section>
@@ -661,8 +652,30 @@ export default function Home() {
         </>
       )}
 
-      <div className="sheet">
-        <div>
+      <div className="sheet diy-grid">
+        {/* 参考图：左侧类别子导航 */}
+        <nav className="diy-subnav" role="tablist" aria-label="配件类别">
+          {CATEGORY_ORDER.map((category) => (
+            <button
+              key={category}
+              role="tab"
+              aria-selected={itemCategory === category}
+              className={`diy-subnav-item ${itemCategory === category ? "active" : ""}`}
+              onClick={() => {
+                if (editingItemId) {
+                  setEditingItemId(null);
+                  setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
+                  setMessage("已退出编辑（切换了类别）。");
+                }
+                setItemCategory(category);
+              }}
+              disabled={busy}
+            >
+              {CATEGORY_META[category].label}
+            </button>
+          ))}
+        </nav>
+        <div className="diy-main">
           {/* 规格表 */}
           <section className="sec">
             <div className="sec-head">
@@ -717,25 +730,6 @@ export default function Home() {
             <div className="sec-head">
               <h3 className="sec-title">{editingItemId ? "编辑配件" : "配件录入"}</h3>
               <span className="sec-meta">数据由你确认，不自动猜测型号</span>
-            </div>
-            <div className="tabs" role="tablist" aria-label="配件类别">
-              {CATEGORY_ORDER.map((category) => (
-                <button
-                  key={category}
-                  className={`tab ${itemCategory === category ? "active" : ""}`}
-                  onClick={() => {
-                    if (editingItemId) {
-                      setEditingItemId(null);
-                      setDrafts((prev) => ({ ...prev, [itemCategory]: EMPTY_DRAFT }));
-                      setMessage("已退出编辑（切换了类别）。");
-                    }
-                    setItemCategory(category);
-                  }}
-                  disabled={busy}
-                >
-                  {CATEGORY_META[category].label}
-                </button>
-              ))}
             </div>
             {editingItemId && (
               <p className="edit-note">正在编辑清单中的配件：类别保持不变，改完点「保存修改」。</p>
@@ -847,8 +841,8 @@ export default function Home() {
           </section>
         </div>
 
-        {/* 诊断 */}
-        <div>
+        {/* 诊断：参考图右栏 */}
+        <aside className="diy-aside">
           <section className="sec">
             <div className="results-head">
               <h3 className="sec-title">兼容性诊断</h3>
@@ -889,7 +883,7 @@ export default function Home() {
               </div>
             ) : (
               <p className="empty-line">
-                尚无检查结果。录入配件后点右上角「运行兼容性检查 ↗」，结论会按阻断、待补充、警告、通过排列。
+                尚无检查结果。录入配件后点右上角「重新检查」，结论会按阻断、待补充、警告、通过排列。
               </p>
             )}
             {checkHistory.length > 0 && (
@@ -909,11 +903,11 @@ export default function Home() {
               </details>
             )}
           </section>
-        </div>
+        </aside>
       </div>
 
       <footer className="footer">
-        <span className="footer-brand">RIGMATE / 业务规则优先</span>
+        <span className="footer-brand">RIGMATE / 先确认能装，再决定买什么</span>
         {/* 操作反馈移至表单按钮旁（form-feedback）：footer 在页面底端，用户看不见 */}
       </footer>
     </main>

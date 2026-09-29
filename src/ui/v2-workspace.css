@@ -875,3 +875,86 @@
   .decision-banner-actions .button { flex: 1; }
 }
 
+/* ============================================================================
+   Task 5（2026-09-28 基线）：DIY 页参考图视觉
+   类别子导航 + 主区编辑 + 诊断右栏；自动检查徽章；重新检查主按钮
+   ========================================================================== */
+
+.sheet.diy-grid {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 340px;
+  gap: 22px;
+  align-items: start;
+}
+
+.diy-subnav {
+  position: sticky; top: 84px;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  box-shadow: var(--wb-shadow-panel);
+}
+.diy-subnav-item {
+  position: relative;
+  display: flex; align-items: center;
+  height: 40px; padding: 0 14px;
+  border-radius: var(--wb-radius-control);
+  color: var(--wb-ink-muted); font-size: 13px; font-weight: 600;
+  text-align: left;
+  transition: background var(--wb-fast), color var(--wb-fast);
+}
+.diy-subnav-item:hover:not(:disabled) { background: var(--wb-surface-subtle); color: var(--wb-ink); }
+.diy-subnav-item.active {
+  background: var(--wb-accent-soft);
+  color: var(--wb-accent);
+}
+.diy-subnav-item.active::before {
+  content: ""; position: absolute; left: 0; top: 50%;
+  width: 3px; height: 16px; border-radius: 0 2px 2px 0;
+  transform: translateY(-50%);
+  background: var(--wb-accent);
+}
+
+.diy-main { min-width: 0; }
+
+.diy-aside {
+  position: sticky; top: 84px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  box-shadow: var(--wb-shadow-panel);
+  max-height: calc(100vh - 108px);
+  overflow-y: auto;
+}
+
+.diy-autocheck-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 6px; padding: 3px 10px; border-radius: 999px;
+  background: var(--wb-pass-soft); color: var(--wb-pass);
+  font-size: 11.5px; font-weight: 700;
+}
+.diy-autocheck-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* 诊断卡在白面板内的呈现（原 sec 结构保持） */
+.diy-aside .sec-head { border-bottom-color: var(--wb-hairline); }
+.diy-aside .stale-banner { margin-top: 10px; }
+
+@media (max-width: 1199px) {
+  .diy-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+  .diy-subnav {
+    position: static; grid-column: 1 / -1;
+    flex-direction: row; flex-wrap: wrap; gap: 4px 6px;
+  }
+  .diy-subnav-item { height: 36px; padding: 0 12px; white-space: nowrap; }
+  .diy-subnav-item.active::before { display: none; }
+}
+@media (max-width: 899px) {
+  .diy-grid { grid-template-columns: minmax(0, 1fr); }
+  .diy-aside { position: static; max-height: none; }
+}
+
+

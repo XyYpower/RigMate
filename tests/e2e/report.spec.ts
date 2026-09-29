@@ -10,14 +10,14 @@ test("M24 报告：运行检查后报告带图框标题栏、清单与诊断条�
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
   await page.getByRole("button", { name: /加入清单/ }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
-  await page.getByRole("tablist", { name: "配件类别" }).getByRole("button", { name: "主板" }).click();
+  await page.getByRole("tab", { name: "主板" }).click();
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("测试主板");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则", exact: true }).fill("LGA1700");
   await page.getByRole("button", { name: /加入清单/ }).click();
   await expect(page.getByText("2 / 8 类")).toBeVisible();
 
   // 运行检查 → 工作台出现"查看报告"入口
-  await page.getByRole("button", { name: /运行兼容性检查/ }).click();
+  await page.getByRole("button", { name: /重新检查/ }).click();
   await expect(page.getByRole("link", { name: /查看报告/ })).toBeVisible();
 
   // 打开报告：图框 + 摘要 + 条款（含阻断）+ 打印按钮
