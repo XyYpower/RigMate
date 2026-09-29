@@ -307,6 +307,9 @@ export default function HardwarePage() {
               <h2 id="catalog-quality-title">数据质量</h2>
               <p className="hw-section-note">
                 入库 {quality.products.total.toLocaleString("zh-CN")} 条，每条的质量状态来自字段级证据链，人工复核后才会提升。
+                <Link href="/review" style={{ marginLeft: 8 }}>
+                  去审核台复核 →
+                </Link>
               </p>
             </div>
             <span className="hw-total">

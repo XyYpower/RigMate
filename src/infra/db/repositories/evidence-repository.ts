@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { buildItemCategorySchema } from "@/domain/build/types";
 import { isValidSpecFieldValue } from "@/domain/catalog/quality";
 import type { EvidenceStatus, IdentityMatch, SourceTier } from "@/domain/catalog/quality";
@@ -253,6 +253,56 @@ export type EvidenceCoverageStats = {
   productsWithEvidence: number;
   productFieldPairs: number;
 };
+
+/** 审核台列表项：待人工复核的字段证据（含来源信息与产品名） */
+export type PendingReviewItem = {
+  evidenceId: string;
+  fieldPath: string;
+  value: unknown;
+  excerpt: string;
+  identityMatch: string;
+  createdAt: string;
+  sourceId: string;
+  sourceTitle: string;
+  sourceUrl: string;
+  sourceTier: string;
+  sourceStatus: string;
+  productId: string;
+  productName: string;
+  productCategory: string;
+};
+
+/** 待人工复核证据列表（verified_at 为空），新→旧 */
+export function listPendingReviewItems(limit = 200): PendingReviewItem[] {
+  const rows = ensureDatabase()
+    .select({
+      evidenceId: productFieldEvidence.id,
+      fieldPath: productFieldEvidence.fieldPath,
+      value: productFieldEvidence.value,
+      excerpt: productFieldEvidence.excerpt,
+      identityMatch: productFieldEvidence.identityMatch,
+      createdAt: productFieldEvidence.createdAt,
+      sourceId: productSources.id,
+      sourceTitle: productSources.sourceTitle,
+      sourceUrl: productSources.sourceUrl,
+      sourceTier: productSources.tier,
+      sourceStatus: productSources.status,
+      productId: canonicalProducts.id,
+      productName: canonicalProducts.name,
+      productCategory: canonicalProducts.category,
+    })
+    .from(productFieldEvidence)
+    .innerJoin(productSources, eq(productFieldEvidence.sourceId, productSources.id))
+    .innerJoin(canonicalProducts, eq(productFieldEvidence.canonicalProductId, canonicalProducts.id))
+    .where(isNull(productFieldEvidence.verifiedAt))
+    .orderBy(desc(productFieldEvidence.createdAt))
+    .limit(limit)
+    .all();
+  return rows.map((row) => ({
+    ...row,
+    value: JSON.parse(row.value) as unknown,
+  }));
+}
 
 export function evidenceCoverageStats(): EvidenceCoverageStats {
   const row = ensureDatabase()

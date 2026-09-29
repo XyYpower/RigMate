@@ -260,6 +260,21 @@ describe("目录数据质量仓储（v8/v9 迁移 + 证据/事件/队列）", ()
     expect(partialRow?.manufacturer).toBe("ASUS");
   });
 
+  it("审核台列表：只返回未盖章证据，盖章后消失", async () => {
+    const { listPendingReviewItems } = await import("@/infra/db/repositories/evidence-repository");
+    const before = listPendingReviewItems();
+    const mine = before.filter((item) => item.productId === gpuId);
+    expect(mine.length).toBeGreaterThanOrEqual(2);
+    expect(mine.every((item) => item.productName.length > 0 && item.sourceUrl.length > 0)).toBe(true);
+
+    // 盖章一条 → 该条从待复核列表消失
+    const target = mine[0]!;
+    const { verifyFieldEvidence } = await import("@/infra/db/repositories/evidence-repository");
+    verifyFieldEvidence(target.evidenceId, "reviewer-desk");
+    const after = listPendingReviewItems().filter((item) => item.productId === gpuId);
+    expect(after.some((item) => item.evidenceId === target.evidenceId)).toBe(false);
+  });
+
   it("重启后数据持久化（close → reopen）", () => {
     closeDatabase();
     // ensureDatabase 会按 RIGMATE_DB_PATH 重新建连并跑幂等迁移

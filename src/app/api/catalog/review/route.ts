@@ -13,6 +13,7 @@ import {
 } from "@/application/catalog-review/service";
 import { evidenceStatusSchema } from "@/domain/catalog/quality";
 import { productSourceTypeSchema, productFieldEvidenceSchema } from "@/contracts/catalog";
+import { listPendingReviewItems } from "@/infra/db/repositories/evidence-repository";
 
 /**
  * 目录审核 API（Task 4）：人工审核的唯一入口。
@@ -94,8 +95,19 @@ const actionSchema = z.discriminatedUnion("action", [
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const productId = url.searchParams.get("productId");
+  // 不带 productId = 审核台模式：返回全部待人工复核的字段证据（按产品分组）
   if (!productId) {
-    return NextResponse.json({ error: "缺少 productId 参数。" }, { status: 400 });
+    const items = listPendingReviewItems();
+    const byProduct = new Map<string, { productId: string; productName: string; productCategory: string; evidence: typeof items }>();
+    for (const item of items) {
+      let bucket = byProduct.get(item.productId);
+      if (!bucket) {
+        bucket = { productId: item.productId, productName: item.productName, productCategory: item.productCategory, evidence: [] };
+        byProduct.set(item.productId, bucket);
+      }
+      bucket.evidence.push(item);
+    }
+    return NextResponse.json({ total: items.length, products: [...byProduct.values()] });
   }
   try {
     return NextResponse.json(getReviewContext(productId));

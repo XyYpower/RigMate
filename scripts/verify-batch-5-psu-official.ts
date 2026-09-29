@@ -67,18 +67,23 @@ updateCatalogQueueItem("pq-1bb449ba-fc44-4102-afbe-6889ea957125", {
 });
 updateCatalogQueueItem("pq-f3e5075a-58ae-4d2f-89c2-772bcd32285d", {
   resolutionNote: "官网核查 2026-09-29：huntkey.com 规格表无接口数量行，仅'ATX3.1 原生 PCIe5.1 接口'声明（红线不采用）；页内型号 HK950-56PP 与标题 MVP K850 并存。维持 ZOL S3 或找说明书 PDF",
+  reviewer: REVIEWER,
 });
 updateCatalogQueueItem("pq-14150357-5daa-4a0a-adef-43948c61451b", {
   resolutionNote: "官网核查 2026-09-29：huntkey.com 同上（无接口行）；另'风魔 P650GS'型号在官网未检索到，身份存疑维持",
+  reviewer: REVIEWER,
 });
 updateCatalogQueueItem("pq-8d627465-b284-4aab-842b-10ef656463d4", {
   resolutionNote: "官网核查 2026-09-29：segotep.com 无'无界PRO'命名，在售为 无界M750Pro/M850Pro/P850W Pro（产品页规格为图片且无'无界PRO'字样）——样本名与在售名对应关系需用户确认（购机凭证/商品页截图）",
+  reviewer: REVIEWER,
 });
 updateCatalogQueueItem("pq-5c379d12-90d5-48d3-82fe-5510056b503d", {
   resolutionNote: "官网核查 2026-09-29：同无界PRO 750W——官网无此命名，需用户确认对应型号（无界M850Pro? P850W Pro?）",
+  reviewer: REVIEWER,
 });
 updateCatalogQueueItem("pq-2598e2b2-3c03-4897-97dc-a83a0058645f", {
   resolutionNote: "官网核查 2026-09-29：m-master.cn 可达（http），FX850 产品页规格为图片且页面不稳定截图超时；需用户提供规格图或说明书截图",
+  reviewer: REVIEWER,
 });
 
 console.log("批次五完成：VTE X2 录入发布，5 个队列项写入官网核查备注。");
