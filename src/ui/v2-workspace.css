@@ -1190,3 +1190,95 @@
 
 /* 修复：::before 编号占 grid col1，内容须显式落 col2 */
 .home-how-nums strong, .home-how-nums p { grid-column: 2; }
+
+/* ============================================================================
+   资料页割裂感根治（用户反馈"为了对齐而对齐"）：
+   橙竖条标题退役 → 全部区块面板化（与方案页/DIY 同语言）
+   ========================================================================== */
+
+/* 通用：hw-page 里的裸 sec 面板化（projects/evidence 自动统一） */
+.hw-page .sec {
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  box-shadow: var(--wb-shadow-panel);
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+.hw-page .sec + .sec { margin-top: 16px; }
+.hw-page .hw-sec-head { border-bottom: 1px solid var(--wb-hairline); padding-bottom: 10px; margin-bottom: 12px; }
+.hw-page .hw-sec-head h2 { font-size: 15px; }
+/* 橙竖条退役：面板头不再需要页级标题装饰 */
+.hw-page .hw-head h1::before,
+.hw-page .hw-sec-head h2::before { display: none; }
+.hw-page .hw-head { padding: 0; margin-bottom: 4px; }
+.hw-page .review-paste { background: var(--wb-surface); }
+
+/* hardware 探索目录面板 */
+.hw-explore { margin-top: 20px; padding: 0 20px 16px; overflow: hidden; }
+.hw-explore-tabs {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 14px 0 12px;
+  border-bottom: 1px solid var(--wb-hairline);
+}
+.hw-explore-tabs button {
+  padding: 6px 15px;
+  border: 1px solid var(--wb-hairline);
+  border-radius: 999px;
+  background: var(--wb-surface);
+  color: var(--wb-ink-muted);
+  font-size: 12.5px; font-weight: 600;
+  transition: all var(--wb-fast);
+}
+.hw-explore-tabs button:hover { color: var(--wb-accent); border-color: var(--wb-accent); }
+.hw-explore-tabs button.active {
+  background: var(--wb-accent-soft);
+  border-color: var(--wb-accent);
+  color: var(--wb-accent);
+}
+.hw-purpose { padding: 13px 0; border-bottom: 1px solid var(--wb-hairline); }
+.hw-purpose p { margin: 0; color: var(--wb-ink-muted); font-size: 13px; line-height: 1.6; }
+.hw-purpose strong { color: var(--wb-ink); font-weight: 700; margin-right: 10px; }
+.hw-explore .hw-searchbar {
+  display: flex; gap: 10px; align-items: center;
+  padding: 13px 0 0;
+  margin-bottom: 0;
+  border: 0; border-radius: 0; box-shadow: none; background: transparent;
+}
+.hw-explore .hw-searchbar input {
+  flex: 1; padding: 8px 13px;
+  border: 1px solid var(--wb-hairline-strong);
+  border-radius: var(--wb-radius-control);
+  background: var(--wb-surface); color: var(--wb-ink); font-size: 13px;
+}
+.hw-explore .hw-searchbar input:focus { outline: none; border-color: var(--wb-accent); box-shadow: 0 0 0 3px var(--wb-accent-soft); }
+.hw-explore .hw-searchbar .button { flex: none; }
+.hw-hits { border-top: 1px solid var(--wb-hairline); }
+.hw-hits th { border-bottom: 1px solid var(--wb-hairline); }
+.hw-hits td { border-bottom: 1px solid var(--wb-hairline); }
+.hw-hits tr:last-child td { border-bottom: 0; }
+
+/* 面板块通用头 */
+.hw-panel-block { margin-top: 16px; padding: 0 20px 6px; overflow: hidden; }
+.hw-panel-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 15px 0 11px;
+  border-bottom: 1px solid var(--wb-hairline);
+}
+.hw-panel-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.hw-panel-head .hw-section-note { margin: 3px 0 0; }
+.hw-panel-block .hw-stats {
+  border: 0; border-radius: 0; box-shadow: none;
+  border-bottom: 1px solid var(--wb-hairline);
+  padding: 14px 0 12px;
+}
+.hw-panel-block .hw-table th { border-bottom-color: var(--wb-hairline); }
+.hw-panel-block .hw-table td { border-bottom: 1px solid var(--wb-hairline); }
+.hw-panel-block .hw-table tr:last-child td { border-bottom: 0; }
+.hw-panel-block .hw-section-note { margin: 10px 0 10px; }
+
+/* 页面骨架：WorkspaceHeader 独立成行 */
+.hw-page .workbench-header {
+  margin: 0 calc(-1 * clamp(16px, 3vw, 32px));
+  border-left: 0; border-right: 0; border-top: 0;
+}

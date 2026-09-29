@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CATEGORY_META, type ItemSpec } from "@/ui/category-form";
 import { productPageUrl } from "@/ui/product-link";
+import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
 
 type SourceInfo = {
   key: string;
@@ -102,7 +103,6 @@ export default function HardwarePage() {
   const [quality, setQuality] = useState<QualityOverview | null>(null);
   const [imports, setImports] = useState<ImportRun[]>([]);
   const [loadError, setLoadError] = useState(false);
-  const [searchCategory, setSearchCategory] = useState("cpu");
   const [selectedCategory, setSelectedCategory] = useState("cpu");
   const [searchQuery, setSearchQuery] = useState("");
   const [hits, setHits] = useState<CatalogHit[] | null>(null);
@@ -132,7 +132,7 @@ export default function HardwarePage() {
   async function runSearch() {
     setSearching(true);
     try {
-      const params = new URLSearchParams({ category: searchCategory });
+      const params = new URLSearchParams({ category: selectedCategory });
       if (searchQuery.trim()) params.set("q", searchQuery.trim());
       const response = await fetch(`/api/catalog?${params.toString()}`);
       const data = await response.json();
@@ -146,25 +146,21 @@ export default function HardwarePage() {
 
   return (
     <main className="hw-page">
-      <header className="hw-head">
-        <p className="hw-kicker">先了解，再选择</p>
-        <h1><span className="sr-only">硬件中心：</span>找到适合你方案的硬件</h1>
-        <p className="hw-sub">
-          先按类别了解它在整机中的作用，再搜索具体型号。目录资料会显示来源和已核对的规格。
-        </p>
-      </header>
+      <WorkspaceHeader
+        title="硬件资料"
+        meta={overview ? `目录 ${overview.totalEntries.toLocaleString("zh-CN")} 条 · 三层来源` : "先了解，再选择"}
+        actions={
+          <Link className="button secondary" href="/">
+            去描述你的目标 <span aria-hidden>↗</span>
+          </Link>
+        }
+      />
 
       {loadError && <p className="helper">目录总览加载失败，请确认开发服务器正在运行。</p>}
 
-      <section className="hw-guide" aria-labelledby="hardware-guide-title">
-        <div className="hw-sec-head">
-          <div>
-            <h2 id="hardware-guide-title">八类核心部件</h2>
-            <p className="hw-section-note">不确定从哪里开始？先从你的用途和预算出发，系统会在方案里帮你组合。</p>
-          </div>
-          <Link className="hw-inline-link" href="/">去描述你的目标 ↗</Link>
-        </div>
-        <div className="hw-category-tabs" role="tablist" aria-label="硬件类别">
+      {/* 探索目录：类别 + 说明 + 检索 + 结果，一个面板讲完 */}
+      <section className="wb-panel hw-explore" aria-labelledby="hardware-explore-title">
+        <div className="hw-explore-tabs" role="tablist" aria-label="硬件类别">
           {Object.entries(CATEGORY_LABELS).map(([category, label]) => (
             <button
               key={category}
@@ -174,7 +170,6 @@ export default function HardwarePage() {
               className={selectedCategory === category ? "active" : ""}
               onClick={() => {
                 setSelectedCategory(category);
-                setSearchCategory(category);
                 setHits(null);
               }}
             >
@@ -183,16 +178,68 @@ export default function HardwarePage() {
           ))}
         </div>
         <div className="hw-purpose" role="tabpanel">
-          <span className="hw-purpose-label">{CATEGORY_LABELS[selectedCategory]}</span>
-          <p>{CATEGORY_PURPOSE[selectedCategory]}</p>
+          <p>
+            <strong>{CATEGORY_LABELS[selectedCategory]}</strong>
+            {CATEGORY_PURPOSE[selectedCategory]}
+          </p>
         </div>
+        <div className="hw-searchbar">
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void runSearch();
+            }}
+            placeholder={`在${CATEGORY_LABELS[selectedCategory]}里搜型号或关键词，例如 5070 / 速虎 / B650M`}
+            aria-label="目录关键词"
+          />
+          <button className="button secondary" onClick={() => void runSearch()} disabled={searching}>
+            {searching ? "检索中…" : "检索"}
+          </button>
+        </div>
+        {hits && (
+          <table className="hw-table hw-hits">
+            <thead>
+              <tr>
+                <th>型号</th>
+                <th>来源</th>
+                <th>规格</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hits.map((hit) => (
+                <tr key={hit.id}>
+                  <td>
+                    <a
+                      className="pj-open"
+                      href={productPageUrl(hit.name, hit.refUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="查看商品页（京东搜索）"
+                    >
+                      {hit.name}
+                    </a>
+                  </td>
+                  <td>{SOURCE_SHORT[hit.source] ?? hit.source}</td>
+                  <td className="hw-spec">{specSummary(hit.category, hit.spec)}</td>
+                </tr>
+              ))}
+              {hits.length === 0 && (
+                <tr>
+                  <td colSpan={3}>没有找到已核实的型号，可以换一个关键词或提交型号线索。</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </section>
 
+      {/* 数据底座：来源数字 + 类别覆盖，一个面板 */}
       {overview && (
-        <section className="sec">
-          <div className="hw-sec-head">
-            <h2>目录来源</h2>
-            <span className="hw-total">共 {overview.totalEntries.toLocaleString("zh-CN")} 条</span>
+        <section className="wb-panel hw-panel-block" aria-labelledby="hardware-source-title">
+          <div className="hw-panel-head">
+            <h2 id="hardware-source-title">目录来源与覆盖</h2>
+            <span>来源构成 = 种子 / 人工 / BuildCores</span>
           </div>
           <div className="hw-stats">
             {overview.sources.map((source) => (
@@ -216,15 +263,6 @@ export default function HardwarePage() {
                 </span>
               </div>
             ))}
-          </div>
-        </section>
-      )}
-
-      {overview && (
-        <section className="sec">
-          <div className="hw-sec-head">
-            <h2>类别覆盖</h2>
-            <span className="hw-total">来源构成 = 种子 / 人工 / BuildCores</span>
           </div>
           <table className="hw-table">
             <thead>
@@ -261,13 +299,14 @@ export default function HardwarePage() {
         </section>
       )}
 
+      {/* 数据质量（只读报表） */}
       {quality && (
-        <section className="sec" aria-labelledby="catalog-quality-title">
-          <div className="hw-sec-head">
+        <section className="wb-panel hw-panel-block" aria-labelledby="catalog-quality-title">
+          <div className="hw-panel-head">
             <div>
               <h2 id="catalog-quality-title">数据质量</h2>
               <p className="hw-section-note">
-                只读报表：入库 {quality.products.total.toLocaleString("zh-CN")} 条，每条的质量状态来自字段级证据链，复核后才会提升。
+                入库 {quality.products.total.toLocaleString("zh-CN")} 条，每条的质量状态来自字段级证据链，人工复核后才会提升。
               </p>
             </div>
             <span className="hw-total">
@@ -329,75 +368,6 @@ export default function HardwarePage() {
           )}
         </section>
       )}
-
-      <section className="sec">
-        <div className="hw-sec-head">
-          <div>
-            <h2>查询型号</h2>
-            <p className="hw-section-note">输入你看到的型号或关键词，结果只来自当前目录。</p>
-          </div>
-        </div>
-        <div className="hw-searchbar">
-          <select
-            value={searchCategory}
-            onChange={(event) => setSearchCategory(event.target.value)}
-            aria-label="检索类别"
-          >
-            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") void runSearch();
-            }}
-            placeholder="型号关键词，例如 5070 / 速虎 / B650M"
-            aria-label="目录关键词"
-          />
-          <button className="button secondary" onClick={() => void runSearch()} disabled={searching}>
-            检索
-          </button>
-        </div>
-        {hits && (
-          <table className="hw-table">
-            <thead>
-              <tr>
-                <th>型号</th>
-                <th>来源</th>
-                <th>规格</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hits.map((hit) => (
-                <tr key={hit.id}>
-                  <td>
-                    <a
-                      className="pj-open"
-                      href={productPageUrl(hit.name, hit.refUrl)}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="查看商品页（京东搜索）"
-                    >
-                      {hit.name}
-                    </a>
-                  </td>
-                  <td>{SOURCE_SHORT[hit.source] ?? hit.source}</td>
-                  <td className="hw-spec">{specSummary(hit.category, hit.spec)}</td>
-                </tr>
-              ))}
-              {hits.length === 0 && (
-                <tr>
-              <td colSpan={3}>没有找到已核实的型号，可以换一个关键词或提交型号线索。</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </section>
 
       <details className="hw-audit">
         <summary>导入审计 · {imports.length} 条</summary>
