@@ -1,5 +1,5 @@
 import type { BuildItem, Finding } from "@/domain/build/types";
-import { firstOf, makeFinding, unknownFinding } from "./helpers";
+import { firstOf, gateFieldQuality, makeFinding, unknownFinding } from "./helpers";
 
 const OTHER_COMPONENTS_BASELINE_WATTS = 80;
 const PSU_WARN_MARGIN_RATIO = 0.8;
@@ -21,6 +21,12 @@ export function checkPsuCapacity(items: BuildItem[]): Finding | null {
   if (missingFields.length > 0) {
     return unknownFinding("R-PSU-001", itemIds, missingFields);
   }
+  const qualityGate = gateFieldQuality("R-PSU-001", itemIds, [
+    { item: psu, field: "ratedWatts", label: "电源额定功率" },
+    ...(cpu ? [{ item: cpu, field: "tdpWatts", label: "CPU TDP 功耗" as const }] : []),
+    ...(gpu ? [{ item: gpu, field: "tdpWatts", label: "显卡 TDP 功耗" as const }] : []),
+  ]);
+  if (qualityGate) return qualityGate;
 
   const requiredWatts =
     (cpu?.spec.tdpWatts ?? 0) + (gpu?.spec.tdpWatts ?? 0) + OTHER_COMPONENTS_BASELINE_WATTS;
@@ -85,6 +91,13 @@ export function checkPsuConnectors(items: BuildItem[]): Finding | null {
   if (missingFields.length > 0) {
     return unknownFinding("R-PSU-002", itemIds, missingFields);
   }
+  const qualityGate = gateFieldQuality("R-PSU-002", itemIds, [
+    { item: gpu, field: "pcie8pin", label: "显卡 PCIe 8pin 数量" },
+    { item: gpu, field: "twelveVhpwr", label: "显卡 12VHPWR 数量" },
+    { item: psu, field: "pcie8pin", label: "电源 PCIe 8pin 数量" },
+    { item: psu, field: "twelveVhpwr", label: "电源 12VHPWR 数量" },
+  ]);
+  if (qualityGate) return qualityGate;
 
   const needed8pin = gpuConnectors.pcie8pin ?? 0;
   const needed12vhpwr = gpuConnectors.twelveVhpwr ?? 0;

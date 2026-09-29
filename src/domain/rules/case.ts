@@ -1,5 +1,5 @@
 import type { BuildItem, Finding } from "@/domain/build/types";
-import { firstOf, makeFinding, unknownFinding } from "./helpers";
+import { firstOf, gateFieldQuality, makeFinding, unknownFinding } from "./helpers";
 
 export function checkMotherboardCase(items: BuildItem[]): Finding | null {
   const motherboard = firstOf(items, "motherboard");
@@ -16,6 +16,11 @@ export function checkMotherboardCase(items: BuildItem[]): Finding | null {
       ...(supported ? [] : ["机箱支持板型列表"]),
     ]);
   }
+  const qualityGate = gateFieldQuality("R-MB-CASE-001", itemIds, [
+    { item: motherboard, field: "formFactor", label: "主板板型" },
+    { item: pcCase, field: "supportedFormFactors", label: "机箱支持板型列表" },
+  ]);
+  if (qualityGate) return qualityGate;
 
   if (!supported.includes(formFactor)) {
     return makeFinding({
@@ -50,6 +55,11 @@ export function checkGpuCaseLength(items: BuildItem[]): Finding | null {
   if (missingFields.length > 0) {
     return unknownFinding("R-GPU-CASE-001", itemIds, missingFields);
   }
+  const qualityGate = gateFieldQuality("R-GPU-CASE-001", itemIds, [
+    { item: gpu, field: "lengthMm", label: "显卡长度" },
+    { item: pcCase, field: "maxGpuLengthMm", label: "机箱显卡限长" },
+  ]);
+  if (qualityGate) return qualityGate;
 
   const length = gpu.spec.lengthMm ?? 0;
   const maxLength = pcCase.spec.maxGpuLengthMm ?? 0;
@@ -90,6 +100,11 @@ export function checkCoolerCaseHeight(items: BuildItem[]): Finding | null {
   if (missingFields.length > 0) {
     return unknownFinding("R-COOLER-CASE-001", itemIds, missingFields);
   }
+  const qualityGate = gateFieldQuality("R-COOLER-CASE-001", itemIds, [
+    { item: cooler, field: "heightMm", label: "散热器高度" },
+    { item: pcCase, field: "maxCoolerHeightMm", label: "机箱散热器限高" },
+  ]);
+  if (qualityGate) return qualityGate;
 
   const height = cooler.spec.heightMm ?? 0;
   const maxHeight = pcCase.spec.maxCoolerHeightMm ?? 0;

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { buildItemCategorySchema } from "@/domain/build/types";
 import { isValidSpecFieldValue } from "@/domain/catalog/quality";
 import type { EvidenceStatus, IdentityMatch, SourceTier } from "@/domain/catalog/quality";
@@ -200,4 +200,90 @@ export function listFieldEvidence(
         createdAt: row.createdAt,
       }),
     );
+}
+
+/** 按 id 读取单条证据（审核操作定位用） */
+export function findFieldEvidence(evidenceId: string): ProductFieldEvidence | null {
+  const row = ensureDatabase()
+    .select()
+    .from(productFieldEvidence)
+    .where(eq(productFieldEvidence.id, evidenceId))
+    .get();
+  if (!row) return null;
+  return {
+    id: row.id,
+    canonicalProductId: row.canonicalProductId,
+    fieldPath: row.fieldPath,
+    sourceId: row.sourceId,
+    value: JSON.parse(row.value) as unknown,
+    excerpt: row.excerpt,
+    identityMatch: row.identityMatch as IdentityMatch,
+    confidence: row.confidence as ProductFieldEvidence["confidence"],
+    verifiedAt: row.verifiedAt,
+    verifiedBy: row.verifiedBy,
+    supersedesId: row.supersedesId,
+    createdAt: row.createdAt,
+  };
+}
+
+/** 人工复核盖章：写入 verifiedAt/verifiedBy（证据唯一允许的 UPDATE，其余字段不可改） */
+export function verifyFieldEvidence(evidenceId: string, verifiedBy: string, verifiedAt?: string): void {
+  const result = ensureDatabase()
+    .update(productFieldEvidence)
+    .set({ verifiedBy, verifiedAt: verifiedAt ?? new Date().toISOString() })
+    .where(eq(productFieldEvidence.id, evidenceId))
+    .run();
+  if (result.changes === 0) throw new Error(`证据不存在：${evidenceId}`);
+}
+
+/** 来源 id → 所属产品 id（审核服务定位用） */
+export function findProductSourceOwner(sourceId: string): string | null {
+  const row = ensureDatabase()
+    .select({ canonicalProductId: productSources.canonicalProductId })
+    .from(productSources)
+    .where(eq(productSources.id, sourceId))
+    .get();
+  return row?.canonicalProductId ?? null;
+}
+
+/** 证据覆盖统计（质量报表用）：总证据/已复核/有证据产品数/产品-字段对数 */
+export type EvidenceCoverageStats = {
+  total: number;
+  verified: number;
+  productsWithEvidence: number;
+  productFieldPairs: number;
+};
+
+export function evidenceCoverageStats(): EvidenceCoverageStats {
+  const row = ensureDatabase()
+    .select({
+      total: sql<number>`count(*)`,
+      verified: sql<number>`sum(case when verified_at is not null then 1 else 0 end)`,
+      productsWithEvidence: sql<number>`count(distinct ${productFieldEvidence.canonicalProductId})`,
+      productFieldPairs: sql<number>`count(distinct ${productFieldEvidence.canonicalProductId} || '|' || ${productFieldEvidence.fieldPath})`,
+    })
+    .from(productFieldEvidence)
+    .get();
+  return {
+    total: row?.total ?? 0,
+    verified: row?.verified ?? 0,
+    productsWithEvidence: row?.productsWithEvidence ?? 0,
+    productFieldPairs: row?.productFieldPairs ?? 0,
+  };
+}
+
+/** 合并去重：把被合并条目的来源与证据整体改挂到保留条目名下（事件流水不动，保留历史） */
+export function reattachProductDataTo(duplicateId: string, keepId: string): { sources: number; evidence: number } {
+  const db = ensureDatabase();
+  const sources = db
+    .update(productSources)
+    .set({ canonicalProductId: keepId })
+    .where(eq(productSources.canonicalProductId, duplicateId))
+    .run().changes;
+  const evidence = db
+    .update(productFieldEvidence)
+    .set({ canonicalProductId: keepId })
+    .where(eq(productFieldEvidence.canonicalProductId, duplicateId))
+    .run().changes;
+  return { sources, evidence };
 }

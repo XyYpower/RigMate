@@ -150,6 +150,8 @@ export const canonicalProducts = sqliteTable("canonical_products", {
   mpn: text("mpn"),
   qualityStatus: text("quality_status").notNull().default("partial"),
   sourceVersion: text("source_version"),
+  /** 合并去重（v9）：本条已并入的目标产品 id；非空 = 不再作为候选出现在任何读取路径 */
+  mergedInto: text("merged_into"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

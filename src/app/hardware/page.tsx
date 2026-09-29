@@ -47,6 +47,20 @@ type CatalogHit = {
   refUrl?: string;
 };
 
+type QualityOverview = {
+  products: { total: number; byQualityStatus: Record<string, number> };
+  bySource: Record<string, number>;
+  categories: Array<{ category: string; total: number; filledFields: number; totalFields: number; fillRate: number }>;
+  evidence: { total: number; verified: number; productsWithEvidence: number; productFieldPairs: number; productCoverageRate: number };
+  conflicts: { products: number; rate: number };
+  stale: { products: number; rate: number };
+  queue: {
+    open: number;
+    byType: Record<string, number>;
+    topBlockingFields: Array<{ field: string; count: number }>;
+  };
+};
+
 const CATEGORY_LABELS: Record<string, string> = {
   cpu: "CPU",
   motherboard: "主板",
@@ -85,6 +99,7 @@ function specSummary(category: string, spec: ItemSpec): string {
 
 export default function HardwarePage() {
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [quality, setQuality] = useState<QualityOverview | null>(null);
   const [imports, setImports] = useState<ImportRun[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [searchCategory, setSearchCategory] = useState("cpu");
@@ -102,6 +117,7 @@ export default function HardwarePage() {
         const data = await response.json();
         if (!cancelled) {
           setOverview(data.overview ?? null);
+          setQuality(data.quality ?? null);
           setImports(data.imports ?? []);
         }
       } catch {
@@ -242,6 +258,75 @@ export default function HardwarePage() {
               })}
             </tbody>
           </table>
+        </section>
+      )}
+
+      {quality && (
+        <section className="sec" aria-labelledby="catalog-quality-title">
+          <div className="hw-sec-head">
+            <div>
+              <h2 id="catalog-quality-title">数据质量</h2>
+              <p className="hw-section-note">
+                只读报表：入库 {quality.products.total.toLocaleString("zh-CN")} 条，每条的质量状态来自字段级证据链，复核后才会提升。
+              </p>
+            </div>
+            <span className="hw-total">
+              证据 {quality.evidence.total.toLocaleString("zh-CN")} 条（已复核 {quality.evidence.verified.toLocaleString("zh-CN")}，覆盖 {quality.evidence.productCoverageRate}% 产品）
+            </span>
+          </div>
+          <div className="hw-stats">
+            <div className="hw-stat">
+              <span className="hw-stat-num">{quality.products.byQualityStatus.verified?.toLocaleString("zh-CN") ?? 0}</span>
+              <span className="hw-stat-label">已核验</span>
+            </div>
+            <div className="hw-stat">
+              <span className="hw-stat-num">{quality.products.byQualityStatus.supported?.toLocaleString("zh-CN") ?? 0}</span>
+              <span className="hw-stat-label">有参考资料</span>
+            </div>
+            <div className="hw-stat">
+              <span className="hw-stat-num">{quality.conflicts.products.toLocaleString("zh-CN")}</span>
+              <span className="hw-stat-label">来源冲突（{quality.conflicts.rate}%）</span>
+            </div>
+            <div className="hw-stat">
+              <span className="hw-stat-num">{quality.stale.products.toLocaleString("zh-CN")}</span>
+              <span className="hw-stat-label">来源过期（{quality.stale.rate}%）</span>
+            </div>
+            <div className="hw-stat">
+              <span className="hw-stat-num">{quality.queue.open.toLocaleString("zh-CN")}</span>
+              <span className="hw-stat-label">待审核（新品 {quality.queue.byType.new_product ?? 0} · 缺字段 {quality.queue.byType.missing_field ?? 0} · 冲突 {quality.queue.byType.conflict ?? 0} · 过期 {quality.queue.byType.stale ?? 0}）</span>
+            </div>
+          </div>
+          <table className="hw-table">
+            <thead>
+              <tr>
+                <th>类别</th>
+                <th className="num">条目</th>
+                <th>关键字段完整率</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quality.categories.map((row) => (
+                <tr key={row.category}>
+                  <td>{CATEGORY_LABELS[row.category] ?? row.category}</td>
+                  <td className="num">{row.total.toLocaleString("zh-CN")}</td>
+                  <td>
+                    <span className="cov">
+                      <span className="cov-track" aria-hidden="true">
+                        <span className="cov-fill" style={{ width: `${row.fillRate}%` }} />
+                      </span>
+                      <span className="cov-pct">{row.fillRate}%</span>
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {quality.queue.topBlockingFields.length > 0 && (
+            <p className="hw-section-note">
+              阻塞最多的字段：
+              {quality.queue.topBlockingFields.map((item) => ` ${item.field}（${item.count}）`).join(" ·")}
+            </p>
+          )}
         </section>
       )}
 

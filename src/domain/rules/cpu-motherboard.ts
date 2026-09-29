@@ -1,5 +1,5 @@
 import type { BuildItem, Finding } from "@/domain/build/types";
-import { firstOf, makeFinding, normalizeSpecValue, unknownFinding } from "./helpers";
+import { firstOf, gateFieldQuality, makeFinding, normalizeSpecValue, unknownFinding } from "./helpers";
 
 export function checkCpuMotherboardSocket(items: BuildItem[]): Finding | null {
   const cpu = firstOf(items, "cpu");
@@ -19,6 +19,11 @@ export function checkCpuMotherboardSocket(items: BuildItem[]): Finding | null {
       ...(motherboardSocket ? [] : ["主板插槽"]),
     ]);
   }
+  const qualityGate = gateFieldQuality("R-CPU-MB-001", itemIds, [
+    { item: cpu, field: "socket", label: "CPU 插槽" },
+    { item: motherboard, field: "socket", label: "主板插槽" },
+  ]);
+  if (qualityGate) return qualityGate;
 
   const normalizedCpuSocket = normalizeSpecValue(cpuSocket);
   const normalizedMotherboardSocket = normalizeSpecValue(motherboardSocket);

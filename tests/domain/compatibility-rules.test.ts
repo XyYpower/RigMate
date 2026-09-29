@@ -316,3 +316,67 @@ describe("报告排序与规则完整性", () => {
     expect(runBuildChecks([])).toEqual([]);
   });
 });
+
+describe("字段质量门（Task 5：unknown/conflicting/stale 一律不得 pass）", () => {
+  const gpuCase = [
+    makeItem({ category: "gpu", spec: { lengthMm: 336, tdpWatts: 220, pcie8pin: 0, twelveVhpwr: 1 } }),
+    makeItem({ category: "case", spec: { supportedFormFactors: ["ATX"], maxGpuLengthMm: 400, maxCoolerHeightMm: 180 } }),
+  ];
+
+  it("显卡长度 conflicting：R-GPU-CASE-001 返回 unknown 并带来源状态与原因", () => {
+    const items = gpuCase.map((item, index) =>
+      index === 0 ? ({ ...item, fieldQuality: { lengthMm: "conflicting" as const } }) : item,
+    );
+    const finding = runBuildChecks(items).find((f) => f.ruleId === "R-GPU-CASE-001");
+    expect(finding?.status).toBe("unknown");
+    expect(finding?.conclusion).toContain("显卡长度");
+    expect(finding?.evidence.join("\n")).toContain("来源冲突");
+    expect(finding?.missingFields).toContain("显卡长度");
+  });
+
+  it("机箱限长 stale：即使显卡长度已核验也不得 pass", () => {
+    const items = gpuCase.map((item, index) =>
+      index === 1 ? ({ ...item, fieldQuality: { maxGpuLengthMm: "stale" as const } }) : item,
+    );
+    const finding = runBuildChecks(items).find((f) => f.ruleId === "R-GPU-CASE-001");
+    expect(finding?.status).toBe("unknown");
+    expect(finding?.evidence.join("\n")).toContain("机箱显卡限长：质量状态「来源过期」");
+  });
+
+  it("电源 12VHPWR conflicting：R-PSU-002 返回 unknown", () => {
+    const finding = runBuildChecks([
+      makeItem({ category: "gpu", spec: { tdpWatts: 220, pcie8pin: 0, twelveVhpwr: 1 } }),
+      { ...makeItem({ category: "psu", spec: { ratedWatts: 850, pcie8pin: 2, twelveVhpwr: 1 } }), fieldQuality: { twelveVhpwr: "conflicting" as const } },
+    ]).find((f) => f.ruleId === "R-PSU-002");
+    expect(finding?.status).toBe("unknown");
+    expect(finding?.evidence.join("\n")).toContain("12VHPWR");
+  });
+
+  it("散热器高度 unknown 状态：R-COOLER-CASE-001 不 pass", () => {
+    const finding = runBuildChecks([
+      { ...makeItem({ category: "cooler", spec: { supportedSockets: ["AM5"], heightMm: 155 } }), fieldQuality: { heightMm: "unknown" as const } },
+      makeItem({ category: "case", spec: { supportedFormFactors: ["ATX"], maxCoolerHeightMm: 180 } }),
+    ]).find((f) => f.ruleId === "R-COOLER-CASE-001");
+    expect(finding?.status).toBe("unknown");
+  });
+
+  it("verified/supported 状态照常通过；未附加质量层行为不变", () => {
+    const verified = gpuCase.map((item, index) =>
+      index === 0 ? ({ ...item, fieldQuality: { lengthMm: "verified" as const } }) : item,
+    );
+    expect(runBuildChecks(verified).find((f) => f.ruleId === "R-GPU-CASE-001")?.status).toBe("pass");
+    const supported = gpuCase.map((item, index) =>
+      index === 0 ? ({ ...item, fieldQuality: { lengthMm: "supported" as const } }) : item,
+    );
+    expect(runBuildChecks(supported).find((f) => f.ruleId === "R-GPU-CASE-001")?.status).toBe("pass");
+    expect(runBuildChecks(gpuCase).find((f) => f.ruleId === "R-GPU-CASE-001")?.status).toBe("pass");
+  });
+
+  it("CPU 插槽 conflicting：R-CPU-MB-001 返回 unknown 而不是 pass/block", () => {
+    const finding = runBuildChecks([
+      { ...makeItem({ category: "cpu", spec: { socket: "AM5" } }), fieldQuality: { socket: "conflicting" as const } },
+      makeItem({ category: "motherboard", spec: { socket: "AM5" } }),
+    ]).find((f) => f.ruleId === "R-CPU-MB-001");
+    expect(finding?.status).toBe("unknown");
+  });
+});

@@ -1,5 +1,5 @@
 import type { BuildItem, Finding } from "@/domain/build/types";
-import { firstOf, makeFinding, normalizeSpecValue, unknownFinding } from "./helpers";
+import { firstOf, gateFieldQuality, makeFinding, normalizeSpecValue, unknownFinding } from "./helpers";
 
 export function checkCoolerSocket(items: BuildItem[]): Finding | null {
   const cpu = firstOf(items, "cpu");
@@ -16,6 +16,11 @@ export function checkCoolerSocket(items: BuildItem[]): Finding | null {
       ...(supportedSockets ? [] : ["散热器支持插槽列表"]),
     ]);
   }
+  const qualityGate = gateFieldQuality("R-COOLER-001", itemIds, [
+    { item: cpu, field: "socket", label: "CPU 插槽" },
+    { item: cooler, field: "supportedSockets", label: "散热器支持插槽列表" },
+  ]);
+  if (qualityGate) return qualityGate;
 
   const normalizedSocket = normalizeSpecValue(socket);
   const supported = supportedSockets.map(normalizeSpecValue);

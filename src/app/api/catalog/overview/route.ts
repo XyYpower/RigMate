@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
-import { buildCatalogOverview, type CatalogSourceKey } from "@/domain/catalog/overview";
+import { buildCatalogOverview, buildQualityOverview, type CatalogSourceKey } from "@/domain/catalog/overview";
 import { CATALOG } from "@/domain/catalog/seed";
 import { loadBuildcoresCatalog, loadManualCatalog } from "@/infra/catalog-import/load";
 import { listCatalogImportRuns } from "@/infra/db/repositories/catalog-import-repository";
+import { listCatalogQualityRows } from "@/infra/db/repositories/catalog-repository";
+import { evidenceCoverageStats } from "@/infra/db/repositories/evidence-repository";
+import { listQueueItems } from "@/infra/db/repositories/quality-repository";
 
 /** 硬件中心总览：GET /api/catalog/overview
- *  三层目录来源计数、按类别规格覆盖、最近导入审计。无副作用，纯读。 */
+ *  三层目录来源计数、按类别规格覆盖、最近导入审计 + 目录质量只读报表（Task 6）。
+ *  无副作用，纯读。 */
 export async function GET() {
   const manual = loadManualCatalog();
   const buildcores = loadBuildcoresCatalog();
@@ -47,5 +51,10 @@ export async function GET() {
   return NextResponse.json({
     overview: buildCatalogOverview(sources),
     imports: listCatalogImportRuns(20),
+    quality: buildQualityOverview({
+      records: listCatalogQualityRows(),
+      queueItems: listQueueItems({ limit: 1000 }),
+      evidence: evidenceCoverageStats(),
+    }),
   });
 }

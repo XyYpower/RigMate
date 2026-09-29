@@ -1,5 +1,5 @@
 import type { BuildItem, Finding } from "@/domain/build/types";
-import { firstOf, itemsOf, makeFinding, unknownFinding } from "./helpers";
+import { firstOf, gateFieldQuality, itemsOf, makeFinding, unknownFinding } from "./helpers";
 
 const STORAGE_INTERFACE_LABELS = {
   m2_nvme: "M.2 NVMe",
@@ -17,6 +17,10 @@ export function checkMotherboardGpuSlot(items: BuildItem[]): Finding | null {
       "主板 PCIe x16 插槽数量",
     ]);
   }
+  const slotGate = gateFieldQuality("R-MB-GPU-001", [motherboard.id, ...gpus.map((g) => g.id)], [
+    { item: motherboard, field: "pcieX16Slots", label: "主板 PCIe x16 插槽数量" },
+  ]);
+  if (slotGate) return slotGate;
 
   if (slots < 1) {
     return makeFinding({
@@ -55,6 +59,11 @@ export function checkMotherboardRamType(items: BuildItem[]): Finding | null {
   if (missingFields.length > 0) {
     return unknownFinding("R-MB-RAM-001", itemIds, missingFields);
   }
+  const ramTypeGate = gateFieldQuality("R-MB-RAM-001", itemIds, [
+    { item: motherboard, field: "ramType", label: "主板内存代际" },
+    ...rams.map((ram) => ({ item: ram, field: "ddrType", label: `内存（${ram.label}）代际` })),
+  ]);
+  if (ramTypeGate) return ramTypeGate;
 
   const mismatched = rams.filter((ram) => ram.spec.ddrType !== motherboardType);
   if (mismatched.length > 0) {
@@ -96,6 +105,11 @@ export function checkRamStickCount(items: BuildItem[]): Finding | null {
       ...kitsWithoutSticks.map((ram) => `内存（${ram.label}）条数`),
     ]);
   }
+  const stickGate = gateFieldQuality("R-RAM-001", itemIds, [
+    { item: motherboard, field: "ramSlots", label: "主板内存插槽数量" },
+    ...rams.map((ram) => ({ item: ram, field: "sticks", label: `内存（${ram.label}）条数` })),
+  ]);
+  if (stickGate) return stickGate;
 
   const totalSticks = rams.reduce((sum, ram) => sum + (ram.spec.sticks ?? 0), 0);
   if (totalSticks > slots) {
@@ -164,6 +178,10 @@ export function checkStorageInterface(items: BuildItem[]): Finding | null {
   if (missingFields.length > 0) {
     return unknownFinding("R-STORAGE-001", itemIds, missingFields);
   }
+  const interfaceGate = gateFieldQuality("R-STORAGE-001", itemIds, [
+    ...itemsOf(items, "storage").map((drive) => ({ item: drive, field: "interface", label: `存储（${drive.label}）接口` })),
+  ]);
+  if (interfaceGate) return interfaceGate;
 
   return makeFinding({
     ruleId: "R-STORAGE-001",
@@ -199,6 +217,11 @@ export function checkStoragePortCount(items: BuildItem[]): Finding | null {
   if (missingFields.length > 0) {
     return unknownFinding("R-STORAGE-002", itemIds, missingFields);
   }
+  const portGate = gateFieldQuality("R-STORAGE-002", itemIds, [
+    { item: motherboard, field: "m2Slots", label: "主板 M.2 插槽数量" },
+    { item: motherboard, field: "sataPorts", label: "主板 SATA 端口数量" },
+  ]);
+  if (portGate) return portGate;
 
   const m2Over = m2Drives.length > (motherboard.spec.m2Slots ?? 0);
   const sataOver = sataDrives.length > (motherboard.spec.sataPorts ?? 0);

@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 8;
+export const LATEST_SCHEMA_VERSION = 9;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -326,6 +326,16 @@ export const MIGRATIONS: Migration[] = [
       }
       if (!names.includes("source_version")) {
         db.run(sql`ALTER TABLE canonical_products ADD COLUMN source_version text`);
+      }
+    },
+  },
+  {
+    version: 9,
+    name: "canonical_products 合并映射列 merged_into（人工合并去重：旧 id 保留可解析，不再进候选）",
+    up: (db) => {
+      const columns = db.all<{ name: string }>(sql`PRAGMA table_info(canonical_products)`);
+      if (!columns.some((column) => column.name === "merged_into")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN merged_into text`);
       }
     },
   },

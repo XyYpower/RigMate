@@ -1,6 +1,6 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { specSchemaByCategory } from "@/domain/build/specs";
-import { buildItemCategorySchema } from "@/domain/build/types";
+import { buildItemCategorySchema, type BuildItemCategory } from "@/domain/build/types";
 import type { CatalogEntry } from "@/domain/catalog/seed";
 import type { PublishStatus } from "@/domain/catalog/quality";
 import { canonicalProductRecordSchema, type CanonicalProductRecord } from "@/contracts/catalog";
@@ -79,6 +79,7 @@ export function loadCatalogEntries(): SourcedCatalogEntry[] {
   const rows = ensureDatabase()
     .select()
     .from(canonicalProducts)
+    .where(isNull(canonicalProducts.mergedInto))
     .orderBy(asc(canonicalProducts.name))
     .all();
   const entries = rows
@@ -157,14 +158,16 @@ export function upsertCatalogEntries(entries: CatalogEntryUpsertInput[]): {
 export function listCatalogRecords(
   options: { qualityStatus?: PublishStatus; category?: string; limit?: number } = {},
 ): CanonicalProductRecord[] {
-  const conditions = [
-    options.qualityStatus ? eq(canonicalProducts.qualityStatus, options.qualityStatus) : undefined,
-    options.category ? eq(canonicalProducts.category, options.category) : undefined,
-  ].filter((condition) => condition !== undefined);
   const rows = ensureDatabase()
     .select()
     .from(canonicalProducts)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(
+      and(
+        isNull(canonicalProducts.mergedInto),
+        options.qualityStatus ? eq(canonicalProducts.qualityStatus, options.qualityStatus) : undefined,
+        options.category ? eq(canonicalProducts.category, options.category) : undefined,
+      ),
+    )
     .orderBy(desc(canonicalProducts.updatedAt))
     .limit(options.limit ?? 200)
     .all();
@@ -261,13 +264,14 @@ export function resetCatalogDbCacheForTests(): void {
   cache = undefined;
 }
 
-/** 审计合并用的行内快照：当前 spec、质量状态与来源版本 */
+/** 审计合并用的行内快照：当前 spec、质量状态与来源版本（mergedInto 非空 = 已被并入他条） */
 export type CatalogRowSnapshot = {
   id: string;
   category: ReturnType<typeof buildItemCategorySchema.parse>;
   spec: Record<string, unknown>;
   qualityStatus: PublishStatus;
   sourceVersion: string | null;
+  mergedInto: string | null;
 };
 
 export function getCatalogSnapshot(id: string): CatalogRowSnapshot | null {
@@ -284,6 +288,7 @@ export function getCatalogSnapshot(id: string): CatalogRowSnapshot | null {
     spec: specSchemaByCategory[category].parse(JSON.parse(row.spec) as Record<string, unknown>),
     qualityStatus: row.qualityStatus as PublishStatus,
     sourceVersion: row.sourceVersion ?? null,
+    mergedInto: row.mergedInto ?? null,
   };
 }
 
@@ -313,4 +318,45 @@ export function writeCatalogMerge(
     .where(eq(canonicalProducts.id, id))
     .run();
   cache = undefined;
+}
+
+/** 合并去重：旧 id 保留（merged_into 指向保留条目），从此不进任何候选读取路径 */
+export function setProductMergedInto(duplicateId: string, keepId: string): void {
+  const result = ensureDatabase()
+    .update(canonicalProducts)
+    .set({ mergedInto: keepId, updatedAt: new Date().toISOString() })
+    .where(eq(canonicalProducts.id, duplicateId))
+    .run();
+  if (result.changes === 0) throw new Error(`合并目标不存在：${duplicateId}`);
+  cache = undefined;
+}
+
+/** 质量报表用的轻量行（只取统计所需列，spec 写入时已过 schema，读侧不再重校验） */
+export type CatalogQualityRow = {
+  id: string;
+  category: BuildItemCategory;
+  spec: Record<string, unknown>;
+  source: CatalogSourceTag;
+  qualityStatus: PublishStatus;
+};
+
+export function listCatalogQualityRows(): CatalogQualityRow[] {
+  return ensureDatabase()
+    .select({
+      id: canonicalProducts.id,
+      category: canonicalProducts.category,
+      spec: canonicalProducts.spec,
+      source: canonicalProducts.source,
+      qualityStatus: canonicalProducts.qualityStatus,
+    })
+    .from(canonicalProducts)
+    .where(isNull(canonicalProducts.mergedInto))
+    .all()
+    .map((row) => ({
+      id: row.id,
+      category: buildItemCategorySchema.parse(row.category),
+      spec: JSON.parse(row.spec) as Record<string, unknown>,
+      source: row.source as CatalogSourceTag,
+      qualityStatus: row.qualityStatus as PublishStatus,
+    }));
 }

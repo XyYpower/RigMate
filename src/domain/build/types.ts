@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { FieldQualityStatus } from "@/domain/catalog/quality";
 import {
   caseSpecSchema,
   coolerSpecSchema,
@@ -108,6 +109,8 @@ export type BuildItem = BuildItemInput & {
   id: string;
   buildId: string;
   createdAt: string;
+  /** 目录字段质量覆盖层（非持久化）：规则引擎据此把 conflicting/stale/unknown 等不可用字段按资料不足处理 */
+  fieldQuality?: Record<string, FieldQualityStatus>;
 };
 
 export type Build = {
