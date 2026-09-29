@@ -2,6 +2,7 @@ import type { PublishStatus } from "@/domain/catalog/quality";
 import {
   computeFieldQuality,
   computeProductQualityStatus,
+  isRuleUsable,
   requiredFieldsOf,
   type FieldEvidenceFact,
   type FieldQualityResult,
@@ -291,7 +292,7 @@ export function markProductStale(input: {
   return after;
 }
 
-/** 发布：把证据链算出的状态落库（不引入新事实；无证据链的字段永远 verified 不了） */
+/** 发布：按证据链重算，把采用值**补缺**写回 spec（绝不覆盖已有值）并落产品质量状态 */
 export function publishProduct(input: {
   canonicalProductId: string;
   reviewer: string;
@@ -300,16 +301,32 @@ export function publishProduct(input: {
   const reviewer = requireReviewer(input.reviewer);
   const snapshot = requireLiveProduct(input.canonicalProductId);
   const report = computeProductFieldStatuses(snapshot.id);
-  writeCatalogMerge(snapshot.id, snapshot.spec, report.productStatus, null);
+  // 采用值补缺：字段状态可用（verified/supported）且证据有采用值、spec 尚缺时写入；
+  // 已有值不覆盖（纠错走 corrected 流程由人工执行），冲突/无证据字段不带值
+  const nextSpec: Record<string, unknown> = { ...snapshot.spec };
+  let adopted = 0;
+  for (const [field, result] of Object.entries(report.fields)) {
+    if (
+      nextSpec[field] === undefined &&
+      isRuleUsable(result.status) &&
+      result.value !== undefined
+    ) {
+      nextSpec[field] = result.value;
+      adopted += 1;
+    }
+  }
+  writeCatalogMerge(snapshot.id, nextSpec, report.productStatus, null);
   appendQualityEvent({
     canonicalProductId: snapshot.id,
     eventType: "reviewed",
-    beforeJson: { productStatus: snapshot.qualityStatus },
+    beforeJson: { productStatus: snapshot.qualityStatus, spec: snapshot.spec },
     afterJson: {
       productStatus: report.productStatus,
+      spec: nextSpec,
+      adoptedFields: adopted,
       fields: Object.fromEntries(Object.entries(report.fields).map(([field, result]) => [field, result.status])),
     },
-    reason: input.note?.trim() || "发布字段质量状态",
+    reason: input.note?.trim() || `发布字段质量状态${adopted > 0 ? `，补缺 ${adopted} 个字段` : ""}`,
     actor: `reviewer:${reviewer}`,
   });
   return report;

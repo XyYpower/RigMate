@@ -168,6 +168,31 @@ describe("目录审核服务", () => {
     expect(listProductSources(GPU_ID_2).every((item) => item.status === "rejected" || item.status === "stale")).toBe(true);
   });
 
+  it("发布把采用值补缺写回 spec；已有值不被覆盖", () => {
+    repo.upsertCatalogEntries([
+      // lengthMm 已有值 300（不得被证据 290 覆盖）；pcie8pin 缺失（由证据补上）
+      { id: "gpu-publish-1", category: "gpu", name: "发布补缺测试卡", aliases: [], spec: { tdpWatts: 220, lengthMm: 300 }, source: "manual" },
+    ]);
+    const source = service.addReviewSource({
+      canonicalProductId: "gpu-publish-1",
+      sourceType: "manufacturer",
+      tier: "S1",
+      sourceUrl: "https://example.com/publish-spec",
+      sourceTitle: "发布补缺来源",
+      contentHash: "c1b2c3d4e5f7",
+      reviewer: "reviewer-a",
+    });
+    service.addReviewEvidence({ canonicalProductId: "gpu-publish-1", fieldPath: "spec.lengthMm", sourceId: source.id, value: 290, excerpt: "长度 290mm", identityMatch: "mpn_exact", reviewer: "reviewer-a" });
+    service.addReviewEvidence({ canonicalProductId: "gpu-publish-1", fieldPath: "spec.pcie8pin", sourceId: source.id, value: 0, excerpt: "16pin 供电无 8pin", identityMatch: "mpn_exact", reviewer: "reviewer-a" });
+
+    const report = service.publishProduct({ canonicalProductId: "gpu-publish-1", reviewer: "reviewer-b" });
+    const record = repo.listCatalogRecords({ category: "gpu" }).find((row) => row.id === "gpu-publish-1");
+    expect(record?.spec.lengthMm).toBe(300); // 已有值不覆盖
+    expect(record?.spec.pcie8pin).toBe(0);   // 缺失字段由证据补上
+    expect(record?.qualityStatus).toBe("partial"); // 还有必填字段无证据 → unknown → partial
+    expect(report.fields.pcie8pin?.status).toBe("supported");
+  });
+
   it("合并去重：证据来源改挂保留条目、补缺、旧 id 记 merged_into 且不再进候选", () => {
     repo.upsertCatalogEntries([
       { id: "gpu-keep", category: "gpu", name: "保留卡", aliases: [], spec: { tdpWatts: 220 }, source: "manual" },
