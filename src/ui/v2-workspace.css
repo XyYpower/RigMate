@@ -1018,3 +1018,54 @@
   .sheet.diy-grid > .diy-subnav { min-width: 0; max-width: 100%; }
   .diy-subnav-item { flex: 0 1 auto; }
 }
+
+/* ============================================================================
+   补齐（参考图对照审计）：项目分组 / 尺寸对比条 / DIY 底部状态条
+   ========================================================================== */
+
+/* 项目页：草稿/正式分组 + 生命周期状态 */
+.pj-group { margin-top: 14px; }
+.pj-group-label {
+  margin: 0 0 6px; color: var(--wb-ink-muted); font-size: 12px; font-weight: 700;
+}
+.pj-status { font-size: 12px; font-weight: 600; }
+.pj-status-review { color: var(--wb-warn); }
+.pj-status-input { color: var(--wb-ink-faint); }
+.pj-status-accepted { color: var(--wb-pass); }
+
+/* DIY：尺寸对比条（参考图"机箱 & 显卡侧视图"的数据诚实版） */
+.size-compare { margin-top: 16px; padding: 0 20px 14px; overflow: hidden; }
+.size-compare-empty { margin: 12px 0 2px; color: var(--wb-ink-faint); font-size: 12px; line-height: 1.6; }
+.size-compare-rows { margin-top: 6px; }
+.size-row { padding: 10px 0; border-bottom: 1px solid var(--wb-hairline); }
+.size-row:last-child { border-bottom: 0; }
+.size-row-title { margin: 0 0 8px; color: var(--wb-ink); font-size: 12.5px; font-weight: 600; }
+.size-row-over {
+  margin-left: 10px; padding: 1px 8px; border-radius: 999px;
+  background: var(--wb-block-soft); color: var(--wb-block);
+  font-size: 11px; font-style: normal; font-weight: 700;
+}
+.size-bar-line { display: grid; grid-template-columns: 92px minmax(0, 1fr) 92px; gap: 10px; align-items: center; padding: 3px 0; }
+.size-bar-label { color: var(--wb-ink-faint); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.size-bar-track { height: 10px; background: var(--wb-surface-subtle); border: 1px solid var(--wb-hairline); border-radius: 999px; overflow: hidden; }
+.size-bar { height: 100%; border-radius: 999px; }
+.size-bar-part { background: var(--wb-accent); }
+.size-row.overflow .size-bar-part { background: var(--wb-block); }
+.size-bar-limit { background: var(--wb-hairline-strong); }
+.size-bar-value { color: var(--wb-ink-muted); font: 600 11.5px ui-monospace, Consolas, monospace; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* DIY：底部状态条（参考图"检查历史 #12 · 计数 · 查看报告"） */
+.diy-bottombar {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  margin-top: 20px; padding: 13px 20px;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  box-shadow: var(--wb-shadow-panel);
+}
+.diy-bottombar-history, .diy-bottombar-counts { color: var(--wb-ink-muted); font-size: 12.5px; font-weight: 600; }
+.diy-bottombar-counts em { font-style: normal; }
+.diy-bottombar-counts .block { color: var(--wb-block); }
+.diy-bottombar-counts .warn { color: var(--wb-warn); }
+.diy-bottombar-counts .pass { color: var(--wb-pass); }
+.diy-bottombar-actions { margin-left: auto; }

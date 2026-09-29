@@ -10,6 +10,7 @@ type Build = {
   useCase: string | null;
   updatedAt: string;
   budgetCents: number | null;
+  status: string;
   budgetSummary?: { pricedTotalCents: number };
   items: unknown[];
 };
@@ -65,9 +66,19 @@ function parsePriceInput(raw: string): number | undefined {
   return Math.round(yuan * 100);
 }
 
+type DraftSummary = {
+  id: string;
+  rawInput: string;
+  status: string;
+  updatedAt: string;
+  latest: { id: string; version: number; title: string; proposalStatus: string } | null;
+  acceptedBuildId: string | null;
+};
+
 export default function ProjectsPage() {
   const router = useRouter();
   const [builds, setBuilds] = useState<Build[] | null>(null);
+  const [drafts, setDrafts] = useState<DraftSummary[] | null>(null);
   const [loadError, setLoadError] = useState(false);
 
   // 整机复核流程状态
@@ -81,9 +92,17 @@ export default function ProjectsPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch("/api/builds");
-        if (!response.ok) throw new Error("failed");
-        const data = await response.json();
+        const [buildsRes, draftsRes] = await Promise.all([
+          fetch("/api/builds"),
+          fetch("/api/design"),
+        ]);
+        if (!buildsRes.ok) throw new Error("failed");
+        const data = await buildsRes.json();
+        if (draftsRes.ok) {
+          const draftData = await draftsRes.json();
+          // 已生成正式方案的草稿不再占据草稿区首位（仍可在表里看到状态）
+          if (!cancelled) setDrafts(draftData.requests ?? []);
+        }
         if (!cancelled) setBuilds(latestFirst(data.builds ?? []));
       } catch {
         if (!cancelled) setLoadError(true);
@@ -182,6 +201,21 @@ export default function ProjectsPage() {
     setReviewRows((prev) =>
       prev?.map((row) => (row.key === key ? { ...row, ...patch } : row)) ?? null,
     );
+  }
+
+  /** 正式方案按生命周期分组（Codex 计划 Task 6）：可继续 DIY / 已有检查结果 / 结论待更新 */
+  function groupBuilds(list: Build[]) {
+    const groups: Array<{ key: string; label: string; builds: Build[] }> = [
+      { key: "diy", label: "可继续 DIY", builds: [] },
+      { key: "reviewed", label: "已有检查结果", builds: [] },
+      { key: "stale", label: "结论待更新", builds: [] },
+    ];
+    for (const build of list) {
+      if (build.status === "reviewed") groups[1]!.builds.push(build);
+      else if (build.status === "stale") groups[2]!.builds.push(build);
+      else groups[0]!.builds.push(build);
+    }
+    return groups.filter((group) => group.builds.length > 0);
   }
 
   return (
@@ -298,7 +332,54 @@ export default function ProjectsPage() {
 
       <section className="sec">
         <div className="hw-sec-head">
-          <h2>项目</h2>
+          <h2>方案草稿</h2>
+          <Link href="/" className="pj-new">
+            ＋ 从目标开始
+          </Link>
+        </div>
+        {loadError && <p className="helper">加载失败，请确认开发服务器正在运行。</p>}
+        {drafts && drafts.length === 0 && (
+          <p className="helper">
+            还没有草稿。回<Link href="/"> 开始配置 </Link>用一句话生成第一套方案。
+          </p>
+        )}
+        {drafts && drafts.length > 0 && (
+          <table className="hw-table">
+            <thead>
+              <tr>
+                <th>目标</th>
+                <th>状态</th>
+                <th className="num">版本</th>
+                <th>更新</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {drafts.map((draft) => (
+                <tr key={draft.id}>
+                  <td>{draft.latest?.title ?? `“${draft.rawInput.length > 28 ? `${draft.rawInput.slice(0, 28)}…` : draft.rawInput}”`}</td>
+                  <td>
+                    <span className={`pj-status pj-status-${draft.status === "accepted" ? "accepted" : draft.status === "needs_input" ? "input" : "review"}`}>
+                      {draft.status === "accepted" ? "已生成正式方案" : draft.status === "needs_input" ? "待补充目标" : "待确认"}
+                    </span>
+                  </td>
+                  <td className="num">{draft.latest ? `v${draft.latest.version}` : "—"}</td>
+                  <td>{formatTime(draft.updatedAt)}</td>
+                  <td>
+                    <Link className="pj-open" href={`/design/${draft.id}`}>
+                      打开
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="sec">
+        <div className="hw-sec-head">
+          <h2>正式方案</h2>
           <Link href="/diy" className="pj-new">
             ＋ 进入高级 DIY
           </Link>
@@ -306,46 +387,53 @@ export default function ProjectsPage() {
         {loadError && <p className="helper">项目列表加载失败，请确认开发服务器正在运行。</p>}
         {builds && builds.length === 0 && (
           <p className="helper">
-            还没有项目。去<Link href="/diy"> 高级 DIY </Link>工作台创建第一个。
+            还没有正式方案。接受一套草稿，或去<Link href="/diy"> 高级 DIY </Link>逐件搭建。
           </p>
         )}
         {builds && builds.length > 0 && (
-          <table className="hw-table">
-            <thead>
-              <tr>
-                <th>项目</th>
-                <th>用途</th>
-                <th className="num">配件</th>
-                <th className="num">预算</th>
-                <th className="num">已计价</th>
-                <th>更新</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {builds.map((build) => (
-                <tr key={build.id}>
-                  <td>{build.name}</td>
-                  <td>{build.useCase ?? "—"}</td>
-                  <td className="num">{build.items.length}</td>
-                  <td className="num">{build.budgetCents !== null ? formatYuan(build.budgetCents) : "—"}</td>
-                  <td className="num">
-                    {build.budgetSummary ? formatYuan(build.budgetSummary.pricedTotalCents) : "—"}
-                  </td>
-                  <td>{formatTime(build.updatedAt)}</td>
-                  <td>
-                    <Link className="pj-open" href={`/diy?project=${build.id}`}>
-                      打开
-                    </Link>
-                    <span className="pj-sep">·</span>
-                    <Link className="pj-open" href={`/builds/${build.id}/report`}>
-                      报告
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <>
+            {groupBuilds(builds).map((group) => (
+              <div key={group.key} className="pj-group">
+                <h3 className="pj-group-label">{group.label} · {group.builds.length}</h3>
+                <table className="hw-table">
+                  <thead>
+                    <tr>
+                      <th>项目</th>
+                      <th>用途</th>
+                      <th className="num">配件</th>
+                      <th className="num">预算</th>
+                      <th className="num">已计价</th>
+                      <th>更新</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.builds.map((build) => (
+                      <tr key={build.id}>
+                        <td>{build.name}</td>
+                        <td>{build.useCase ?? "—"}</td>
+                        <td className="num">{build.items.length}</td>
+                        <td className="num">{build.budgetCents !== null ? formatYuan(build.budgetCents) : "—"}</td>
+                        <td className="num">
+                          {build.budgetSummary ? formatYuan(build.budgetSummary.pricedTotalCents) : "—"}
+                        </td>
+                        <td>{formatTime(build.updatedAt)}</td>
+                        <td>
+                          <Link className="pj-open" href={`/diy?project=${build.id}`}>
+                            打开
+                          </Link>
+                          <span className="pj-sep">·</span>
+                          <Link className="pj-open" href={`/builds/${build.id}/report`}>
+                            报告
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </>
         )}
       </section>
     </main>

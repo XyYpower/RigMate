@@ -228,6 +228,53 @@ export function appendAgentEvent(event: AgentEvent): void {
   }).run();
 }
 
+export type DesignRequestListItem = {
+  id: string;
+  rawInput: string;
+  status: DesignRequest["status"];
+  createdAt: string;
+  updatedAt: string;
+  /** 最新草稿摘要；信息不足（无方案）时为 null */
+  latest: { id: string; version: number; title: string; proposalStatus: string } | null;
+  acceptedBuildId: string | null;
+};
+
+/** 方案库列表（UI Task 6 补齐）：最近请求 + 最新草稿摘要，按更新时间倒序 */
+export function listDesignRequests(limit = 20): DesignRequestListItem[] {
+  const db = ensureDatabase();
+  const rows = db
+    .select()
+    .from(designRequests)
+    .orderBy(desc(designRequests.updatedAt))
+    .limit(limit)
+    .all();
+  return rows.map((row) => {
+    const proposalRow = db
+      .select()
+      .from(designProposals)
+      .where(eq(designProposals.requestId, row.id))
+      .orderBy(desc(designProposals.version))
+      .limit(1)
+      .get();
+    return {
+      id: row.id,
+      rawInput: row.rawInput,
+      status: designRequestStatusSchema.parse(row.status),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      latest: proposalRow
+        ? {
+            id: proposalRow.id,
+            version: proposalRow.version,
+            title: proposalRow.title,
+            proposalStatus: proposalRow.status,
+          }
+        : null,
+      acceptedBuildId: proposalRow?.acceptedBuildId ?? null,
+    };
+  });
+}
+
 export function updateDesignRequestStatus(id: string, status: DesignRequest["status"]): void {
   ensureDatabase().update(designRequests).set({ status, updatedAt: new Date().toISOString() }).where(eq(designRequests.id, id)).run();
 }

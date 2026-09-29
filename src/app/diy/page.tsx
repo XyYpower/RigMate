@@ -14,6 +14,7 @@ import { FindingCard } from "@/ui/components/finding-card";
 import { StatusChip } from "@/ui/components/status-chip";
 import type { BudgetSummary, Finding, FindingStatus } from "@/domain/build/types";
 import type { CheckRunSummary } from "@/infra/db/repositories/build-repository";
+import { SizeCompare } from "@/ui/workbench/size-compare";
 
 type Category = keyof typeof CATEGORY_META;
 
@@ -725,6 +726,9 @@ export default function Home() {
             )}
           </section>
 
+          {/* 尺寸核对（参考图"机箱 & 显卡侧视图"）：数据齐才显示对比条 */}
+          <SizeCompare items={build?.items ?? []} />
+
           {/* 配件录入 */}
           <section className="sec">
             <div className="sec-head">
@@ -847,13 +851,7 @@ export default function Home() {
             <div className="results-head">
               <h3 className="sec-title">兼容性诊断</h3>
               {findings.length > 0 && resultMeta && (
-                <span className="result-time">
-                  结果时间：{resultMeta.time}
-                  {" · "}
-                  <a className="result-report-link" href={`/builds/${build?.id ?? ""}/report`}>
-                    查看报告 ↗
-                  </a>
-                </span>
+                <span className="result-time">结果时间：{resultMeta.time}</span>
               )}
             </div>
             {resultMeta?.stale && (
@@ -905,6 +903,24 @@ export default function Home() {
           </section>
         </aside>
       </div>
+
+      {/* 底部状态条（参考图）：检查历史摘要 + 计数 + 查看报告 */}
+      {build && (
+        <section className="diy-bottombar" aria-label="检查状态">
+          <span className="diy-bottombar-history">
+            检查历史 {checkHistory.length > 0 ? `${checkHistory.length} 次` : "· 暂无"}
+            {resultMeta && <> · 最近 {resultMeta.time}</>}
+          </span>
+          <span className="diy-bottombar-counts">
+            <em className="block">{counts.block} 项阻断</em> · <em className="warn">{counts.unknown} 项待补充</em> · <em className="warn">{counts.warn} 项警告</em> · <em className="pass">{counts.pass} 项通过</em>
+          </span>
+          <div className="diy-bottombar-actions">
+            <a className="button secondary" href={`/builds/${build.id}/report`}>
+              查看报告 <span aria-hidden>↗</span>
+            </a>
+          </div>
+        </section>
+      )}
 
       <footer className="footer">
         <span className="footer-brand">RIGMATE / 先确认能装，再决定买什么</span>
