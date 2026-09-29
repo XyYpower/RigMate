@@ -10,7 +10,7 @@ test("M35 三栏工作台导航：六区可达", async ({ page }) => {
   await expect(nav.getByRole("link", { name: "高级 DIY" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "证据台账" })).toBeVisible();
 
-  await expect(page.getByRole("heading", { name: "你想配置一台什么样的电脑？" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /你想配一台\s*什么样的电脑？/ })).toBeVisible();
   await nav.getByRole("link", { name: "高级 DIY" }).click();
   await expect(page.getByRole("heading", { name: /配件录入|编辑配件/ })).toBeVisible();
 

@@ -1069,3 +1069,124 @@
 .diy-bottombar-counts .warn { color: var(--wb-warn); }
 .diy-bottombar-counts .pass { color: var(--wb-pass); }
 .diy-bottombar-actions { margin-left: auto; }
+
+/* ============================================================================
+   首页重设计（用户反馈：提示词繁琐重复、拼凑感）
+   展示与数据分离（短标签填入完整句）；次级入口成卡；右栏极简编号
+   ========================================================================== */
+
+.home-intro h1 {
+  margin: 0;
+  font-size: clamp(34px, 4.2vw, 50px);
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+  color: var(--wb-ink);
+}
+.home-dot {
+  display: inline-block;
+  width: 0.18em; height: 0.18em;
+  margin-left: 0.12em;
+  border-radius: 50%;
+  background: var(--wb-accent);
+}
+
+/* 输入面板：textarea 即主角 */
+.goal-composer.wb-panel { margin-top: 30px; }
+.goal-composer.wb-panel textarea { min-height: 96px; font-size: clamp(17px, 1.8vw, 20px); }
+
+.goal-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  padding-top: 12px; margin-top: 4px;
+  border-top: 1px solid var(--wb-hairline);
+}
+.goal-budget-group { display: flex; align-items: stretch; gap: 0; min-width: 0; }
+.goal-budget-input {
+  width: 96px; padding: 7px 12px;
+  border: 1px solid var(--wb-hairline-strong);
+  border-right: 0;
+  border-radius: var(--wb-radius-control) 0 0 var(--wb-radius-control);
+  background: var(--wb-surface); color: var(--wb-ink);
+  font: 600 12.5px ui-monospace, Consolas, monospace;
+  transition: border-color var(--wb-fast);
+}
+.goal-budget-input::placeholder { color: var(--wb-ink-faint); font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+.goal-budget-input:focus { outline: none; border-color: var(--wb-accent); }
+.goal-budget-seg { display: flex; }
+.goal-budget-seg-btn {
+  padding: 7px 13px;
+  border: 1px solid var(--wb-hairline-strong);
+  border-right-width: 0;
+  background: var(--wb-surface);
+  color: var(--wb-ink-muted);
+  font-size: 12px; font-weight: 600;
+  transition: background var(--wb-fast), color var(--wb-fast), border-color var(--wb-fast);
+}
+.goal-budget-seg-btn:last-child {
+  border-right: 1px solid var(--wb-hairline-strong);
+  border-radius: 0 var(--wb-radius-control) var(--wb-radius-control) 0;
+}
+.goal-budget-seg-btn:hover:not(:disabled) { color: var(--wb-accent); }
+.goal-budget-seg-btn.active {
+  background: var(--wb-accent); border-color: var(--wb-accent); color: #fff;
+}
+.goal-budget-seg-btn.active + .goal-budget-seg-btn { border-left-color: var(--wb-accent); }
+
+.goal-submit { padding: 10px 22px; font-size: 13px; border-radius: var(--wb-radius-control); }
+.goal-submit:hover:not(:disabled) { background: var(--wb-accent-hover) !important; }
+
+/* 示例：短标签 pill，展示与填入内容分离 */
+.goal-suggestions { border-top: 0; padding-top: 12px; }
+.goal-suggestion {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 13px;
+  border: 1px solid var(--wb-hairline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--wb-ink-muted);
+  font-size: 12px; font-weight: 600;
+}
+.goal-suggestion span { color: var(--wb-accent); font-weight: 700; }
+.goal-suggestion:hover:not(:disabled) { color: var(--wb-accent); border-color: var(--wb-accent); }
+
+/* 次级入口卡 */
+.home-entry-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 680px; margin-top: 18px; }
+.home-entry {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 14px 18px;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  box-shadow: var(--wb-shadow-panel);
+  text-decoration: none;
+  transition: border-color var(--wb-fast), transform var(--wb-fast);
+}
+.home-entry:hover { border-color: var(--wb-accent); }
+.home-entry strong { color: var(--wb-ink); font-size: 13.5px; }
+.home-entry span { color: var(--wb-ink-faint); font-size: 11.5px; }
+
+/* 右栏：极简编号步骤（替代解释型时间线） */
+.home-how-nums { list-style: none; margin: 12px 0 0; padding: 0; counter-reset: how; }
+.home-how-nums li {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--wb-hairline);
+}
+.home-how-nums li:last-child { border-bottom: 0; }
+.home-how-nums li::before {
+  counter-increment: how;
+  content: "0" counter(how);
+  font: 700 12px ui-monospace, Consolas, monospace;
+  color: var(--wb-accent);
+  padding-top: 1px;
+}
+.home-how-nums strong { display: block; font-size: 13px; color: var(--wb-ink); }
+.home-how-nums p { margin: 2px 0 0; color: var(--wb-ink-faint); font-size: 11.5px; }
+
+@media (max-width: 720px) {
+  .home-entry-cards { grid-template-columns: 1fr; }
+  .goal-toolbar { align-items: stretch; flex-direction: column; }
+  .goal-submit { width: 100%; }
+}
+
+/* 修复：::before 编号占 grid col1，内容须显式落 col2 */
+.home-how-nums strong, .home-how-nums p { grid-column: 2; }

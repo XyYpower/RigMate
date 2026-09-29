@@ -16,7 +16,7 @@ test("首页：非法预算不发起方案请求且保留输入", async ({ page 
     { timeout: 3000 },
   ).catch(() => null);
 
-  await page.getByRole("button", { name: /生成装机方案/ }).click();
+  await page.getByRole("button", { name: /开始搭配/ }).click();
 
   const posted = await designRequest;
   expect(posted).toBeNull();
@@ -35,7 +35,7 @@ test("首页：预算快捷档一键填入并随提交生效", async ({ page }) 
   const designRequest = page.waitForRequest(
     (request) => request.url().includes("/api/design") && request.method() === "POST",
   );
-  await page.getByRole("button", { name: /生成装机方案/ }).click();
+  await page.getByRole("button", { name: /开始搭配/ }).click();
   const request = await designRequest;
   expect((request!.postDataJSON() as { budgetCents?: number }).budgetCents).toBe(2_000_000);
 });
