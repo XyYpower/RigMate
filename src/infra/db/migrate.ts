@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 7;
+export const LATEST_SCHEMA_VERSION = 8;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -234,6 +234,99 @@ export const MIGRATIONS: Migration[] = [
       )`);
       db.run(sql`CREATE INDEX IF NOT EXISTS idx_canonical_products_category
         ON canonical_products(category)`);
+    },
+  },
+  {
+    version: 8,
+    name: "目录数据质量：产品来源/字段证据/质量事件/待审核队列 + canonical_products 身份列",
+    up: (db) => {
+      db.run(sql`CREATE TABLE IF NOT EXISTS product_sources (
+        id text PRIMARY KEY NOT NULL,
+        canonical_product_id text NOT NULL,
+        source_type text NOT NULL,
+        tier text NOT NULL,
+        source_url text NOT NULL,
+        source_title text NOT NULL,
+        source_version text,
+        license text,
+        captured_at text NOT NULL,
+        content_hash text NOT NULL,
+        status text NOT NULL,
+        reviewer_note text,
+        created_at text NOT NULL
+      )`);
+      db.run(sql`CREATE INDEX IF NOT EXISTS idx_product_sources_product
+        ON product_sources(canonical_product_id)`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS product_field_evidence (
+        id text PRIMARY KEY NOT NULL,
+        canonical_product_id text NOT NULL,
+        field_path text NOT NULL,
+        source_id text NOT NULL,
+        value text NOT NULL,
+        excerpt text NOT NULL,
+        identity_match text NOT NULL,
+        confidence text NOT NULL,
+        verified_at text,
+        verified_by text,
+        supersedes_id text,
+        created_at text NOT NULL
+      )`);
+      db.run(sql`CREATE INDEX IF NOT EXISTS idx_field_evidence_product_field
+        ON product_field_evidence(canonical_product_id, field_path)`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS data_quality_events (
+        id text PRIMARY KEY NOT NULL,
+        canonical_product_id text NOT NULL,
+        event_type text NOT NULL,
+        before_json text,
+        after_json text,
+        reason text NOT NULL,
+        actor text NOT NULL,
+        created_at text NOT NULL
+      )`);
+      db.run(sql`CREATE INDEX IF NOT EXISTS idx_quality_events_product
+        ON data_quality_events(canonical_product_id)`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS pending_catalog_queue (
+        id text PRIMARY KEY NOT NULL,
+        queue_type text NOT NULL,
+        category text NOT NULL,
+        user_input text,
+        candidate_ids text NOT NULL DEFAULT '[]',
+        missing_fields text NOT NULL DEFAULT '[]',
+        priority text NOT NULL,
+        reason text NOT NULL,
+        status text NOT NULL,
+        assigned_to text,
+        resolution_note text,
+        created_at text NOT NULL,
+        updated_at text NOT NULL,
+        resolved_at text
+      )`);
+      db.run(sql`CREATE INDEX IF NOT EXISTS idx_pending_catalog_queue_status
+        ON pending_catalog_queue(status)`);
+      const columns = db.all<{ name: string }>(sql`PRAGMA table_info(canonical_products)`);
+      const names = columns.map((column) => column.name);
+      if (!names.includes("manufacturer")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN manufacturer text`);
+      }
+      if (!names.includes("series")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN series text`);
+      }
+      if (!names.includes("model")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN model text`);
+      }
+      if (!names.includes("variant")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN variant text`);
+      }
+      if (!names.includes("mpn")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN mpn text`);
+      }
+      // 存量行无证据记录，按 partial 处理（可搜索，规则涉及缺失字段时返回 unknown）
+      if (!names.includes("quality_status")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN quality_status text NOT NULL DEFAULT 'partial'`);
+      }
+      if (!names.includes("source_version")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN source_version text`);
+      }
     },
   },
 ];

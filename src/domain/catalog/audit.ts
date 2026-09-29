@@ -3,7 +3,7 @@ import type { BuildItemCategory } from "@/domain/build/types";
 export type CatalogAuditSource = "seed" | "manual" | "buildcores" | "zol";
 export type AuditableCatalogEntry = { id: string; category: BuildItemCategory; name: string; aliases: string[]; spec: Record<string, unknown>; source: CatalogAuditSource };
 
-const REQUIRED_FIELDS: Record<BuildItemCategory, string[]> = {
+export const REQUIRED_FIELDS_BY_CATEGORY: Record<BuildItemCategory, string[]> = {
   cpu: ["socket", "tdpWatts"],
   motherboard: ["socket", "ramType", "formFactor", "ramSlots", "m2Slots", "sataPorts", "pcieX16Slots"],
   gpu: ["lengthMm", "tdpWatts", "pcie8pin", "twelveVhpwr"],
@@ -31,7 +31,7 @@ export function normalizeCatalogName(value: string): string {
 }
 
 export function auditCatalog(entries: AuditableCatalogEntry[]): CatalogAuditReport {
-  const categories = Object.keys(REQUIRED_FIELDS) as BuildItemCategory[];
+  const categories = Object.keys(REQUIRED_FIELDS_BY_CATEGORY) as BuildItemCategory[];
   const sources: CatalogAuditSource[] = ["seed", "manual", "buildcores", "zol"];
   const byCategory = Object.fromEntries(categories.map((category) => [category, createCategoryAudit()])) as Record<BuildItemCategory, CategoryAudit>;
   const bySource = Object.fromEntries(sources.map((source) => [source, createSourceAudit()])) as Record<CatalogAuditSource, SourceAudit>;
@@ -39,7 +39,7 @@ export function auditCatalog(entries: AuditableCatalogEntry[]): CatalogAuditRepo
   for (const entry of entries) {
     const category = byCategory[entry.category];
     category.total += 1;
-    const missing = REQUIRED_FIELDS[entry.category].filter((field) => entry.spec[field] === undefined || entry.spec[field] === null);
+    const missing = REQUIRED_FIELDS_BY_CATEGORY[entry.category].filter((field) => entry.spec[field] === undefined || entry.spec[field] === null);
     if (missing.length === 0) category.complete += 1;
     for (const field of missing) category.missing[field] = (category.missing[field] ?? 0) + 1;
     const source = bySource[entry.source];

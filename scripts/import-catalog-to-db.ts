@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
 import { CATALOG } from "../src/domain/catalog/seed";
+import { importBuildcoresBatch } from "../src/infra/catalog-import/db-import";
 import { loadBuildcoresCatalog, loadManualCatalog } from "../src/infra/catalog-import/load";
 import { recordCatalogImportRun } from "../src/infra/db/repositories/catalog-import-repository";
 import {
@@ -15,6 +16,9 @@ import {
  *
  * 初始化（存量三层目录 → 库，幂等，可重复执行）：
  *   npm run catalog:db
+ *
+ * BuildCores 审计合并（补缺 + 冲突留痕降级，产物来自 npm run import-catalog）：
+ *   npm run catalog:db -- --merge-buildcores
  *
  * 补缺更新（ZOL 等外部参数源，只填缺失字段，绝不覆盖已核值）：
  *   npm run catalog:db -- --update data/catalog/zol-update.json
@@ -32,7 +36,42 @@ function argValue(flag: string): string | undefined {
   return index >= 0 ? process.argv[index + 1] : undefined;
 }
 
+const mergeBuildcores = process.argv.includes("--merge-buildcores");
 const updateFile = argValue("--update");
+
+if (mergeBuildcores) {
+  const buildcores = loadBuildcoresCatalog();
+  if (!buildcores) {
+    console.error("尚未找到 BuildCores 导入产物（data/catalog/buildcores.json）。请先执行 npm run import-catalog。");
+    process.exit(1);
+  }
+  console.log(`BuildCores 审计合并：${buildcores.entries.length} 条（commit ${buildcores.provenance.upstreamCommit.slice(0, 12)}）…`);
+  const report = importBuildcoresBatch(buildcores.entries, {
+    upstreamCommit: buildcores.provenance.upstreamCommit,
+    upstreamUrl: buildcores.provenance.upstreamUrl,
+    license: buildcores.provenance.license,
+    sourcePath: "data/catalog/buildcores.json",
+  });
+  console.log(
+    `完成：新增 ${report.inserted}，补缺 ${report.filledFields} 字段（${report.filledProducts} 产品），` +
+      `冲突 ${report.conflictedFields} 字段（${report.conflictedProducts} 产品已降级 conflicting），` +
+      `一致 ${report.unchangedFields}，schema 拒绝 ${report.rejectedFields}，` +
+      `来源登记 ${report.sourcesCreated}，质量事件 ${report.eventsAppended}。`,
+  );
+  recordCatalogImportRun({
+    upstreamCommit: buildcores.provenance.upstreamCommit,
+    upstreamUrl: buildcores.provenance.upstreamUrl,
+    license: buildcores.provenance.license,
+    sourcePath: "data/catalog/buildcores.json",
+    filesRead: report.total,
+    importedCount: report.inserted,
+    skippedCount: report.unchangedFields,
+    errorCount: report.rejectedFields + report.conflictedFields,
+    errors: report.conflictedFields > 0 ? [`字段冲突 ${report.conflictedFields} 处已留痕并降级，待人工复核`] : [],
+  });
+  console.log("冲突与补缺明细可用 npm run catalog:quality 查看；涉及冲突的产品需人工复核后才能恢复推荐。");
+  process.exit(0);
+}
 
 if (updateFile) {
   const filePath = resolve(updateFile);

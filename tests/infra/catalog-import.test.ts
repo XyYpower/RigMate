@@ -290,12 +290,23 @@ describe("BuildCores 导入管线与运行时加载", () => {
     expect(summary.recordedErrors.length).toBeGreaterThan(0);
 
     const payload = JSON.parse(readFileSync(outputPath, "utf8")) as {
-      provenance: { upstreamCommit: string; entryCount: number; license: string };
+      provenance: {
+        upstreamCommit: string;
+        entryCount: number;
+        license: string;
+        contentHash: string;
+        fieldMapping: Record<string, Record<string, number>>;
+      };
       entries: { id: string; name: string; spec: Record<string, unknown> }[];
     };
     expect(payload.provenance.entryCount).toBe(2);
     expect(payload.provenance.upstreamCommit).toBe("4bbac3cd57a57cef3b017b24c2b664361cb886c8");
     expect(payload.provenance.license).toBe("ODC-By 1.0");
+    // 来源审计（Task 3）：内容哈希 + 字段映射统计进产物 provenance
+    expect(payload.provenance.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(payload.provenance.fieldMapping.cpu).toEqual({ socket: 1, tdpWatts: 1 });
+    expect(payload.provenance.fieldMapping.gpu).toEqual({ tdpWatts: 1, lengthMm: 1, pcie8pin: 1, twelveVhpwr: 1 });
+    expect(summary.contentHash).toBe(payload.provenance.contentHash);
     expect(payload.entries.map((e) => e.name)).toEqual([
       "AMD Ryzen 7 9800X3D",
       "NVIDIA RTX 4070 SUPER 某非公",

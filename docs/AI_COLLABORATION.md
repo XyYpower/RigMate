@@ -5,7 +5,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-28 ｜ 当前阶段：**UI 重构进行中（2026-09-28 参考图基线）**——Task 1-3 已落地：`DESIGN.md` 设计契约 + `--wb-*` token + 三栏壳（六区导航）+ 首页重做；Task 4-8（方案页/DIY/项目资料页/响应式验收/契约确认）待续。设计契约 = 根目录 `DESIGN.md`，参考图 = `docs/design/reference/`；执行计划 = `docs/superpowers/plans/2026-09-28-rigmate-ui-redesign.md`。路线见 `docs/superpowers/specs/2026-09-24-v2-product-design.md`。
+> 最后更新：2026-09-29 ｜ 当前阶段：**双线并行**——① UI 重构 Task 4-7 已落地（v4.4，三栏工作台全线），Task 8 契约确认待续；② **数据质量系统 Task 1-3 已落地（本轮，v4.5）**：字段级来源/证据/质量状态契约 + v8 迁移四表 + BuildCores 审计合并（`--merge-buildcores`）。执行计划 = `docs/superpowers/plans/2026-09-28-data-quality-implementation.md`（Task 4 审核服务起待续）。设计契约 = 根目录 `DESIGN.md`，参考图 = `docs/design/reference/`。路线见 `docs/superpowers/specs/2026-09-24-v2-product-design.md`。
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
@@ -14,7 +14,7 @@
 ## 0. 交接快照（2026-09-24 M33 产品化收口后状态，新窗口先读这节）
 
 - **Git**：M27-M33 已提交至 `1112bf8`；本节所述 V2 规划为后续文档变更，远程状态以 `git status -sb` 和推送结果为准。
-- **测试基线**：166 单测 + 19 E2E 全绿（含检查历史断言）；lint / typecheck / build 通过；8 状态截图视觉验收通过（桌面 1280 + 窄屏 390，截图目录 D:/tmp/rigmate-shots2/）。
+- **测试基线（2026-09-29 v4.5）**：210 单测全绿（新增数据质量 40 条）；lint / typecheck / build 通过；E2E 40 条中 39 过、1 失败 = **并行 UI 窗口在途改动的正则笔误**（navigation.spec.ts:13 `s*` 应为 `\s*`，见版本记录），非数据层问题。
 - **本机注意事项**：
   - E2E 需 `RIGMATE_E2E_EXECUTABLE_PATH`（见 §6）；**E2E 必须在"静默机器"上跑**——若同机还有 dev server/构建在跑，会出现 5 倍耗时与超时雪崩（2026-09-22 实证，两个假失败由此而来，清场重跑即绿）；
   - E2E webServer 是 `next dev`（3100 端口，`reuseExistingServer: true`），**新路由首次访问有编译延迟**，断言默认 5s 超时；
@@ -28,10 +28,10 @@
 - **诚实边界（重要）**：当前方案生成 = **本地目录规则式分档选择**（预算 <1.4万 → 9600X/4060/650W；1.4-2.3万 → 9800X3D/4070S/850W；≥2.3万 → 4090 档），价格区间为按型号的经验估算（界面标注"经验估算，非实时成交价"），**尚未接入 LLM/RAG**。Agent 活动流文案如实写"本地目录就绪…按预算档位挑选候选"。禁止把规则式生成说成"AI 智能搭配"。
 - **设计单一事实源**：`docs/design/10-系统布局规划.md` v2；视觉层 `docs/design/README.md` 与 `00-visual-system.md`。
 - **可信边界**：现有 `Build`/`BuildItem` 继续表示用户接受后的正式方案；Agent 生成中的候选存为 DesignProposal；兼容冲突的草稿服务端拒绝直接接受（409），"自己调整配置"以 allowConflicts 显式进入 DIY 但检查结果照实保留冲突。
-- **数据现状（M29 后）**：自有规格库 `canonical_products` 表（v7 迁移）为运行时首选——`npm run catalog:db` 一键把 种子 34 + 人工 49 + BuildCores 26,121 清洗入库（幂等，同 id 先到先得）；库为空时自动回退 JSON 三层合并（历史行为）。ZOL 补缺走 `npm run catalog:db -- --update <file>`（只填缺失字段、不覆盖已核值、不允许静默创建新品）。字段纪律 = 只存决策字段（specs.ts 每类 2-8 个）+ 可选 refUrl；商品页链接缺失时前端按型号拼京东搜索链接兜底（只链不爬）。上游克隆在 `data/buildcores-open-db/`；规格查证剩余字段等搜索配额 2026-09-28 重置后补查。
+- **数据现状（M29 后 / v4.5 扩展）**：自有规格库 `canonical_products` 表为运行时首选——`npm run catalog:db` 一键把 种子 34 + 人工 49 + BuildCores 26,121 清洗入库（幂等，同 id 先到先得）；库为空时自动回退 JSON 三层合并（历史行为）。ZOL 补缺走 `npm run catalog:db -- --update <file>`（只填缺失字段、不覆盖已核值、不允许静默创建新品）。**v8 质量系统（v4.5）**：`product_sources` / `product_field_evidence` / `data_quality_events` / `pending_catalog_queue` 四表 + canonical_products 身份五元组与 quality_status 列（存量行默认 partial）；字段质量判定纯函数在 `src/domain/catalog/quality.ts`（verified 封顶规则：S1/S2 + 身份明确 + 已人工复核 + 无未解决冲突；conflicting/stale/unknown 一律不得 pass）；BuildCores 再导入走 `npm run catalog:db -- --merge-buildcores`（补缺落证据、冲突留痕并降级 conflicting）；质量报表 `npm run catalog:quality`。价格与规格继续分离（price_evidence 独立）。字段纪律 = 只存决策字段（specs.ts 每类 2-8 个）+ 可选 refUrl；商品页链接缺失时前端按型号拼京东搜索链接兜底（只链不爬）。上游克隆在 `data/buildcores-open-db/`；规格查证剩余字段等搜索配额 2026-09-28 重置后补查。
 - **架构决策（2026-09-23）**：评估并否决"整体套用 zai-org/ZCode 开源工作台改造 UI"——产品对象不匹配/集成重量失控/深色 IDE 风是已否决路线（ADR §3.6）；允许逐件拆用 Vercel `ai-elements`（Apache-2.0，npm 独立包）做 M30+ 副驾组件。
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
-- **下一项工作**：M36 目录与证据质量：建立国内高频推荐池、别名确认、决策字段完整度、来源审计和样本驱动补录；保持 M34–M35 的输入、版本、依据和 DIY/报告路径不回退。随后 M37 做受约束的模型选件，M38 部署与完整闭环，M39 公开试用。详细范围与退出条件见新设计文档。
+- **下一项工作**：数据质量 Task 4-9（审核服务 API → 规则引擎读质量状态 → /hardware 只读质量报表 → 首批 100-300 高频变体查证 → 价格证据隔离 → 发布门禁）；UI 侧 Task 8 契约确认由 UI 窗口收尾。随后 M37 做受约束的模型选件，M38 部署与完整闭环，M39 公开试用。详细范围与退出条件见新设计文档。
 - **本轮用户确认的方向**：首批服务新手；Agent 调大模型协助生成配置，但候选、规格、价格和兼容结论必须有系统数据与规则支撑；可整体重构前端，要求简洁、清楚、舒服；参考开源 Agent 工作台的信息层级与任务状态，不整体移植代码或通用聊天壳。首轮交付可运行前端原型，桌面优先、手机适配。
 - **前端所有权**：归 AI 窗口（全栈）。
 
@@ -469,6 +469,7 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-09-29 v4.5：**数据质量系统 Task 1-3 落地**（实施计划 docs/superpowers/plans/2026-09-28-data-quality-implementation.md）——Task 1：`src/contracts/catalog.ts`（ProductSource/ProductFieldEvidence/DataQualityEvent/PendingCatalogItem/CanonicalProductRecord 五个存储契约）+ `src/domain/catalog/quality.ts` 纯函数（来源等级 S0-S5、字段七态、产品六态、identityMatchOf 身份匹配 [MPN 锚点/变体相斥/两项计分、series 不计分]、computeFieldQuality 四维判定 [排除序→冲突裁定→verified 封顶规则]、computeProductQualityStatus 聚合、isRuleUsable 规则门 [仅 verified/supported 可 pass]）；语义决策：身份不明确证据降级为"仅供参考"而非制造冲突（兄弟变体页面不污染本变体字段），resolved 冲突封顶 supported 待人工复核。Task 2：v8 迁移（四张质量表 + canonical_products 身份/质量列，存量默认 partial，幂等补列）+ evidence-repository（来源状态机 unreviewed→verified/conflicting/stale/rejected、证据追加式、值过 schema 门）+ quality-repository（事件只增不改、队列状态机 open→processing→resolved/dismissed 终态不可复活）+ catalog-repository 扩展（身份列读写、listCatalogRecords 按状态筛选、getCatalogSnapshot/writeCatalogMerge）。Task 3：run.ts 产物 provenance 增 contentHash（sha256）+ fieldMapping 统计；新增 db-import.ts `importBuildcoresBatch` 审计合并（新建 partial 起步、已有只补缺落逐字段证据、冲突留痕降级 conflicting 不覆盖、坏值门口拒绝）+ `npm run catalog:db -- --merge-buildcores` 接线 + `npm run catalog:quality` 只读报表 CLI。新增 40 条测试（domain 27 + infra 13），全量 210 单测 + lint + build 绿。**并行窗口碰撞记录**：UI 窗口同时段在改 page.tsx/v2-workspace.css/home-workbench/design/navigation 四个 spec——按 §11 纪律本轮提交不含其文件；其 navigation.spec.ts:13 正则丢反斜杠（`s*` 应为 `\s*`，首页标题现为"你想配一台 什么样的电脑？"带空格），该 1 条 E2E 失败归 UI 窗口修复；本轮改了 migrate.ts（v8），dev server 必须重启后新表才生效（§0 老坑）。
 - 2026-09-29 v4.4：**UI 重构 Task 4-7 完成（参考图三栏工作台全线落地）**——Task 4：方案页重做（workbench 组件化：BuildSummaryCard 摘要卡/BuildPartsTable 可展开清单表/DecisionBanner 真实决策条/AgentProgressCard 时间线/RequirementCard 需求卡；修订输入上顶栏，参考图形态）；Task 5：DIY 页三栏化（删 masthead、类别 tabs 升级为左侧 role=tab 子导航、诊断右栏 aside、主按钮"重新检查"）；Task 6：资料/方案/证据/报告页 CSS 统一（橙竖条标题+面板化+行 hover，DOM 与断言不动）；Task 7：新增 responsive-workbench.spec 16 条（1440/1280/768/390 × 4 页无横向滚动断言）。踩坑三连：① .diy-grid 断点被基础 .sheet.diy-grid 特异性压住（窄屏仍三列溢出）——断点统一加前缀；② heredoc 写 CSS 会中途截断——改用 Edit 追加；③ 子导航 role=tab 后 E2E 的 tablist>button 定位失效——改 tab role 定位。170 单测 + 37 E2E + build 全绿；1440 截图验收方案页/DIY 页对齐参考图。
 - 2026-09-28 v4.3：**UI 重构 Task 1-3（参考图三栏工作台）**——用户以两张 image2 参考图拍板新视觉；删除旧"技术规格单"体系（boards/ 母版、前端UI设计_v1.md 深色草案、tmp/imagegen 过程文件、已完成的 M34 过程计划）；参考图落位 `docs/design/reference/`；**新增根目录 `DESIGN.md` 设计契约**（awesome-design-md 方法：token/布局/组件/状态/动效/文案，AI 会话的视觉单一事实源）；theme.css 切 `--wb-*` token（`--rm-*` 保留兼容别名）；新增三栏壳 `src/ui/workbench/`（BrandSidebar 六区导航 / WorkspaceHeader / WorkbenchShell + workbench.css），layout 接线，nav-shell 退役；首页按参考图重做（主区输入面板 + 预算快捷 chips + 页面级右栏"怎么工作/最近方案"）；主按钮全站切橙；ESLint 忽略 `.worktrees/**`（修复 Codex worktree 构建产物导致的 1669 lint errors）。168 单测 + 22 E2E + build 全绿；1440/390 截图验收（D:/tmp/rigmate-m35/）。Task 4-8（方案页/DIY/资料页/响应式/契约确认）待续。
 - 2026-09-24 v3.13：M33 产品化收口——检查历史时间线（仓储摘要 + /check/history + DIY 折叠区）+ 品牌 favicon（icon.svg，脚手架 SVG 清理）+ 路由级 loading/error/404 + Dockerfile/.dockerignore（未实测，注记诚实）+ 8 状态截图视觉验收（修复窄屏导航竖排折行真 bug）；166 单测 + 19 E2E。

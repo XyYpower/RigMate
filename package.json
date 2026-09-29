@@ -16,6 +16,7 @@
     "catalog:audit": "tsx scripts/audit-catalog.ts",
     "import-manual": "tsx scripts/import-manual.ts",
     "catalog:db": "tsx scripts/import-catalog-to-db.ts",
+    "catalog:quality": "tsx scripts/catalog-quality-report.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate-db.ts"
   },

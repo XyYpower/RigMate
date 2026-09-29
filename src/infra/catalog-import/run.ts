@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { buildItemCategorySchema, type BuildItemCategory } from "@/domain/build/types";
@@ -40,6 +41,10 @@ export type ImportSummary = {
   recordedErrors: string[];
   perCategory: Record<BuildItemCategory, { imported: number; skipped: number; errors: number }>;
   importRunId: string;
+  /** 产物内容哈希（entries 规范 JSON 的 sha256），用于批次比对与来源变化检测 */
+  contentHash: string;
+  /** 字段映射统计：各类别每个规格字段带出了多少条（字段映射审计） */
+  fieldMapping: Record<BuildItemCategory, Record<string, number>>;
 };
 
 const MAX_RECORDED_ERRORS = 20;
@@ -131,6 +136,9 @@ export function runImport(options: {
       (a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
   );
 
+  const contentHash = createHash("sha256").update(JSON.stringify(entries)).digest("hex");
+  const fieldMapping = countFieldMapping(entries);
+
   const payload = {
     provenance: {
       upstreamCommit: options.upstreamCommit,
@@ -139,6 +147,8 @@ export function runImport(options: {
       licenseUrl: BUILDCORES_LICENSE_URL,
       importedAt: new Date().toISOString(),
       entryCount: entries.length,
+      contentHash,
+      fieldMapping,
     },
     entries,
   };
@@ -168,7 +178,26 @@ export function runImport(options: {
     recordedErrors: errors,
     perCategory,
     importRunId,
+    contentHash,
+    fieldMapping,
   };
+}
+
+/** 字段映射统计：每类别每个规格字段最终带出了多少条（缺字段故意缺省不计） */
+function countFieldMapping(entries: CatalogEntry[]): Record<BuildItemCategory, Record<string, number>> {
+  const mapping = buildItemCategorySchema.options.reduce(
+    (acc, category) => {
+      acc[category] = {};
+      return acc;
+    },
+    {} as Record<BuildItemCategory, Record<string, number>>,
+  );
+  for (const entry of entries) {
+    for (const field of Object.keys(entry.spec)) {
+      mapping[entry.category][field] = (mapping[entry.category][field] ?? 0) + 1;
+    }
+  }
+  return mapping;
 }
 
 function recordError(errors: string[], message: string): void {

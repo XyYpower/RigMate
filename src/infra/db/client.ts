@@ -143,8 +143,78 @@ export const canonicalProducts = sqliteTable("canonical_products", {
   spec: text("spec").notNull().default("{}"),
   source: text("source").notNull(),
   refUrl: text("ref_url"),
+  manufacturer: text("manufacturer"),
+  series: text("series"),
+  model: text("model"),
+  variant: text("variant"),
+  mpn: text("mpn"),
+  qualityStatus: text("quality_status").notNull().default("partial"),
+  sourceVersion: text("source_version"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
+});
+
+/** 产品来源（PROVENANCE §4）：一次来源访问/录入一行，内容哈希用于检测来源变化 */
+export const productSources = sqliteTable("product_sources", {
+  id: text("id").primaryKey(),
+  canonicalProductId: text("canonical_product_id").notNull(),
+  sourceType: text("source_type").notNull(),
+  tier: text("tier").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  sourceTitle: text("source_title").notNull(),
+  sourceVersion: text("source_version"),
+  license: text("license"),
+  capturedAt: text("captured_at").notNull(),
+  contentHash: text("content_hash").notNull(),
+  status: text("status").notNull(),
+  reviewerNote: text("reviewer_note"),
+  createdAt: text("created_at").notNull(),
+});
+
+/** 字段级证据（PROVENANCE §4）：追加式，不覆盖旧证据；value 为 JSON 序列化字符串 */
+export const productFieldEvidence = sqliteTable("product_field_evidence", {
+  id: text("id").primaryKey(),
+  canonicalProductId: text("canonical_product_id").notNull(),
+  fieldPath: text("field_path").notNull(),
+  sourceId: text("source_id").notNull(),
+  value: text("value").notNull(),
+  excerpt: text("excerpt").notNull(),
+  identityMatch: text("identity_match").notNull(),
+  confidence: text("confidence").notNull(),
+  verifiedAt: text("verified_at"),
+  verifiedBy: text("verified_by"),
+  supersedesId: text("supersedes_id"),
+  createdAt: text("created_at").notNull(),
+});
+
+/** 数据质量事件（PROVENANCE §4）：导入/审核/修正/冲突/合并的审计流水 */
+export const dataQualityEvents = sqliteTable("data_quality_events", {
+  id: text("id").primaryKey(),
+  canonicalProductId: text("canonical_product_id").notNull(),
+  eventType: text("event_type").notNull(),
+  beforeJson: text("before_json"),
+  afterJson: text("after_json"),
+  reason: text("reason").notNull(),
+  actor: text("actor").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+/** 待审核队列（PLAYBOOK §5）：new_product / missing_field / conflict / stale 四类 */
+export const pendingCatalogQueue = sqliteTable("pending_catalog_queue", {
+  id: text("id").primaryKey(),
+  queueType: text("queue_type").notNull(),
+  category: text("category").notNull(),
+  userInput: text("user_input"),
+  candidateIds: text("candidate_ids").notNull().default("[]"),
+  missingFields: text("missing_fields").notNull().default("[]"),
+  priority: text("priority").notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").notNull(),
+  assignedTo: text("assigned_to"),
+  resolutionNote: text("resolution_note"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  resolvedAt: text("resolved_at"),
 });
 
 export type RigmateDatabase = BetterSQLite3Database<Record<string, never>>;
