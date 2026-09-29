@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "import-catalog": "tsx scripts/import-buildcores.ts",
     "catalog-template": "tsx scripts/catalog-template.ts",
+    "catalog:audit": "tsx scripts/audit-catalog.ts",
     "import-manual": "tsx scripts/import-manual.ts",
     "catalog:db": "tsx scripts/import-catalog-to-db.ts",
     "db:generate": "drizzle-kit generate",

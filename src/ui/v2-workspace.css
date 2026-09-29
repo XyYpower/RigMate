@@ -944,7 +944,7 @@
 .diy-aside .stale-banner { margin-top: 10px; }
 
 @media (max-width: 1199px) {
-  .diy-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+  .sheet.diy-grid { grid-template-columns: minmax(0, 1fr) 320px; }
   .diy-subnav {
     position: static; grid-column: 1 / -1;
     flex-direction: row; flex-wrap: wrap; gap: 4px 6px;
@@ -953,8 +953,68 @@
   .diy-subnav-item.active::before { display: none; }
 }
 @media (max-width: 899px) {
-  .diy-grid { grid-template-columns: minmax(0, 1fr); }
+  .sheet.diy-grid { grid-template-columns: minmax(0, 1fr); }
   .diy-aside { position: static; max-height: none; }
 }
 
 
+
+/* ============================================================================
+   Task 6（2026-09-28 基线）：资料类页面统一（hardware/projects/evidence/report）
+   纯视觉层：面板化区块 + 橙竖条标题 + 行 hover；DOM 与断言不变
+   ========================================================================== */
+
+.hw-page { max-width: 1080px; padding-top: 28px; }
+.hw-head h1 {
+  position: relative; padding-left: 13px;
+  font-size: 22px; letter-spacing: -0.02em;
+}
+.hw-head h1::before {
+  content: ""; position: absolute; left: 0; top: 50%;
+  width: 4px; height: 20px; border-radius: 2px; transform: translateY(-50%);
+  background: var(--wb-accent);
+}
+.hw-sec-head h2 {
+  position: relative; padding-left: 11px;
+  font-size: 15px;
+}
+.hw-sec-head h2::before {
+  content: ""; position: absolute; left: 0; top: 50%;
+  width: 3px; height: 14px; border-radius: 2px; transform: translateY(-50%);
+  background: var(--wb-accent);
+}
+.hw-page .hw-stats,
+.hw-page .hw-table,
+.hw-page .hw-searchbar {
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  box-shadow: var(--wb-shadow-panel);
+}
+.hw-page .hw-stats { padding: 16px 20px 12px; border-top-width: 1px; border-top-color: var(--wb-hairline); }
+.hw-page .hw-table td { transition: background var(--wb-fast); }
+.hw-page .hw-table tbody tr:hover td { background: var(--wb-surface-subtle); }
+.hw-page .hw-searchbar { padding: 14px 16px; align-items: end; }
+.hw-page .hw-audit { border-top-color: var(--wb-hairline); }
+
+/* 报告页同语言：保持打印样式，仅屏上统一 */
+.report-page .report-frame {
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  box-shadow: var(--wb-shadow-panel);
+  background: var(--wb-surface);
+}
+.report-page .report-actions a { color: var(--wb-ink-muted); }
+.report-page .report-actions a:hover { color: var(--wb-accent); }
+
+/* Task 7：窄屏表格横滚（页面不溢出）与搜索栏单列 */
+@media (max-width: 720px) {
+  .hw-page .hw-table { display: block; overflow-x: auto; }
+  .hw-page .hw-searchbar { grid-template-columns: 1fr; }
+}
+
+/* Task 7：窄屏子导航收缩（grid item 防内容撑爆） */
+@media (max-width: 899px) {
+  .sheet.diy-grid > .diy-subnav { min-width: 0; max-width: 100%; }
+  .diy-subnav-item { flex: 0 1 auto; }
+}
