@@ -1311,3 +1311,46 @@
   max-width: 1240px;
   margin-inline: auto;
 }
+
+/* ============================================================================
+   修复（用户截图：面板内表格文字贴死边框）
+   根因：Task 6 给 .hw-table 自身加了边框/圆角（面板里嵌假面板），
+   而 td 首列左 padding 为 0——文字贴死边框。
+   修法：面板内表格去自身面板化，首尾列与面板头内容对齐。
+   ========================================================================== */
+
+.hw-page .hw-panel-block .hw-table,
+.hw-page .hw-explore .hw-table {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  width: 100%;
+}
+.hw-page .hw-panel-block .hw-table th,
+.hw-page .hw-panel-block .hw-table td,
+.hw-page .hw-explore .hw-table th,
+.hw-page .hw-explore .hw-table td {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.hw-page .hw-panel-block .hw-table th:first-child,
+.hw-page .hw-panel-block .hw-table td:first-child,
+.hw-page .hw-explore .hw-table th:first-child,
+.hw-page .hw-explore .hw-table td:first-child {
+  padding-left: 0;
+}
+.hw-page .hw-panel-block .hw-table th:last-child,
+.hw-page .hw-panel-block .hw-table td:last-child,
+.hw-page .hw-explore .hw-table th:last-child,
+.hw-page .hw-explore .hw-table td:last-child {
+  padding-right: 0;
+}
+.hw-page .hw-panel-block .hw-table th,
+.hw-page .hw-panel-block .hw-table td,
+.hw-page .hw-explore .hw-table th,
+.hw-page .hw-explore .hw-table td {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
