@@ -13,5 +13,5 @@ test("M36 数据质量只读报表：质量状态、队列计数与关键字段�
   const qualityTable = page.getByRole("table").nth(1);
   await expect(qualityTable.getByRole("columnheader", { name: "关键字段完整率" })).toBeVisible();
   await expect(qualityTable.getByRole("columnheader", { name: "条目" })).toBeVisible();
-  await expect(page.getByText(/入库 \d+ 条/)).toBeVisible();
+  await expect(page.getByText(/质量状态来自字段级证据链/)).toBeVisible();
 });

@@ -17,6 +17,7 @@
     "import-manual": "tsx scripts/import-manual.ts",
     "catalog:db": "tsx scripts/import-catalog-to-db.ts",
     "catalog:quality": "tsx scripts/catalog-quality-report.ts",
+    "gate:data": "npm run typecheck && npm run lint && npm test && tsx scripts/data-release-gate.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate-db.ts"
   },

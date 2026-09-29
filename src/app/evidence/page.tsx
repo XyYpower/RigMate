@@ -12,6 +12,9 @@ type EvidenceRecord = {
   platform?: string;
   shop?: string;
   condition?: string;
+  canonicalProductId?: string;
+  region?: string;
+  reviewStatus: string;
   evidenceUrl?: string;
   note?: string;
   capturedAt: string;
@@ -31,6 +34,12 @@ const CATEGORY_LABELS: Record<string, string> = {
 const PLATFORMS = ["京东", "淘宝", "拼多多", "抖音", "线下", "其他"];
 const CONDITIONS = ["全新", "散片", "二手"];
 const BASES = ["到手价", "标价", "券后价"];
+
+const REVIEW_LABELS: Record<string, string> = {
+  unreviewed: "待复核",
+  verified: "已复核",
+  rejected: "已驳回",
+};
 
 function formatYuan(cents: number): string {
   return `¥${(cents / 100).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
@@ -249,6 +258,8 @@ export default function EvidencePage() {
                 <th className="num">价格</th>
                 <th>口径 / 渠道 / 店铺</th>
                 <th>成色</th>
+                <th>地区</th>
+                <th>审核</th>
                 <th>证据</th>
               </tr>
             </thead>
@@ -263,6 +274,8 @@ export default function EvidencePage() {
                     {[record.priceBasis, record.platform, record.shop].filter(Boolean).join(" · ") || "—"}
                   </td>
                   <td>{record.condition ?? "—"}</td>
+                  <td>{record.region ?? "中国大陆"}</td>
+                  <td>{REVIEW_LABELS[record.reviewStatus] ?? record.reviewStatus}</td>
                   <td>
                     {record.evidenceUrl ? (
                       <a href={record.evidenceUrl} target="_blank" rel="noreferrer" className="pj-open">

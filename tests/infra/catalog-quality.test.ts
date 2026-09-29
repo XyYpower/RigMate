@@ -58,12 +58,12 @@ function addSource(status: "unreviewed" | "verified" = "unreviewed") {
 }
 
 describe("目录数据质量仓储（v8/v9 迁移 + 证据/事件/队列）", () => {
-  it("迁移幂等：重复执行不再产生新步骤，版本停在 v9", () => {
+  it("迁移幂等：重复执行不再产生新步骤，版本停在 v10", () => {
     const db = ensureDatabase();
-    expect(readSchemaVersion(db)).toBe(9);
+    expect(readSchemaVersion(db)).toBe(10);
     const second = migrateSchema(db);
     expect(second.applied).toEqual([]);
-    expect(second.from).toBe(9);
+    expect(second.from).toBe(10);
   });
 
   it("证据追加式：同字段冲突证据并存，旧证据不被覆盖", () => {
@@ -265,6 +265,6 @@ describe("目录数据质量仓储（v8/v9 迁移 + 证据/事件/队列）", ()
     // ensureDatabase 会按 RIGMATE_DB_PATH 重新建连并跑幂等迁移
     const rows = evidenceRepo.listFieldEvidence(gpuId, "spec.lengthMm");
     expect(rows).toHaveLength(2);
-    expect(readSchemaVersion(ensureDatabase())).toBe(9);
+    expect(readSchemaVersion(ensureDatabase())).toBe(10);
   });
 });

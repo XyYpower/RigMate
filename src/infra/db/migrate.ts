@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 9;
+export const LATEST_SCHEMA_VERSION = 10;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -336,6 +336,24 @@ export const MIGRATIONS: Migration[] = [
       const columns = db.all<{ name: string }>(sql`PRAGMA table_info(canonical_products)`);
       if (!columns.some((column) => column.name === "merged_into")) {
         db.run(sql`ALTER TABLE canonical_products ADD COLUMN merged_into text`);
+      }
+    },
+  },
+  {
+    version: 10,
+    name: "price_evidence 隔离强化：canonicalId 绑定 + 地区 + 审核状态（Task 8）",
+    up: (db) => {
+      const columns = db.all<{ name: string }>(sql`PRAGMA table_info(price_evidence)`);
+      const names = columns.map((column) => column.name);
+      // 价格与规格的隔离边界：canonicalId 只做关联，绝不影响规格的质量状态
+      if (!names.includes("canonical_product_id")) {
+        db.run(sql`ALTER TABLE price_evidence ADD COLUMN canonical_product_id text`);
+      }
+      if (!names.includes("region")) {
+        db.run(sql`ALTER TABLE price_evidence ADD COLUMN region text`);
+      }
+      if (!names.includes("review_status")) {
+        db.run(sql`ALTER TABLE price_evidence ADD COLUMN review_status text NOT NULL DEFAULT 'unreviewed'`);
       }
     },
   },

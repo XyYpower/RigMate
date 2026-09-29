@@ -68,6 +68,12 @@ export const priceEvidence = sqliteTable("price_evidence", {
   condition: text("condition"),
   evidenceUrl: text("evidence_url"),
   note: text("note"),
+  /** 关联目录条目（Task 8）：只做关联，绝不影响该产品的规格质量状态 */
+  canonicalProductId: text("canonical_product_id"),
+  /** 价格地区（Task 8）：如"中国大陆"；跨区价格不可比 */
+  region: text("region"),
+  /** 审核状态（Task 8）：unreviewed / verified / rejected */
+  reviewStatus: text("review_status").notNull().default("unreviewed"),
   capturedAt: text("captured_at").notNull(),
   createdAt: text("created_at").notNull(),
 });
