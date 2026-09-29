@@ -1282,3 +1282,32 @@
   margin: 0 calc(-1 * clamp(16px, 3vw, 32px));
   border-left: 0; border-right: 0; border-top: 0;
 }
+
+/* ============================================================================
+   内容带居中（用户反馈：宽屏左对齐太极端）
+   统一规则：无右栏资料页 1060px 居中；工作台主区+右栏 1240px 居中；
+   页头白条保持通栏，但页头内容与内容带对齐。
+   ========================================================================== */
+
+.hw-page {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1060px;
+}
+.hw-page .workbench-header {
+  margin: 0;
+  padding-inline: max(40px, calc((100% - 1060px) / 2));
+}
+
+.design-page .page-grid {
+  max-width: 1240px;
+  margin-inline: auto;
+}
+.design-page .workbench-header {
+  padding-inline: max(24px, calc((100% - 1240px) / 2));
+}
+
+.home-page .page-grid {
+  max-width: 1240px;
+  margin-inline: auto;
+}
