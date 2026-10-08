@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { AssemblyRail, emptyAssemblySlots } from "@/ui/workbench/assembly-rail";
+import { BudgetRuler, emptyBudgetRulerView } from "@/ui/workbench/budget-ruler";
 
 type BuildSummary = {
   id: string;
@@ -25,7 +27,12 @@ const GOAL_SUGGESTIONS = [
 
 const BUDGET_PRESETS = [8000, 12000, 16000, 20000];
 
-const GOAL_STEPS = ["理解目标", "检索目录", "搭配方案"];
+/** 三项真实能力：不承诺做不到的事 */
+const HOME_CAPABILITIES = [
+  { title: "资料核验", detail: "型号规格来自已核目录，来源可查" },
+  { title: "兼容检查", detail: "插槽、功耗、尺寸逐项规则检查" },
+  { title: "可编辑方案", detail: "改一句重新校验，或进 DIY 换件" },
+];
 
 export default function Home() {
   const router = useRouter();
@@ -86,6 +93,10 @@ export default function Home() {
             </h1>
           </section>
 
+          <section className="home-rail" aria-label="整机装配轨道">
+            <AssemblyRail slots={emptyAssemblySlots(busy ? "retrieving" : "empty")} />
+          </section>
+
           <form className="goal-composer wb-panel" onSubmit={(event) => void startDesign(event)}>
             <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
             <textarea
@@ -131,11 +142,9 @@ export default function Home() {
               </button>
             </div>
             {busy ? (
-              <div className="agent-progress" role="status" aria-label="方案生成中">
-                {GOAL_STEPS.map((step) => (
-                  <span className="agent-step active" key={step}>{step}</span>
-                ))}
-              </div>
+              <p className="agent-progress" role="status" aria-label="方案生成中">
+                正在按你的目标检索目录并搭配方案，通常几秒内完成。
+              </p>
             ) : (
               <div className="goal-suggestions" aria-label="示例目标">
                 {GOAL_SUGGESTIONS.map((suggestion) => (
@@ -155,6 +164,18 @@ export default function Home() {
             {message && <p className="form-feedback" role="status">{message}</p>}
           </form>
 
+          <section className="home-ruler-row" aria-label="预算与能力">
+            <BudgetRuler view={emptyBudgetRulerView()} />
+            <ul className="home-caps wb-panel">
+              {HOME_CAPABILITIES.map((capability) => (
+                <li key={capability.title}>
+                  <strong>{capability.title}</strong>
+                  <p>{capability.detail}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+
           <div className="home-entry-cards">
             <Link href="/projects?mode=review" className="home-entry">
               <strong>已有配置单？</strong>
@@ -167,22 +188,13 @@ export default function Home() {
           </div>
         </div>
 
-        <aside className="workbench-aside page-level" aria-label="工作方式与最近方案">
-          <section className="wb-panel home-how" aria-labelledby="home-how-title">
-            <h2 id="home-how-title">RigMate 怎么工作</h2>
-            <ol className="home-how-nums">
-              <li><strong>说目标</strong><p>预算用途，一句话</p></li>
-              <li><strong>看方案</strong><p>八件套与预算区间</p></li>
-              <li><strong>再调整</strong><p>改一句，重新校验</p></li>
-            </ol>
-          </section>
-
-          {builds.length > 0 && (
-            <section className="wb-panel recent-designs" aria-labelledby="recent-title">
-              <div className="home-section-heading">
-                <h2 id="recent-title">最近的方案</h2>
-                <Link href="/projects">全部 <span aria-hidden>→</span></Link>
-              </div>
+        <aside className="workbench-aside page-level" aria-label="最近方案">
+          <section className="wb-panel recent-designs" aria-labelledby="recent-title">
+            <div className="home-section-heading">
+              <h2 id="recent-title">最近的方案</h2>
+              {builds.length > 0 && <Link href="/projects">全部 <span aria-hidden>→</span></Link>}
+            </div>
+            {builds.length > 0 ? (
               <ul>
                 {builds.map((build) => (
                   <li key={build.id}>
@@ -193,8 +205,10 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-            </section>
-          )}
+            ) : (
+              <p className="recent-empty">还没有方案。描述一个目标，生成的方案会出现在这里。</p>
+            )}
+          </section>
         </aside>
       </div>
     </main>
