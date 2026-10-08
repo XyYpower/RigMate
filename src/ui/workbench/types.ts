@@ -1,3 +1,4 @@
+import type { BuildItemCategory } from "@/domain/build/types";
 import type { DesignProposal } from "@/contracts/design";
 
 /**
@@ -15,6 +16,43 @@ export type WorkspaceStatus =
   | "unknown"
   | "accepted"
   | "error";
+
+/** 装配轨道单个槽位状态（2026-10-08 决策台 UI 重置） */
+export type AssemblySlotState =
+  | "empty"
+  | "retrieving"
+  | "ready"
+  | "attention"
+  | "conflict"
+  | "unknown";
+
+/** 装配轨道槽位：八类硬件各一格，缺失事实为 null */
+export type AssemblySlot = {
+  category: BuildItemCategory;
+  label: string;
+  model: string | null;
+  state: AssemblySlotState;
+  detail: string | null;
+};
+
+/** 预算标尺：预算线 + 估算区间 + 中值；无预算时 state=unknown 且 budgetCents=null */
+export type BudgetRulerView = {
+  budgetCents: number | null;
+  lowCents: number | null;
+  highCents: number | null;
+  midpointCents: number | null;
+  state: "unknown" | "within" | "crossing" | "over";
+};
+
+/** 核验台条目：按 conflict → attention → unknown → pass 排序呈现 */
+export type VerificationDeskItem = {
+  id: string;
+  state: "conflict" | "attention" | "unknown" | "pass";
+  title: string;
+  impact: string;
+  evidenceLabel: string | null;
+  actionLabel: string | null;
+};
 
 /** 右栏 Agent 处理进度条目（由 AgentEvent 映射） */
 export type AgentTimelineStep = {

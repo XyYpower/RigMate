@@ -38,6 +38,22 @@
   --wb-fast: 150ms;
   --wb-slow: 250ms;
 
+  /* ---- 决策台扩展（2026-10-08 UI 重置）：固定十六进制，不用渐变/玻璃 ---- */
+  /* 石墨结构色：轨道节点、标尺刻度文字等重结构元素 */
+  --wb-graphite: #1f2937;
+  --wb-graphite-soft: #374151;
+  /* 铝灰槽位色：空槽位底与槽位边框 */
+  --wb-alu: #cfd4db;
+  --wb-alu-soft: #e9ecef;
+  /* 蓝灰资料色：资料/参考类信息（区别于中性 unknown 灰） */
+  --wb-slate: #475569;
+  --wb-slate-soft: #edf1f5;
+  /* 轨道线：装配轨道的连接线 */
+  --wb-rail-line: #d7dbe0;
+  /* 标尺线：预算标尺的轨道与刻度 */
+  --wb-ruler-line: #c6ccd4;
+  --wb-ruler-tick: #9aa3af;
+
   /* ---- 旧「仪器白」兼容别名（消费方迁移到 --wb-* 后删除） ---- */
   --rm-bg: var(--wb-canvas);
   --rm-surface: var(--wb-surface);
