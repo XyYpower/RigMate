@@ -119,13 +119,20 @@ function SlotBody({ slot }: { slot: AssemblySlot }) {
 export function AssemblyRail({
   slots,
   onSelect,
+  layout = "track",
 }: {
   slots: AssemblySlot[];
   onSelect?: (category: BuildItemCategory) => void;
+  /** track = 横向轨道（组件内滚动）；grid = 网格全量平铺（方案页主区用，八类同屏可见） */
+  layout?: "track" | "grid";
 }) {
   return (
-    <div className="assembly-rail" role="group" aria-label="装配轨道">
-      <ol className="assembly-rail-track">
+    <div
+      className={`assembly-rail${layout === "grid" ? " assembly-rail--grid" : ""}`}
+      role="group"
+      aria-label="装配轨道"
+    >
+      <ol className={`assembly-rail-track${layout === "grid" ? " assembly-rail-track--grid" : ""}`}>
         {slots.map((slot) => (
           <li className={`assembly-slot slot-${slot.state}`} key={slot.category} data-category={slot.category}>
             {onSelect ? (

@@ -159,6 +159,8 @@
   .brand-footnote { display: none; }
   .workbench-header { flex-wrap: wrap; gap: 10px 16px; padding: 12px 16px; }
   .workbench-header-summary { order: 3; flex-basis: 100%; justify-content: flex-start; }
+  /* 窄屏：页头 meta 允许换行（如方案库长句），不产生横向滚动 */
+  .workbench-header-title p { white-space: normal; }
   .workbench-aside { position: static; height: auto; border-left: 0; border-top: 1px solid var(--wb-hairline); }
 }
 
@@ -172,7 +174,13 @@
   /* 横向滚动只发生在轨道内部，页面 body 永不横滚 */
   overflow-x: auto;
   padding-bottom: 4px;
+  /* 可滚动提示：细滚动条常显 */
+  scrollbar-width: thin;
+  scrollbar-color: var(--wb-hairline-strong) transparent;
 }
+.assembly-rail::-webkit-scrollbar { height: 6px; }
+.assembly-rail::-webkit-scrollbar-thumb { background: var(--wb-hairline-strong); border-radius: 999px; }
+.assembly-rail::-webkit-scrollbar-track { background: transparent; }
 .assembly-rail-track {
   display: flex;
   gap: 0;
@@ -182,6 +190,16 @@
   width: max-content;
   min-width: 100%;
 }
+/* 网格变体：八类同屏平铺（方案页主区），不做内部横滚 */
+.assembly-rail--grid { overflow: visible; }
+.assembly-rail-track--grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.assembly-rail-track--grid .assembly-slot { flex: none; }
+.assembly-rail-track--grid .assembly-slot::before { display: none; }
 .assembly-slot {
   position: relative;
   flex: 1 0 128px;
@@ -429,5 +447,6 @@ button.assembly-slot-body:hover { border-color: var(--wb-accent); }
 
 @media (max-width: 720px) {
   .assembly-slot { flex-basis: 116px; }
+  .assembly-rail-track--grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .budget-ruler-figures { gap: 4px 12px; }
 }

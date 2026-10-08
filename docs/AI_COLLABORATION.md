@@ -5,7 +5,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-10-08 ｜ 当前阶段：**装机决策台 UI 重置已完成（分支 `feat/decision-bench-ui`，7 个独立提交，待合并决策）**——按 `docs/superpowers/plans/2026-10-08-rigmate-decision-bench-ui.md` 执行：新增 AssemblyRail / BudgetRuler / VerificationDesk 三个纯展示组件与视图契约（types.ts + theme.css token），导航收缩为"三主入口 + 场景入口"，首页改为装配台叙事（标题 → 八类槽位 → 目标输入 → 预算标尺），方案页改为"预算标尺 → 摘要 → 配置清单（核验列）→ 决策条"，右栏核验台成为主叙事、Agent 事件降级为折叠处理记录。门禁全绿（247 单测 + 53 E2E + build），视觉验收记录见 `docs/design/rigmate-decision-bench-review.md`。**只改 UI 展示层，API/domain/数据库未动；与 M37 数据质量工作零耦合。** 合并决策后，下一窗口仍按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行证据池收口 + M37 质量门（候选池只放 verified/supported、方案项携带真实质量状态、sourceLevel 不得冒充 verified_catalog）；**不扩展 UI、不引入完整 Agent 编排、不改产品路线。**
+> 最后更新：2026-10-08 ｜ 当前阶段：**装机决策台 UI 重置 + 布局收口已完成（分支 `feat/decision-bench-ui`，8 个独立提交，待合并决策）**——UI-R1 七任务（AssemblyRail / BudgetRuler / VerificationDesk 三件套、导航收缩、首页与方案页重做、辅助页统一）之后，又完成一轮收口 `fix: close decision bench layout gaps`：① 方案页装配轨道移入主区 4×2 网格（八类同屏可见，不再被右栏截断）；② <1200px 核验台摘要内联到配置清单之后、决策动作之前；③ /projects 与报告页统一 WorkspaceHeader 页头 / 状态徽章 / 主按钮（打印版式未动）。门禁全绿（247 单测 + 55 E2E + build），截图与验收记录见 `docs/design/rigmate-decision-bench-review.md`。**只改 UI 展示层，API/domain/数据库未动；与 M37 数据质量工作零耦合。** 合并决策后，下一窗口仍按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行证据池收口 + M37 质量门；**不扩展 UI、不引入完整 Agent 编排、不改产品路线。**
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
@@ -34,6 +34,7 @@
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
 - **下一项工作（新窗口执行）**：先对 `feat/decision-bench-ui` 做合并决策（finishing-a-development-branch：合并或 PR，勿与 M37 工作混提交）；然后按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行证据池收口 + M37 质量门（Task A-E）；完成后再进完整 M37 评测与发布判断。
 - **UI 重置窗口交接（2026-10-08）**：新组件在 `src/ui/workbench/{assembly-rail,budget-ruler,verification-desk}.tsx`，纯展示、只吃视图类型；映射纯函数同文件导出并被 `tests/ui/workbench-views.test.ts` 覆盖（14 例）。导航两栏结构（主导航 aria-label="主导航"、场景入口 aria-label="场景入口"），`/design/[id]` 归属"我的方案" active。方案页修订输入已移至内容区（`.revision-inline`），顶栏只有 `summary`（预算摘要）插槽；E2E 断言锚点：核验台 heading、`.budget-ruler`、`.build-parts-verify`、`.verification-log`。冲突态 UI（接受禁用 + 核验台冲突条目）因生成器恒兼容无法经 API 黑盒到达，由单测 + DIY 冲突 E2E 覆盖，详见验收文档已知限制。
+- **收口轮交接（2026-10-08，`fix: close decision bench layout gaps`）**：① `AssemblyRail` 新增 `layout="track" | "grid"`（方案页主区用 grid=4×2，<720px 2×4；首页仍 track + `.home-rail-hint` 滚动提示）；② 核验台双挂载：`.design-desk-aside`（≥1200px）/`.design-desk-inline`（<1200px，配置清单后、决策前），组件已去 `id` 改 `aria-label`——**给核验台写测试必须 `filter({ visible: true })`**，否则 strict mode 撞双份 DOM；③ `/projects`、报告页已统一 WorkspaceHeader + 状态徽章，报告页打印 CSS 隐藏 `.brand-sidebar/.workbench-header/.workbench-aside`（顺带修了侧栏被打印的旧问题）；④ 页头 meta 长句在 <900px 允许换行（曾致 390px 溢出，勿回退 nowrap）。
 - **本轮用户确认的方向**：首批服务新手；Agent 调大模型协助生成配置，但候选、规格、价格和兼容结论必须有系统数据与规则支撑；可整体重构前端，要求简洁、清楚、舒服；参考开源 Agent 工作台的信息层级与任务状态，不整体移植代码或通用聊天壳。首轮交付可运行前端原型，桌面优先、手机适配。
 - **前端所有权**：归 AI 窗口（全栈）。
 
@@ -86,7 +87,7 @@
 | M31：自然语言修订方案 / M32：版本差异与 DIY 渐进披露 / M33：产品化收口 | ✅ 完成 |
 | M34：新手工作台体验基线（入口 / 方案 / 修订 / 硬件查询） | ✅ 完成（真实 API + 仪器白视觉层 + 21 E2E） |
 | M35：历史版本只读切换 + 逐件依据展开 + 真实版本回传 | ✅ 完成（22 E2E；旧版禁止接受/修订，最新版本保持可操作） |
-| UI-R1：装机决策台 UI 重置（三件套组件 + 导航收缩 + 首页/方案页重做 + 辅助页统一） | ✅ 完成（分支 `feat/decision-bench-ui`；247 单测 + 53 E2E + build；验收记录 docs/design/rigmate-decision-bench-review.md） |
+| UI-R1：装机决策台 UI 重置（三件套组件 + 导航收缩 + 首页/方案页重做 + 辅助页统一） | ✅ 完成（分支 `feat/decision-bench-ui`；含收口轮：装配轨道 4×2 主区网格 / 核验台 <1200 内联 / projects+报告统一页头；247 单测 + 55 E2E + build；验收记录 docs/design/rigmate-decision-bench-review.md） |
 | M37：受约束的目录候选选择器 | 🔶 进行中（候选 catalogId 校验、理由保留、非法选择回退；待真实样本评测） |
 | V1-C：联盟 API / OCR 报价单入口 / PostgreSQL | ⬜ |
 
@@ -472,6 +473,8 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-10-08 v4.18：**决策台布局收口（本窗口，独立提交 `fix: close decision bench layout gaps`）**——修三个实际 UX 问题：① 方案页八类装配轨道被 340px 右栏截断（1440 只见 CPU+部分主板）→ 轨道移入主内容区，`AssemblyRail` 增加 `layout="grid"` 变体（桌面 4×2 / 窄屏 2×4，八类同屏可见，槽位四要素保留），首页横向轨道加"← 横向滑动查看全部八类 →"提示与细滚动条；② 1024px 核验台被排到全部主内容之后 → 核验台双挂载（≥1200 右栏 / <1200 内联到配置清单之后、决策动作之前，处理记录仍折叠），VerificationDesk/AgentProgressCard 去 id 改 aria-label 防重复 ID；③ /projects 与报告页旧结构 → 方案库换 WorkspaceHeader + 状态徽章化 + 「创建项目并运行检查」升主动作，报告页屏上加页头（检查报告 + 冲突/待确认/就绪徽章）+ 打印按钮升主动作，打印版式本体未动、打印 CSS 补隐藏全局壳（修复侧栏被打印的旧问题）。E2E +2（1024 核验台几何位置断言、projects/报告品牌一致断言）共 55 条；三档视口新增"8 槽位边界不越出视口"几何断言。修复过程踩坑已记 §0：页头 meta nowrap 致 390px 溢出（已放开换行）、双挂载测试需 filter visible。247 单测 + 55 E2E + lint + typecheck + build 全绿；截图 7 张（真实 API 数据）确认八类部件不再截断。
+
 - 2026-10-08 v4.17：**装机决策台 UI 重置（UI-R1，本窗口）**——按 codex 规划 `docs/superpowers/plans/2026-10-08-rigmate-decision-bench-ui.md` 七任务执行，每任务独立提交：① 视图契约与 token（`AssemblySlot`/`BudgetRulerView`/`VerificationDeskItem` + 石墨/铝灰/蓝灰/轨道线/标尺线 token，旧 `--rm-*` 别名保留）；② 三个纯展示组件 + 14 例映射单测；③ 导航收缩为三主入口 + 场景入口、顶栏砍掉修订输入（移内容区）、品牌副标题改"装机决策台"；④ 首页装配台叙事（八类空槽位 → 目标输入 → 预算标尺 + 三项真实能力，删"RigMate 怎么工作"大卡）；⑤ 方案页核验台主叙事（预算标尺进首屏、清单加核验列与真实 sourceLevel 文案、右栏四阶段轨道 + 核验台 + 折叠处理记录、同屏单橙主动作）；⑥ 辅助页统一（DIY 页头、证据页审核徽章 + 主按钮）；⑦ 三档视口（1440/1024/390）三件套断言 + 键盘 Tab 路径 + reduced-motion + 截图验收（6 张，真实 API 数据）。诚实红线保持：待确认/资料不足/冲突不升格为通过，价格标"经验估算"。视觉修复 4 处（预算线标签裁切、待确认徽章截断、1024 顶栏挤压、空库最近方案消失）。247 单测 + 53 E2E + lint + typecheck + build 全绿。
 
 - 2026-10-08 v4.16：**首批 verified 产品诞生（用户完成全量人工复核）**——用户在审核台以署名 xyy 盖章全部 45 条字段证据（质量事件留痕 45 次，待复核归零）。流程补全两处：① 盖章后需重新发布才落产品级状态（审核台 verify_evidence 不自动 publish——待办：考虑盖章后自动触发）；② **批次四 supersedesId 透传缺失回填**（当时代码补丁晚于脚本执行，9 条 S1 取代 S2/S3 的取代链没写上，新旧证据并存被判"已裁定冲突"封顶 supported），按 (产品,字段) 维度补链后重新发布：**酷里奥 A60 与 七彩虹火神 4080 SUPER 成为系统前两个 verified 产品**（火神四必填字段全部 S1 已核验）。GRE/冰猎鹰仍 partial（tdpWatts 等必填字段暂无证据，诚实状态）。**下一块：M37 受约束的模型选件**（用户已确认方向讨论：LLM 在已核验候选内挑选+解释，不发明事实）。

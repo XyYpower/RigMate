@@ -20,9 +20,10 @@ test("M27 目标驱动主链路：自然语言生成方案、自动校验并接�
   await expect(page.locator(".build-parts-verify").first()).toBeVisible();
   await expect(page.locator(".build-parts").getByText("待确认").first()).toBeVisible();
 
-  // 真实事件保留在折叠的处理记录里
-  await page.locator(".verification-log summary").click();
-  await expect(page.getByText("正在检索目录和已核验规格。")).toBeVisible();
+  // 真实事件保留在折叠的处理记录里（核验台 ≥1200 在右栏、<1200 内联主区，只取可见的一份）
+  const visibleDesk = page.locator(".verification-desk").filter({ visible: true });
+  await visibleDesk.locator(".verification-log summary").click();
+  await expect(visibleDesk.getByText("正在检索目录和已核验规格。")).toBeVisible();
 
   const accept = page.getByRole("button", { name: "接受这一版" });
   await expect(accept).toBeEnabled();
@@ -56,8 +57,9 @@ test("M31 自然语言修订：顶栏输入，预算跨档位生成第 2 版并�
   await page.getByRole("button", { name: "提交修改" }).click();
 
   // 处理记录（折叠）承载真实事件；展开后可读
-  await page.locator(".verification-log summary").click();
-  await expect(page.getByText(/已理解调整：预算调整为 12,000 元/)).toBeVisible();
+  const visibleDesk = page.locator(".verification-desk").filter({ visible: true });
+  await visibleDesk.locator(".verification-log summary").click();
+  await expect(visibleDesk.getByText(/已理解调整：预算调整为 12,000 元/)).toBeVisible();
   await expect(page.locator(".header-title-version")).toContainText("方案 v2");
   // 版本差异区：预算跌破档位线，CPU/显卡/电源应出现 旧件→新件 的变化
   const diff = page.locator(".proposal-diff");
@@ -95,8 +97,8 @@ test("M31 无法理解的调整：诚实追问而不是硬猜，保留原方案"
   await page.getByRole("textbox", { name: "继续调整这套方案" }).fill("帮我随便改改");
   await page.getByRole("button", { name: "提交修改" }).click();
 
-  // 追问同时出现在 Agent 时间线与内联反馈（同一事件两处呈现），断言取其一
-  await expect(page.getByText(/我没能理解这条调整/).first()).toBeVisible();
-  await expect(page.getByText(/本地规则只能处理预算和已有硬件类调整/).first()).toBeVisible();
+  // 追问出现在内联反馈与处理记录时间线（同一事件两处呈现）；内联反馈直接断言
+  await expect(page.locator(".revision-feedback")).toContainText(/我没能理解这条调整/);
+  await expect(page.locator(".revision-feedback")).toContainText(/本地规则只能处理预算和已有硬件类调整/);
   await expect(page.locator(".header-title-version")).toContainText("方案 v1");
 });

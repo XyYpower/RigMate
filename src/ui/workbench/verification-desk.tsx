@@ -145,9 +145,9 @@ export function VerificationDesk({
 }) {
   const sorted = [...items].sort((a, b) => STATE_RANK[a.state] - STATE_RANK[b.state]);
   return (
-    <section className="wb-panel verification-desk" aria-labelledby="verification-desk-title">
+    <section className="wb-panel verification-desk" aria-label="核验台">
       <div className="verification-desk-head">
-        <h2 id="verification-desk-title">核验台</h2>
+        <h2>核验台</h2>
         <span className="verification-desk-count">
           {sorted.filter((item) => item.state === "conflict").length > 0
             ? "有冲突待解决"

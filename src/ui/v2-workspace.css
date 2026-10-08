@@ -721,7 +721,16 @@
 .design-page { padding-top: 0; }
 .design-page::before { display: none; }
 .design-page .page-main > .budget-ruler { margin-top: 20px; }
-.design-rail { padding: 14px 16px; }
+
+/* 方案页主区装配轨道（4×2 网格，八类同屏可见） */
+.design-rail-section { margin-top: 16px; }
+
+/* 核验台双挂载：≥1200px 右栏；<1200px 内联到配置清单之后、决策动作之前 */
+.design-desk-inline { display: none; }
+@media (max-width: 1199px) {
+  .design-desk-inline { display: block; margin-top: 16px; }
+  .design-desk-aside { display: none; }
+}
 
 /* 推荐摘要卡（浅橙底，参考图 C 位） */
 .build-summary {
@@ -1074,15 +1083,22 @@
    补齐（参考图对照审计）：项目分组 / 尺寸对比条 / DIY 底部状态条
    ========================================================================== */
 
-/* 项目页：草稿/正式分组 + 生命周期状态 */
+/* 项目页：草稿/正式分组 + 生命周期状态（徽章化，与决策台状态语言一致） */
 .pj-group { margin-top: 14px; }
 .pj-group-label {
   margin: 0 0 6px; color: var(--wb-ink-muted); font-size: 12px; font-weight: 700;
 }
-.pj-status { font-size: 12px; font-weight: 600; }
-.pj-status-review { color: var(--wb-warn); }
-.pj-status-input { color: var(--wb-ink-faint); }
-.pj-status-accepted { color: var(--wb-pass); }
+.pj-status {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pj-status-review { background: var(--wb-warn-soft); color: var(--wb-warn); }
+.pj-status-input { background: var(--wb-unknown-soft); color: var(--wb-unknown); }
+.pj-status-accepted { background: var(--wb-pass-soft); color: var(--wb-pass); }
 
 /* DIY：尺寸对比条（参考图"机箱 & 显卡侧视图"的数据诚实版） */
 .size-compare { margin-top: 16px; padding: 0 20px 14px; overflow: hidden; }
@@ -1248,6 +1264,15 @@
    ========================================================================== */
 
 .home-rail { margin-top: 26px; }
+.home-rail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.home-rail-head h2 { margin: 0; color: var(--wb-ink); font-size: 15px; font-weight: 700; }
+.home-rail-hint { color: var(--wb-ink-faint); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .agent-progress { margin: 12px 0 0; padding: 10px 12px; border-radius: var(--wb-radius-control); background: var(--wb-slate-soft); color: var(--wb-slate); font-size: 12.5px; }
 
 .home-ruler-row {

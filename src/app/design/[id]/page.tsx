@@ -193,6 +193,30 @@ export default function DesignPage() {
     },
   ];
 
+  function openPartsRow(category: string) {
+    const row = document.querySelector(`.build-parts-row[data-category="${category}"]`);
+    if (row instanceof HTMLDetailsElement) {
+      row.open = true;
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  /** 核验台面板：≥1200px 在右栏，<1200px 内联到配置清单之后（同一内容两处挂载，CSS 控制可见） */
+  const deskPanel = (
+    <VerificationDesk
+      items={verificationItemsFrom(viewedProposal)}
+      track={<StageTrack steps={stageTrackFromEvents(result.run.events)} />}
+      log={<AgentProgressCard steps={toTimelineSteps(result.run.events)} />}
+      onAction={(item) => {
+        if (item.id === "compat-conflict") void acceptProposal(true);
+      }}
+      onEvidence={(item) => {
+        const category = item.id.startsWith("pending-") ? item.id.slice("pending-".length) : null;
+        if (category) openPartsRow(category);
+      }}
+    />
+  );
+
   return (
     <main className="design-page">
       <WorkspaceHeader
@@ -227,6 +251,10 @@ export default function DesignPage() {
 
           <BuildSummaryCard proposal={viewedProposal} />
 
+          <section className="design-rail-section" aria-label="本方案装配轨道">
+            <AssemblyRail slots={assemblySlotsFromProposal(viewedProposal)} layout="grid" />
+          </section>
+
           <section className="wb-panel build-parts-section" aria-labelledby="parts-title">
             <div className="build-parts-section-head">
               <h2 id="parts-title">配置清单</h2>
@@ -234,6 +262,8 @@ export default function DesignPage() {
             </div>
             <BuildPartsTable items={viewedProposal.items} />
           </section>
+
+          <div className="design-desk-inline">{deskPanel}</div>
 
           {viewedProposal.version > 1 && changes.length > 0 && (
             <section className="wb-panel proposal-diff" aria-labelledby="diff-title">
@@ -305,26 +335,7 @@ export default function DesignPage() {
         </div>
 
         <aside className="workbench-aside page-level">
-          <VerificationDesk
-            items={verificationItemsFrom(viewedProposal)}
-            track={<StageTrack steps={stageTrackFromEvents(result.run.events)} />}
-            log={<AgentProgressCard steps={toTimelineSteps(result.run.events)} />}
-            onAction={(item) => {
-              if (item.id === "compat-conflict") void acceptProposal(true);
-            }}
-            onEvidence={(item) => {
-              const category = item.id.startsWith("pending-") ? item.id.slice("pending-".length) : null;
-              if (!category) return;
-              const row = document.querySelector(`.build-parts-row[data-category="${category}"]`);
-              if (row instanceof HTMLDetailsElement) {
-                row.open = true;
-                row.scrollIntoView({ behavior: "smooth", block: "center" });
-              }
-            }}
-          />
-          <section className="wb-panel design-rail" aria-label="本方案装配轨道">
-            <AssemblyRail slots={assemblySlotsFromProposal(viewedProposal)} />
-          </section>
+          <div className="design-desk-aside">{deskPanel}</div>
           <RequirementCard items={requirementItems} />
           <section className="wb-panel design-status-strip" aria-label="方案状态">
             <div>

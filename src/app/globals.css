@@ -447,7 +447,10 @@ select {
 .report-item-spec { color: var(--rm-ink-faint); font-size: 12px; }
 
 @media print {
-  .nav-shell, .report-actions { display: none !important; }
+  /* 打印只保留报告本体：全局壳部件（侧栏/页头/右栏）与屏上动作不打印（shell 容器保留，内容在其中） */
+  .nav-shell, .report-actions,
+  .brand-sidebar, .workbench-header, .workbench-aside { display: none !important; }
+  .workbench-shell, .workbench-shell.has-aside { grid-template-columns: minmax(0, 1fr) !important; }
   body { background: #fff; }
   .report-page { padding: 0; max-width: none; }
   .report-frame { background: #fff; }

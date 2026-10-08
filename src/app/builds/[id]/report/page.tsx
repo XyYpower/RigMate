@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import type { Build, Finding } from "@/domain/build/types";
 import { CATEGORY_META, type ItemSpec } from "@/ui/category-form";
 import { STATUS_ORDER, toFindingCardModel } from "@/ui/finding-model";
+import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
+import type { WorkspaceStatus } from "@/ui/workbench/types";
 
 type CheckPayload = {
   createdAt: string;
@@ -124,11 +126,30 @@ export default function ReportPage() {
 
   const summary = build.budgetSummary;
 
+  /** 报告状态徽章：阻断=存在冲突，过期=待确认，其余已完成；未检查不给徽章（图框里已说明） */
+  const reportStatus: WorkspaceStatus | undefined = !check
+    ? undefined
+    : check.stale
+      ? "attention"
+      : (check.findings ?? []).some((finding) => finding.status === "block")
+        ? "conflict"
+        : "ready";
+
   return (
     <main className="report-page">
+      <WorkspaceHeader
+        title="检查报告"
+        meta={`${build.name} · ${build.items.length} 配件 · ${check ? (check.stale ? "结论待更新" : "检查完成") : "尚未运行检查"}`}
+        status={reportStatus}
+        actions={
+          <Link className="button secondary" href="/projects">
+            回方案库
+          </Link>
+        }
+      />
       <div className="report-actions">
         <Link href="/diy">← 回高级 DIY</Link>
-        <button className="button secondary" onClick={() => window.print()}>
+        <button className="button primary" onClick={() => window.print()}>
           打印 / 导出 PDF
         </button>
       </div>

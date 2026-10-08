@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
 
 type Build = {
   id: string;
@@ -220,13 +221,20 @@ export default function ProjectsPage() {
 
   return (
     <main className="hw-page">
-      <header className="hw-head">
-        <h1>方案库</h1>
-          <p className="hw-sub">
-          历史方案一览，点「打开」回到
-          <Link href="/diy"> 高级 DIY </Link>工作台继续编辑。
-        </p>
-      </header>
+      <WorkspaceHeader
+        title="方案库"
+        meta={
+          <>
+            历史方案一览，点「打开」回到
+            <Link href="/diy"> 高级 DIY </Link>工作台继续编辑。
+          </>
+        }
+        actions={
+          <Link className="button secondary" href="/">
+            从目标开始 <span aria-hidden>↗</span>
+          </Link>
+        }
+      />
 
       <section className="sec">
         <div className="hw-sec-head">
@@ -322,7 +330,7 @@ export default function ProjectsPage() {
               <span className="helper">
                 「目录候选」选中后自动带出规格并标记来源；不带候选的行规格留空，检查时按待补充处理。
               </span>
-              <button className="button secondary" onClick={() => void createAndCheck()} disabled={reviewBusy}>
+              <button className="button primary" onClick={() => void createAndCheck()} disabled={reviewBusy}>
                 {reviewBusy ? "创建中…" : "创建项目并运行检查"}
               </button>
             </div>

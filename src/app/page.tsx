@@ -94,6 +94,10 @@ export default function Home() {
           </section>
 
           <section className="home-rail" aria-label="整机装配轨道">
+            <div className="home-rail-head">
+              <h2>八个部件位</h2>
+              <span className="home-rail-hint">← 横向滑动查看全部八类 →</span>
+            </div>
             <AssemblyRail slots={emptyAssemblySlots(busy ? "retrieving" : "empty")} />
           </section>
 
