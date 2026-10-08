@@ -10,6 +10,14 @@ import { DecisionBanner } from "@/ui/workbench/decision-banner";
 import { RequirementCard } from "@/ui/workbench/requirement-card";
 import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
 import { formatYuanParts } from "@/ui/workbench/format";
+import { BudgetRuler, budgetRulerFrom } from "@/ui/workbench/budget-ruler";
+import { AssemblyRail, assemblySlotsFromProposal } from "@/ui/workbench/assembly-rail";
+import {
+  StageTrack,
+  VerificationDesk,
+  stageTrackFromEvents,
+  verificationItemsFrom,
+} from "@/ui/workbench/verification-desk";
 import type { DesignResult } from "@/contracts/design";
 import { workspaceStatusOf } from "@/ui/workbench/types";
 import { diffProposals } from "@/domain/design/diff";
@@ -215,12 +223,14 @@ export default function DesignPage() {
 
       <div className="page-grid">
         <div className="page-main">
+          <BudgetRuler view={budgetRulerFrom(viewedProposal)} />
+
           <BuildSummaryCard proposal={viewedProposal} />
 
           <section className="wb-panel build-parts-section" aria-labelledby="parts-title">
             <div className="build-parts-section-head">
               <h2 id="parts-title">配置清单</h2>
-              <span>可展开调整</span>
+              <span>核验状态逐行可见，可展开调整</span>
             </div>
             <BuildPartsTable items={viewedProposal.items} />
           </section>
@@ -279,7 +289,11 @@ export default function DesignPage() {
           <div className="proposal-actions">
             {!isHistoryView && (
               <>
-                <button className="button primary" onClick={() => void acceptProposal()} disabled={accepting || compatibility?.status === "conflict"}>
+                <button
+                  className={`button ${pendingItems.length > 0 || compatibility?.status === "conflict" ? "secondary" : "primary"}`}
+                  onClick={() => void acceptProposal()}
+                  disabled={accepting || compatibility?.status === "conflict"}
+                >
                   {accepting ? "正在保存并检查…" : "接受这一版"}<span aria-hidden>→</span>
                 </button>
                 <Link className="button secondary" href={`/diy`}>进入高级 DIY</Link>
@@ -291,7 +305,26 @@ export default function DesignPage() {
         </div>
 
         <aside className="workbench-aside page-level">
-          <AgentProgressCard steps={toTimelineSteps(result.run.events)} />
+          <VerificationDesk
+            items={verificationItemsFrom(viewedProposal)}
+            track={<StageTrack steps={stageTrackFromEvents(result.run.events)} />}
+            log={<AgentProgressCard steps={toTimelineSteps(result.run.events)} />}
+            onAction={(item) => {
+              if (item.id === "compat-conflict") void acceptProposal(true);
+            }}
+            onEvidence={(item) => {
+              const category = item.id.startsWith("pending-") ? item.id.slice("pending-".length) : null;
+              if (!category) return;
+              const row = document.querySelector(`.build-parts-row[data-category="${category}"]`);
+              if (row instanceof HTMLDetailsElement) {
+                row.open = true;
+                row.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+            }}
+          />
+          <section className="wb-panel design-rail" aria-label="本方案装配轨道">
+            <AssemblyRail slots={assemblySlotsFromProposal(viewedProposal)} />
+          </section>
           <RequirementCard items={requirementItems} />
           <section className="wb-panel design-status-strip" aria-label="方案状态">
             <div>

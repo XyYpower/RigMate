@@ -716,6 +716,8 @@
 /* 方案页画布 */
 .design-page { padding-top: 0; }
 .design-page::before { display: none; }
+.design-page .page-main > .budget-ruler { margin-top: 20px; }
+.design-rail { padding: 14px 16px; }
 
 /* 推荐摘要卡（浅橙底，参考图 C 位） */
 .build-summary {
@@ -769,7 +771,8 @@
 
 .build-parts-head, .build-parts-row > summary {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) 52px 150px 28px;
+  /* 部件 | 型号 | 核验 | 数量 | 参考价格 | 详情 */
+  grid-template-columns: 76px minmax(0, 1fr) 84px 44px 140px 24px;
   gap: 12px; align-items: center;
 }
 .build-parts-head {
@@ -788,7 +791,16 @@
 .build-parts-row > summary::-webkit-details-marker { display: none; }
 .build-parts-row > summary:hover { background: var(--wb-surface-subtle); }
 .build-parts-cat { color: var(--wb-ink-muted); font-size: 12.5px; font-weight: 600; }
-.build-parts-model { min-width: 0; color: var(--wb-ink); font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.build-parts-model { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.build-parts-model-name { min-width: 0; color: var(--wb-ink); font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.build-parts-model-meta { display: none; color: var(--wb-ink-faint); font-size: 10.5px; }
+.build-parts-verify {
+  justify-self: start; padding: 1px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; white-space: nowrap;
+}
+.build-parts-verify.verify-pass { background: var(--wb-pass-soft); color: var(--wb-pass); }
+.build-parts-verify.verify-warn { background: var(--wb-warn-soft); color: var(--wb-warn); }
+.build-parts-verify.verify-unknown { background: var(--wb-unknown-soft); color: var(--wb-unknown); }
 .build-parts-confirm {
   margin-left: 8px; padding: 1px 7px; border-radius: 999px;
   background: var(--wb-warn-soft); color: var(--wb-warn);
@@ -876,7 +888,10 @@
   .build-summary { flex-direction: column; gap: 14px; }
   .build-summary-price { text-align: left; }
   .build-parts-head { display: none; }
-  .build-parts-row > summary { grid-template-columns: 60px minmax(0, 1fr) 110px 20px; }
+  /* 窄屏：数量列并入型号行内信息，核验列改为行内徽章 */
+  .build-parts-row > summary { grid-template-columns: 56px minmax(0, 1fr) 104px 18px; }
+  .build-parts-qty-col, .build-parts-verify { display: none; }
+  .build-parts-model-meta { display: inline; }
   .build-parts-detail { padding-left: 20px; }
   .decision-banner-actions { width: 100%; }
   .decision-banner-actions .button { flex: 1; }

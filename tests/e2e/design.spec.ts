@@ -6,12 +6,23 @@ test("M27 目标驱动主链路：自然语言生成方案、自动校验并接�
   await page.getByRole("button", { name: "开始搭配" }).click();
 
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
-  // 参考图形态：摘要卡 + 配置清单 + Agent 进度 + 状态徽章
+  // 参考图形态：预算标尺 + 摘要卡 + 配置清单 + 核验台 + 状态徽章
+  await expect(page.getByRole("heading", { name: "核验台" })).toBeVisible();
+  const ruler = page.locator(".budget-ruler");
+  await expect(ruler).toBeVisible();
+  await expect(ruler).toContainText("预算 ¥20,000");
   await expect(page.locator(".build-summary")).toBeVisible();
   await expect(page.getByRole("heading", { name: "配置清单" })).toBeVisible();
-  await expect(page.getByText("正在检索目录和已核验规格。")).toBeVisible();
   await expect(page.locator(".wb-status-badge")).toBeVisible();
   await expect(page.getByText("经验估算，非实时成交价").first()).toBeVisible();
+
+  // 配置清单核验状态：逐行真实来源，白色外观待确认可读
+  await expect(page.locator(".build-parts-verify").first()).toBeVisible();
+  await expect(page.locator(".build-parts").getByText("待确认").first()).toBeVisible();
+
+  // 真实事件保留在折叠的处理记录里
+  await page.locator(".verification-log summary").click();
+  await expect(page.getByText("正在检索目录和已核验规格。")).toBeVisible();
 
   const accept = page.getByRole("button", { name: "接受这一版" });
   await expect(accept).toBeEnabled();
@@ -44,6 +55,8 @@ test("M31 自然语言修订：顶栏输入，预算跨档位生成第 2 版并�
   await headerEditor.fill("预算压到 1.2 万");
   await page.getByRole("button", { name: "提交修改" }).click();
 
+  // 处理记录（折叠）承载真实事件；展开后可读
+  await page.locator(".verification-log summary").click();
   await expect(page.getByText(/已理解调整：预算调整为 12,000 元/)).toBeVisible();
   await expect(page.locator(".header-title-version")).toContainText("方案 v2");
   // 版本差异区：预算跌破档位线，CPU/显卡/电源应出现 旧件→新件 的变化
@@ -69,7 +82,7 @@ test("M35 可以切换查看历史方案并展开单件依据", async ({ page })
   // 历史版本：顶栏修订输入被替换为提示；展开单件依据仍可见
   await expect(page.getByText(/正在查看历史版本/)).toBeVisible();
   await page.locator(".build-parts-row summary").first().click();
-  await expect(page.getByText(/已核目录|型号 ID/).first()).toBeVisible();
+  await expect(page.locator(".build-parts-detail").first()).toContainText(/已核目录型号|型号 ID/);
 });
 
 test("M31 无法理解的调整：诚实追问而不是硬猜，保留原方案", async ({ page }) => {

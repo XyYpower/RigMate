@@ -131,11 +131,14 @@ export function StageTrack({ steps }: { steps: StageTrackStep[] }) {
 
 export function VerificationDesk({
   items,
+  track,
   log,
   onAction,
   onEvidence,
 }: {
   items: VerificationDeskItem[];
+  /** 四阶段轨道（由页面层从真实 AgentEvent 映射后传入） */
+  track?: ReactNode;
   log?: ReactNode;
   onAction?: (item: VerificationDeskItem) => void;
   onEvidence?: (item: VerificationDeskItem) => void;
@@ -153,6 +156,7 @@ export function VerificationDesk({
               : "全部通过"}
         </span>
       </div>
+      {track}
       <ul className="verification-desk-list">
         {sorted.map((item) => (
           <li className={`verification-item item-${item.state}`} key={item.id}>
