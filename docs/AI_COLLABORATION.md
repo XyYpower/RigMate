@@ -5,7 +5,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-09-29 ｜ 当前阶段：**数据质量系统 Task 1-6 + 8-9 代码全部落地（v4.7）**——字段级证据/质量状态体系 + 审核服务 API + 规则引擎质量门 + /hardware 只读质量报表 + 价格证据隔离（v10）+ 数据发布门禁（`npm run gate:data`）。仅剩 Task 7 数据查证为持续数据活。UI 窗口并行改造 /hardware 面板化进行中（工作区有其未提交文件）。设计契约 = 根目录 `DESIGN.md`。路线见 `docs/superpowers/specs/2026-09-24-v2-product-design.md`。
+> 最后更新：2026-10-08 ｜ 当前阶段：**移交：证据池收口 + M37 质量门（窄任务）**——数据质量系统代码（实施计划 Task 1-9）与六批查证完成，用户已在审核台全量复核 45 条证据（署名 xyy），**A60/火神为首批 verified 产品**。下一窗口按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行：候选池只放 verified/supported、方案项携带真实质量状态与来源引用、sourceLevel 不得冒充 verified_catalog、补齐八类最小候选池、真实目标样本评测。**不扩展 UI、不引入完整 Agent 编排、不改产品路线。**
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
@@ -32,7 +32,7 @@
 - **数据现状（M29 后 / v4.7 扩展）**：自有规格库 `canonical_products` 表为运行时首选——`npm run catalog:db` 一键把 种子 34 + 人工 49 + BuildCores 26,121 清洗入库（幂等，同 id 先到先得）；库为空时自动回退 JSON 三层合并（历史行为）。ZOL 补缺走 `npm run catalog:db -- --update <file>`（只填缺失字段、不覆盖已核值、不允许静默创建新品）。**v8-v10 质量系统**：`product_sources` / `product_field_evidence` / `data_quality_events` / `pending_catalog_queue` 四表 + canonical_products 身份五元组、quality_status、merged_into 列（存量行默认 partial）；字段质量判定纯函数在 `src/domain/catalog/quality.ts`；人工审核服务 `src/application/catalog-review/service.ts`（API：POST /api/catalog/review 七 action + /api/catalog/queue），所有写操作强制 reviewer 署名；BuildCores 再导入走 `npm run catalog:db -- --merge-buildcores`；质量报表 `npm run catalog:quality` + /hardware 只读面板。**价格隔离（v10）**：price_evidence 增 canonical_product_id / region / review_status（unreviewed→verified/rejected，rejected 终态），PATCH /api/evidence 审核流转，价格绝不写规格质量状态。**发布门禁**：`npm run gate:data` = typecheck+lint+test+数据门禁脚本（G1 schema 版本 / G2 无来源 verified / G3 verified 必填齐全 / G4 降级留痕 / G5 批次报告 / G6 价格绑定悬空）。字段纪律 = 只存决策字段 + 可选 refUrl；商品页链接缺失时前端拼京东搜索链接兜底（只链不爬）。规格查证走审核链路（查证 → addReviewSource/addReviewEvidence → verifyReviewEvidence → publishProduct）。
 - **架构决策（2026-09-23）**：评估并否决"整体套用 zai-org/ZCode 开源工作台改造 UI"——产品对象不匹配/集成重量失控/深色 IDE 风是已否决路线（ADR §3.6）；允许逐件拆用 Vercel `ai-elements`（Apache-2.0，npm 独立包）做 M30+ 副驾组件。
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
-- **下一项工作**：数据质量 Task 7-9（首批 100-300 高频变体查证 [搜索配额已重置，v2.11 遗留字段一并补] → 价格证据隔离 → 发布门禁）；审核 API 已就绪（POST /api/catalog/review 七个 action + /api/catalog/queue），可边查证边录入。随后 M37 做受约束的模型选件，M38 部署与完整闭环，M39 公开试用。详细范围与退出条件见新设计文档。
+- **下一项工作（新窗口执行）**：按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行证据池收口 + M37 质量门（Task A-E）；完成后再进完整 M37 评测与发布判断。
 - **本轮用户确认的方向**：首批服务新手；Agent 调大模型协助生成配置，但候选、规格、价格和兼容结论必须有系统数据与规则支撑；可整体重构前端，要求简洁、清楚、舒服；参考开源 Agent 工作台的信息层级与任务状态，不整体移植代码或通用聊天壳。首轮交付可运行前端原型，桌面优先、手机适配。
 - **前端所有权**：归 AI 窗口（全栈）。
 
