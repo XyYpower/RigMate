@@ -140,3 +140,283 @@
   .workbench-header-center { order: 3; flex-basis: 100%; }
   .workbench-aside { position: static; height: auto; border-left: 0; border-top: 1px solid var(--wb-hairline); }
 }
+
+/* ============================================================================
+   决策台组件（2026-10-08 UI 重置）：装配轨道 / 预算标尺 / 核验台 / 四阶段轨道
+   契约见 DESIGN.md §6；状态同时用图形、文字和颜色表达；无彩色侧边条。
+   ========================================================================== */
+
+/* ---- 装配轨道 ---- */
+.assembly-rail {
+  /* 横向滚动只发生在轨道内部，页面 body 永不横滚 */
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.assembly-rail-track {
+  display: flex;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: max-content;
+  min-width: 100%;
+}
+.assembly-slot {
+  position: relative;
+  flex: 1 0 128px;
+  min-width: 0;
+  display: flex;
+}
+/* 槽位间轨道连接线 */
+.assembly-slot + .assembly-slot::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 26px;
+  width: 14px;
+  height: 1px;
+  background: var(--wb-rail-line);
+}
+.assembly-slot-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-alu);
+  border-radius: var(--wb-radius-panel);
+  transition: border-color var(--wb-fast), background var(--wb-fast);
+}
+button.assembly-slot-body { cursor: pointer; }
+button.assembly-slot-body:hover { border-color: var(--wb-accent); }
+.assembly-slot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.assembly-slot-label { color: var(--wb-ink-muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.assembly-slot-state { font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.assembly-slot-state.state-empty { color: var(--wb-ink-faint); }
+.assembly-slot-state.state-retrieving { color: var(--wb-slate); }
+.assembly-slot-state.state-ready { color: var(--wb-pass); }
+.assembly-slot-state.state-attention { color: var(--wb-warn); }
+.assembly-slot-state.state-conflict { color: var(--wb-block); }
+.assembly-slot-state.state-unknown { color: var(--wb-unknown); }
+.assembly-slot-model {
+  min-height: 18px;
+  color: var(--wb-ink);
+  font: 600 12.5px/1.4 ui-monospace, Consolas, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.assembly-slot-model em {
+  font-style: normal;
+  color: var(--wb-ink-faint);
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-weight: 500;
+}
+.assembly-slot-detail { color: var(--wb-ink-faint); font-size: 11px; line-height: 1.45; }
+/* 状态图形：槽位上缘状态点（圆点=就绪/检索，方点=待确认/冲突，虚线=资料不足），配合文字不靠颜色单通道 */
+.assembly-slot::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--wb-alu);
+  background: var(--wb-surface);
+}
+.assembly-slot.slot-retrieving::after { border-color: var(--wb-slate); background: var(--wb-slate-soft); }
+.assembly-slot.slot-ready::after { border-color: var(--wb-pass); background: var(--wb-pass); }
+.assembly-slot.slot-attention::after { border-color: var(--wb-warn); background: var(--wb-warn-soft); border-radius: 2px; transform: rotate(45deg); }
+.assembly-slot.slot-conflict::after { border-color: var(--wb-block); background: var(--wb-block-soft); border-radius: 2px; }
+.assembly-slot.slot-unknown::after { border-style: dashed; }
+.assembly-slot.slot-attention .assembly-slot-body { border-color: color-mix(in srgb, var(--wb-warn) 45%, transparent); }
+.assembly-slot.slot-conflict .assembly-slot-body { border-color: color-mix(in srgb, var(--wb-block) 45%, transparent); }
+.assembly-slot.slot-unknown .assembly-slot-body { border-style: dashed; }
+
+/* ---- 预算标尺 ---- */
+.budget-ruler {
+  padding: 14px 16px 12px;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-panel);
+  box-shadow: var(--wb-shadow-panel);
+}
+.budget-ruler-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.budget-ruler-head h2 { margin: 0; font-size: 14px; font-weight: 700; color: var(--wb-ink); }
+.budget-ruler-state { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.budget-ruler-state.state-unknown { color: var(--wb-unknown); }
+.budget-ruler-state.state-within { color: var(--wb-pass); }
+.budget-ruler-state.state-crossing { color: var(--wb-warn); }
+.budget-ruler-state.state-over { color: var(--wb-block); }
+.budget-ruler-track {
+  position: relative;
+  height: 14px;
+  margin: 16px 0 8px;
+  border-left: 1px solid var(--wb-ruler-line);
+  border-right: 1px solid var(--wb-ruler-line);
+  background:
+    repeating-linear-gradient(to right, transparent 0, transparent calc(10% - 1px), var(--wb-ruler-line) calc(10% - 1px), var(--wb-ruler-line) 10%),
+    var(--wb-surface-subtle);
+  border-radius: 3px;
+}
+.budget-ruler-empty-line {
+  position: absolute;
+  inset: 6px 4px auto;
+  border-top: 2px dotted var(--wb-alu);
+}
+.budget-ruler-estimate {
+  position: absolute;
+  top: 3px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--wb-slate);
+  min-width: 6px;
+}
+.ruler-crossing .budget-ruler-estimate { background: var(--wb-warn); }
+.ruler-over .budget-ruler-estimate { background: var(--wb-block); }
+.ruler-within .budget-ruler-estimate { background: var(--wb-pass); }
+.budget-ruler-midpoint {
+  position: absolute;
+  top: 1px;
+  width: 2px;
+  height: 12px;
+  background: var(--wb-graphite);
+}
+.budget-ruler-budgetline {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 22px;
+  background: var(--wb-accent);
+}
+.budget-ruler-budgetline::after {
+  content: "预算线";
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--wb-accent);
+  font-size: 9.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.budget-ruler-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+}
+.budget-ruler-figures span { font: 600 12px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.budget-ruler-budget { color: var(--wb-ink); }
+.budget-ruler-range { color: var(--wb-ink-muted); }
+
+/* ---- 核验台 ---- */
+.verification-desk-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--wb-hairline);
+}
+.verification-desk-head h2 { margin: 0; font-size: 14px; font-weight: 700; color: var(--wb-ink); }
+.verification-desk-count { color: var(--wb-ink-faint); font-size: 11.5px; font-weight: 600; }
+.verification-desk-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.verification-item {
+  padding: 10px 12px;
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--wb-radius-control);
+  background: var(--wb-surface-subtle);
+}
+.verification-item.item-conflict { border-color: color-mix(in srgb, var(--wb-block) 40%, transparent); background: var(--wb-block-soft); }
+.verification-item.item-attention { border-color: color-mix(in srgb, var(--wb-warn) 40%, transparent); background: var(--wb-warn-soft); }
+.verification-item.item-unknown { border-color: var(--wb-hairline); background: var(--wb-slate-soft); }
+.verification-item.item-pass { border-color: color-mix(in srgb, var(--wb-pass) 30%, transparent); background: var(--wb-pass-soft); }
+.verification-item-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.verification-item-state { align-self: flex-start; padding: 1px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
+.verification-item-state.state-conflict { background: var(--wb-block); color: #fff; }
+.verification-item-state.state-attention { background: var(--wb-warn); color: #fff; }
+.verification-item-state.state-unknown { background: var(--wb-unknown); color: #fff; }
+.verification-item-state.state-pass { background: var(--wb-pass); color: #fff; }
+.verification-item-title { margin: 0; color: var(--wb-ink); font-size: 12.5px; font-weight: 600; line-height: 1.5; }
+.verification-item-impact { margin: 0; color: var(--wb-ink-muted); font-size: 11.5px; line-height: 1.55; }
+.verification-item-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.verification-evidence {
+  padding: 0;
+  color: var(--wb-ink);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.verification-evidence:hover { color: var(--wb-accent); }
+.verification-action { padding: 5px 12px; font-size: 12px; }
+.verification-log { margin-top: 12px; border-top: 1px solid var(--wb-hairline); padding-top: 10px; }
+.verification-log summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--wb-ink-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.verification-log summary::-webkit-details-marker { display: none; }
+.verification-log summary::before { content: "▸ "; color: var(--wb-ink-faint); }
+.verification-log[open] summary::before { content: "▾ "; }
+
+/* ---- 四阶段轨道 ---- */
+.stage-track {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 12px 0 2px;
+}
+.stage-track-step {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 4px 0 12px;
+}
+.stage-track-step::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--wb-alu);
+  background: var(--wb-surface);
+}
+.stage-track-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 14px;
+  right: -6px;
+  height: 1px;
+  background: var(--wb-rail-line);
+}
+.stage-track-step.done::before { border-color: var(--wb-graphite); background: var(--wb-graphite); }
+.stage-track-step.done:not(:last-child)::after { background: var(--wb-graphite-soft); }
+.stage-track-step.active::before { border-color: var(--wb-accent); background: var(--wb-accent-soft); }
+.stage-track-label { color: var(--wb-ink); font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.stage-track-state { color: var(--wb-ink-faint); font-size: 10px; font-weight: 600; }
+.stage-track-step.active .stage-track-state { color: var(--wb-accent); }
+.stage-track-step.done .stage-track-state { color: var(--wb-graphite-soft); }
+
+@media (max-width: 720px) {
+  .assembly-slot { flex-basis: 116px; }
+  .budget-ruler-figures { gap: 4px 12px; }
+}
