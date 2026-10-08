@@ -5,7 +5,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-10-08 ｜ 当前阶段：**移交：证据池收口 + M37 质量门（窄任务）**——数据质量系统代码（实施计划 Task 1-9）与六批查证完成，用户已在审核台全量复核 45 条证据（署名 xyy），**A60/火神为首批 verified 产品**。下一窗口按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行：候选池只放 verified/supported、方案项携带真实质量状态与来源引用、sourceLevel 不得冒充 verified_catalog、补齐八类最小候选池、真实目标样本评测。**不扩展 UI、不引入完整 Agent 编排、不改产品路线。**
+> 最后更新：2026-10-08 ｜ 当前阶段：**装机决策台 UI 重置已完成（分支 `feat/decision-bench-ui`，7 个独立提交，待合并决策）**——按 `docs/superpowers/plans/2026-10-08-rigmate-decision-bench-ui.md` 执行：新增 AssemblyRail / BudgetRuler / VerificationDesk 三个纯展示组件与视图契约（types.ts + theme.css token），导航收缩为"三主入口 + 场景入口"，首页改为装配台叙事（标题 → 八类槽位 → 目标输入 → 预算标尺），方案页改为"预算标尺 → 摘要 → 配置清单（核验列）→ 决策条"，右栏核验台成为主叙事、Agent 事件降级为折叠处理记录。门禁全绿（247 单测 + 53 E2E + build），视觉验收记录见 `docs/design/rigmate-decision-bench-review.md`。**只改 UI 展示层，API/domain/数据库未动；与 M37 数据质量工作零耦合。** 合并决策后，下一窗口仍按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行证据池收口 + M37 质量门（候选池只放 verified/supported、方案项携带真实质量状态、sourceLevel 不得冒充 verified_catalog）；**不扩展 UI、不引入完整 Agent 编排、不改产品路线。**
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
@@ -14,7 +14,7 @@
 ## 0. 交接快照（2026-09-24 M33 产品化收口后状态，新窗口先读这节）
 
 - **Git**：M27-M33 已提交至 `1112bf8`；本节所述 V2 规划为后续文档变更，远程状态以 `git status -sb` 和推送结果为准。
-- **测试基线（2026-09-29 v4.7）**：230 单测 + 41 E2E（1 条失败属 UI 窗口在途的 /hardware 标题改造，spec 与页面半路）；lint / typecheck / build / `gate:data` 6 项数据门禁全过。**E2E 静默纪律再次应验**：3000 端口 dev server 开着跑 E2E 会引发 ERR_CONNECTION_REFUSED 雪崩，先杀再跑。
+- **测试基线（2026-10-08 UI 重置后）**：247 单测 + 53 E2E；lint / typecheck / build 全过。**E2E 静默纪律再次应验**：3000 端口 dev server 开着跑 E2E 会引发 ERR_CONNECTION_REFUSED 雪崩，先杀再跑（本次 UI 重置窗口 E2E 与 3000 端口 dev server 共存时未复现雪崩，但纪律不变：跑全量前先清场）。
 - **本机注意事项**：
   - **dev 环境必须放行 127.0.0.1**（2026-09-29 实证）：Next 16 默认把 127.0.0.1 视为跨域并阻断 dev 资源，症状是页面"能打开但没数据"（服务端渲染壳正常、React 不水合）。`next.config.ts` 已配 `allowedDevOrigins: ["127.0.0.1","localhost"]`，不要删；若页面疑似"没数据"，先在浏览器控制台看有无 `Blocked cross-origin request`。
   - E2E 需 `RIGMATE_E2E_EXECUTABLE_PATH`（见 §6）；**E2E 必须在"静默机器"上跑**——若同机还有 dev server/构建在跑，会出现 5 倍耗时与超时雪崩（2026-09-22 实证，两个假失败由此而来，清场重跑即绿）；
@@ -32,7 +32,8 @@
 - **数据现状（M29 后 / v4.7 扩展）**：自有规格库 `canonical_products` 表为运行时首选——`npm run catalog:db` 一键把 种子 34 + 人工 49 + BuildCores 26,121 清洗入库（幂等，同 id 先到先得）；库为空时自动回退 JSON 三层合并（历史行为）。ZOL 补缺走 `npm run catalog:db -- --update <file>`（只填缺失字段、不覆盖已核值、不允许静默创建新品）。**v8-v10 质量系统**：`product_sources` / `product_field_evidence` / `data_quality_events` / `pending_catalog_queue` 四表 + canonical_products 身份五元组、quality_status、merged_into 列（存量行默认 partial）；字段质量判定纯函数在 `src/domain/catalog/quality.ts`；人工审核服务 `src/application/catalog-review/service.ts`（API：POST /api/catalog/review 七 action + /api/catalog/queue），所有写操作强制 reviewer 署名；BuildCores 再导入走 `npm run catalog:db -- --merge-buildcores`；质量报表 `npm run catalog:quality` + /hardware 只读面板。**价格隔离（v10）**：price_evidence 增 canonical_product_id / region / review_status（unreviewed→verified/rejected，rejected 终态），PATCH /api/evidence 审核流转，价格绝不写规格质量状态。**发布门禁**：`npm run gate:data` = typecheck+lint+test+数据门禁脚本（G1 schema 版本 / G2 无来源 verified / G3 verified 必填齐全 / G4 降级留痕 / G5 批次报告 / G6 价格绑定悬空）。字段纪律 = 只存决策字段 + 可选 refUrl；商品页链接缺失时前端拼京东搜索链接兜底（只链不爬）。规格查证走审核链路（查证 → addReviewSource/addReviewEvidence → verifyReviewEvidence → publishProduct）。
 - **架构决策（2026-09-23）**：评估并否决"整体套用 zai-org/ZCode 开源工作台改造 UI"——产品对象不匹配/集成重量失控/深色 IDE 风是已否决路线（ADR §3.6）；允许逐件拆用 Vercel `ai-elements`（Apache-2.0，npm 独立包）做 M30+ 副驾组件。
 - **样本进度**：11/20 份（samples/，配比 整机10+自购10——**缺自购单**，用户收集中）。
-- **下一项工作（新窗口执行）**：按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行证据池收口 + M37 质量门（Task A-E）；完成后再进完整 M37 评测与发布判断。
+- **下一项工作（新窗口执行）**：先对 `feat/decision-bench-ui` 做合并决策（finishing-a-development-branch：合并或 PR，勿与 M37 工作混提交）；然后按 `docs/superpowers/plans/2026-10-08-evidence-pool-and-m37-quality-gate.md` 执行证据池收口 + M37 质量门（Task A-E）；完成后再进完整 M37 评测与发布判断。
+- **UI 重置窗口交接（2026-10-08）**：新组件在 `src/ui/workbench/{assembly-rail,budget-ruler,verification-desk}.tsx`，纯展示、只吃视图类型；映射纯函数同文件导出并被 `tests/ui/workbench-views.test.ts` 覆盖（14 例）。导航两栏结构（主导航 aria-label="主导航"、场景入口 aria-label="场景入口"），`/design/[id]` 归属"我的方案" active。方案页修订输入已移至内容区（`.revision-inline`），顶栏只有 `summary`（预算摘要）插槽；E2E 断言锚点：核验台 heading、`.budget-ruler`、`.build-parts-verify`、`.verification-log`。冲突态 UI（接受禁用 + 核验台冲突条目）因生成器恒兼容无法经 API 黑盒到达，由单测 + DIY 冲突 E2E 覆盖，详见验收文档已知限制。
 - **本轮用户确认的方向**：首批服务新手；Agent 调大模型协助生成配置，但候选、规格、价格和兼容结论必须有系统数据与规则支撑；可整体重构前端，要求简洁、清楚、舒服；参考开源 Agent 工作台的信息层级与任务状态，不整体移植代码或通用聊天壳。首轮交付可运行前端原型，桌面优先、手机适配。
 - **前端所有权**：归 AI 窗口（全栈）。
 
@@ -85,6 +86,7 @@
 | M31：自然语言修订方案 / M32：版本差异与 DIY 渐进披露 / M33：产品化收口 | ✅ 完成 |
 | M34：新手工作台体验基线（入口 / 方案 / 修订 / 硬件查询） | ✅ 完成（真实 API + 仪器白视觉层 + 21 E2E） |
 | M35：历史版本只读切换 + 逐件依据展开 + 真实版本回传 | ✅ 完成（22 E2E；旧版禁止接受/修订，最新版本保持可操作） |
+| UI-R1：装机决策台 UI 重置（三件套组件 + 导航收缩 + 首页/方案页重做 + 辅助页统一） | ✅ 完成（分支 `feat/decision-bench-ui`；247 单测 + 53 E2E + build；验收记录 docs/design/rigmate-decision-bench-review.md） |
 | M37：受约束的目录候选选择器 | 🔶 进行中（候选 catalogId 校验、理由保留、非法选择回退；待真实样本评测） |
 | V1-C：联盟 API / OCR 报价单入口 / PostgreSQL | ⬜ |
 
@@ -470,6 +472,8 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-10-08 v4.17：**装机决策台 UI 重置（UI-R1，本窗口）**——按 codex 规划 `docs/superpowers/plans/2026-10-08-rigmate-decision-bench-ui.md` 七任务执行，每任务独立提交：① 视图契约与 token（`AssemblySlot`/`BudgetRulerView`/`VerificationDeskItem` + 石墨/铝灰/蓝灰/轨道线/标尺线 token，旧 `--rm-*` 别名保留）；② 三个纯展示组件 + 14 例映射单测；③ 导航收缩为三主入口 + 场景入口、顶栏砍掉修订输入（移内容区）、品牌副标题改"装机决策台"；④ 首页装配台叙事（八类空槽位 → 目标输入 → 预算标尺 + 三项真实能力，删"RigMate 怎么工作"大卡）；⑤ 方案页核验台主叙事（预算标尺进首屏、清单加核验列与真实 sourceLevel 文案、右栏四阶段轨道 + 核验台 + 折叠处理记录、同屏单橙主动作）；⑥ 辅助页统一（DIY 页头、证据页审核徽章 + 主按钮）；⑦ 三档视口（1440/1024/390）三件套断言 + 键盘 Tab 路径 + reduced-motion + 截图验收（6 张，真实 API 数据）。诚实红线保持：待确认/资料不足/冲突不升格为通过，价格标"经验估算"。视觉修复 4 处（预算线标签裁切、待确认徽章截断、1024 顶栏挤压、空库最近方案消失）。247 单测 + 53 E2E + lint + typecheck + build 全绿。
+
 - 2026-10-08 v4.16：**首批 verified 产品诞生（用户完成全量人工复核）**——用户在审核台以署名 xyy 盖章全部 45 条字段证据（质量事件留痕 45 次，待复核归零）。流程补全两处：① 盖章后需重新发布才落产品级状态（审核台 verify_evidence 不自动 publish——待办：考虑盖章后自动触发）；② **批次四 supersedesId 透传缺失回填**（当时代码补丁晚于脚本执行，9 条 S1 取代 S2/S3 的取代链没写上，新旧证据并存被判"已裁定冲突"封顶 supported），按 (产品,字段) 维度补链后重新发布：**酷里奥 A60 与 七彩虹火神 4080 SUPER 成为系统前两个 verified 产品**（火神四必填字段全部 S1 已核验）。GRE/冰猎鹰仍 partial（tdpWatts 等必填字段暂无证据，诚实状态）。**下一块：M37 受约束的模型选件**（用户已确认方向讨论：LLM 在已核验候选内挑选+解释，不发明事实）。
 
 - 2026-09-29 v4.15：**修复 dev 环境页面"能开但没数据"（Next 16 allowedDevOrigins）**——用户报告 /review 打开只有空壳。排查链：接口 200 返回 45 条 → 页面显示"全部处理完毕"（空态）→ 浏览器实测 DOM 无任何 `__react` 标记 = **React 从未水合**；清 .next 缓存、换 Webpack dev、加 --no-proxy-server 都无效；最后在 Webpack 日志抓到决定性一行：`⚠ Blocked cross-origin request to Next.js dev resource /_next/hmr from "127.0.0.1"`——**Next 16 默认把 127.0.0.1 当跨域来源，阻断 dev 资源，客户端 JS 不执行**，服务端渲染的静态壳照样返回 200，所以现象极像"后端没数据"。修复：next.config.ts 增 `allowedDevOrigins: ["127.0.0.1", "localhost"]`。修复后 /review 水合成功（14 张分组表）、/evidence 同步恢复。**教训写入§0**：本机开发若用 127.0.0.1 打开页面，必须有这条配置；E2E（127.0.0.1:3100）同样依赖它。233 单测 + 42 E2E + lint + typecheck 全绿。

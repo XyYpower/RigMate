@@ -71,8 +71,8 @@ export function BuildPartsTable({ items }: { items: ProposalItem[] }) {
             <summary role="row">
               <span className="build-parts-cat">{CATEGORY_LABELS[item.category] ?? item.category}</span>
               <span className="build-parts-model">
-                <span className="build-parts-model-name">
-                  {item.label}
+                <span className="build-parts-model-line">
+                  <span className="build-parts-model-name">{item.label}</span>
                   {item.confirmationRequired && <em className="build-parts-confirm">待确认</em>}
                 </span>
                 <span className="build-parts-model-meta">

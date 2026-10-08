@@ -89,7 +89,7 @@
   letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .workbench-header-title p { margin: 0; color: var(--wb-ink-faint); font-size: 12px; white-space: nowrap; }
-.workbench-header-summary { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; }
+.workbench-header-summary { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 .workbench-header-summary:empty { display: none; }
 .workbench-header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
 
@@ -319,17 +319,6 @@ button.assembly-slot-body:hover { border-color: var(--wb-accent); }
   height: 22px;
   background: var(--wb-accent);
 }
-.budget-ruler-budgetline::after {
-  content: "预算线";
-  position: absolute;
-  top: -15px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--wb-accent);
-  font-size: 9.5px;
-  font-weight: 700;
-  white-space: nowrap;
-}
 .budget-ruler-figures {
   display: flex;
   flex-wrap: wrap;
@@ -337,7 +326,8 @@ button.assembly-slot-body:hover { border-color: var(--wb-accent); }
   margin: 0;
 }
 .budget-ruler-figures span { font: 600 12px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
-.budget-ruler-budget { color: var(--wb-ink); }
+/* 橙色预算数字即橙色预算线的图例（文本替代，线不再内嵌标签） */
+.budget-ruler-budget { color: var(--wb-accent); }
 .budget-ruler-range { color: var(--wb-ink-muted); }
 
 /* ---- 核验台 ---- */
