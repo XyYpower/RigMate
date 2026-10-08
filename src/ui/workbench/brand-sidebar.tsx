@@ -37,12 +37,6 @@ function NavIcon({ kind }: { kind: string }) {
           <path d="M6.5 1.5v2.5M9.5 1.5v2.5M6.5 12v2.5M9.5 12v2.5M1.5 6.5H4M1.5 9.5H4M12 6.5h2.5M12 9.5h2.5" />
         </svg>
       );
-    case "library":
-      return (
-        <svg {...common}>
-          <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3L8 5h4.5A1.5 1.5 0 0 1 14 6.5v5A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5v-7Z" />
-        </svg>
-      );
     case "diy":
       return (
         <svg {...common}>
@@ -60,16 +54,41 @@ function NavIcon({ kind }: { kind: string }) {
   }
 }
 
-const NAV_ITEMS = [
-  { href: "/", label: "开始配置", icon: "start", match: (p: string) => p === "/" },
-  { href: "/projects", label: "装机方案", icon: "plan", match: (p: string) => p.startsWith("/design/") },
-  { href: "/hardware", label: "硬件资料", icon: "hardware", match: (p: string) => p.startsWith("/hardware") },
-  { href: "/projects", label: "我的方案", icon: "library", match: (p: string) => p === "/projects" },
-  { href: "/diy", label: "高级 DIY", icon: "diy", match: (p: string) => p.startsWith("/diy") },
-  { href: "/evidence", label: "证据台账", icon: "evidence", match: (p: string) => p.startsWith("/evidence") },
-] as const;
+type NavEntry = {
+  href: string;
+  label: string;
+  icon: string;
+  match: (path: string) => boolean;
+};
 
-/** 左侧品牌导航（DESIGN.md §6 BrandSidebar）：220px 白栏，当前项浅橙底 + 橙图标 + 右短竖线 */
+/** 三个主入口（DESIGN.md §6 BrandSidebar）：方案页 /design/[id] 归属"我的方案" */
+const NAV_ITEMS: NavEntry[] = [
+  { href: "/", label: "开始配置", icon: "start", match: (p) => p === "/" },
+  { href: "/projects", label: "我的方案", icon: "plan", match: (p) => p === "/projects" || p.startsWith("/design/") },
+  { href: "/hardware", label: "硬件资料", icon: "hardware", match: (p) => p.startsWith("/hardware") },
+];
+
+/** 场景入口：高级流程与数据台账，从任何页面都可到达 */
+const SCENE_ITEMS: NavEntry[] = [
+  { href: "/diy", label: "高级 DIY", icon: "diy", match: (p) => p.startsWith("/diy") || p.startsWith("/builds/") },
+  { href: "/evidence", label: "证据台账", icon: "evidence", match: (p) => p.startsWith("/evidence") },
+];
+
+function NavLink({ item, pathname }: { item: NavEntry; pathname: string }) {
+  const active = item.match(pathname);
+  return (
+    <Link
+      href={item.href}
+      className={`brand-nav-item${active ? " active" : ""}`}
+      aria-current={active ? "page" : undefined}
+    >
+      <NavIcon kind={item.icon} />
+      <span>{item.label}</span>
+    </Link>
+  );
+}
+
+/** 左侧品牌导航（DESIGN.md §6）：三个主入口 + 场景入口分组；当前项浅橙底 + 橙图标 + 右短竖线 */
 export function BrandSidebar() {
   const pathname = usePathname();
   return (
@@ -80,21 +99,21 @@ export function BrandSidebar() {
         </span>
         <span className="brand-copy">
           <strong>RigMate</strong>
-          <small>PC 装机与升级 Agent 工作台</small>
+          <small>装机决策台</small>
         </span>
       </div>
       <nav className="brand-nav" aria-label="主导航">
-        {NAV_ITEMS.map((item) => {
-          const active = item.match(pathname);
-          return (
-            <Link key={item.label} href={item.href} className={`brand-nav-item${active ? " active" : ""}`}>
-              <NavIcon kind={item.icon} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+        {NAV_ITEMS.map((item) => (
+          <NavLink key={item.label} item={item} pathname={pathname} />
+        ))}
       </nav>
-      <p className="brand-footnote">更懂你的需求，为你打造合适的电脑配置</p>
+      <nav className="brand-nav brand-nav-scene" aria-label="场景入口">
+        <p className="brand-nav-caption">场景入口</p>
+        {SCENE_ITEMS.map((item) => (
+          <NavLink key={item.label} item={item} pathname={pathname} />
+        ))}
+      </nav>
+      <p className="brand-footnote">说清预算和用途，得到可核验的装机方案</p>
     </aside>
   );
 }

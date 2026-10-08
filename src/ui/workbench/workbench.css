@@ -60,6 +60,13 @@
   transform: translateY(-50%);
   background: var(--wb-accent);
 }
+/* 场景入口：主入口之下的次级分组 */
+.brand-nav-scene { margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--wb-hairline); }
+.brand-nav-caption {
+  margin: 0 0 4px; padding: 0 12px;
+  color: var(--wb-ink-faint); font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em;
+}
+.brand-nav-scene .brand-nav-item { height: 36px; font-size: 12.5px; }
 .brand-footnote {
   margin: auto 8px 0;
   color: var(--wb-ink-faint); font-size: 11px; line-height: 1.6;
@@ -82,8 +89,19 @@
   letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .workbench-header-title p { margin: 0; color: var(--wb-ink-faint); font-size: 12px; white-space: nowrap; }
-.workbench-header-center { flex: 1; min-width: 0; display: flex; justify-content: center; }
+.workbench-header-summary { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; }
+.workbench-header-summary:empty { display: none; }
 .workbench-header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+
+/* 上下文栏语义标题 */
+.workbench-aside-title {
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--wb-hairline);
+  color: var(--wb-ink-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
 
 /* ---- 状态徽章 ---- */
 .wb-status-badge {
@@ -133,11 +151,14 @@
     flex-direction: column; gap: 12px;
     border-right: 0; border-bottom: 1px solid var(--wb-hairline);
   }
-  .brand-nav { flex-direction: row; flex-wrap: wrap; gap: 4px 6px; }
+  .brand-nav, .brand-nav-scene { flex-direction: row; flex-wrap: wrap; gap: 4px 6px; }
+  .brand-nav-scene { margin-top: 0; padding-top: 0; border-top: 0; padding-left: 8px; }
+  .brand-nav-scene .brand-nav-item { height: 34px; padding: 0 10px; font-size: 12px; }
+  .brand-nav-caption { display: none; }
   .brand-nav-item { height: 36px; padding: 0 10px; white-space: nowrap; }
   .brand-footnote { display: none; }
   .workbench-header { flex-wrap: wrap; gap: 10px 16px; padding: 12px 16px; }
-  .workbench-header-center { order: 3; flex-basis: 100%; }
+  .workbench-header-summary { order: 3; flex-basis: 100%; justify-content: flex-start; }
   .workbench-aside { position: static; height: auto; border-left: 0; border-top: 1px solid var(--wb-hairline); }
 }
 

@@ -1,27 +1,48 @@
 import { test, expect } from "@playwright/test";
 
-test("M35 三栏工作台导航：六区可达", async ({ page }) => {
+test("决策台导航：三个主入口 + 场景入口可达", async ({ page }) => {
   await page.goto("/");
-  const nav = page.getByRole("navigation");
+  const nav = page.getByRole("navigation", { name: "主导航" });
   await expect(nav.getByRole("link", { name: "开始配置" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "装机方案" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "硬件资料" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "我的方案" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "高级 DIY" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "证据台账" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "硬件资料" })).toBeVisible();
+
+  // 场景入口分组仍可达
+  const sceneNav = page.getByRole("navigation", { name: "场景入口" });
+  await expect(sceneNav.getByRole("link", { name: "高级 DIY" })).toBeVisible();
+  await expect(sceneNav.getByRole("link", { name: "证据台账" })).toBeVisible();
 
   await expect(page.getByRole("heading", { name: /你想配一台\s*什么样的电脑？/ })).toBeVisible();
-  await nav.getByRole("link", { name: "高级 DIY" }).click();
+  await sceneNav.getByRole("link", { name: "高级 DIY" }).click();
   await expect(page.getByRole("heading", { name: /配件录入|编辑配件/ })).toBeVisible();
 
-  await nav.getByRole("link", { name: "硬件资料" }).click();
+  await page.getByRole("link", { name: "硬件资料" }).click();
   await expect(page.getByRole("heading", { name: "硬件资料" })).toBeVisible();
 
-  await nav.getByRole("link", { name: "证据台账" }).click();
+  await sceneNav.getByRole("link", { name: "证据台账" }).click();
   await expect(page.getByRole("heading", { name: "证据台账" })).toBeVisible();
 
-  await nav.getByRole("link", { name: "我的方案" }).click();
+  await page.getByRole("link", { name: "我的方案" }).click();
   await expect(page.getByRole("heading", { name: "方案库" })).toBeVisible();
+});
+
+test("决策台导航：首页与方案页的 active 状态可辨识", async ({ page }) => {
+  await page.goto("/");
+  const nav = page.getByRole("navigation", { name: "主导航" });
+  await expect(nav.getByRole("link", { name: "开始配置" })).toHaveAttribute("aria-current", "page");
+
+  // 经真实 API 建一个方案，进入 /design/[id] 后"我的方案"应处于 active
+  const response = await page.request.post("/api/design", {
+    data: { rawInput: "8 千预算，主要玩 2K 游戏，想要安静一点" },
+  });
+  expect(response.ok()).toBeTruthy();
+  const data = await response.json();
+  const designId = data.result.request.id as string;
+
+  await page.goto(`/design/${designId}`);
+  await page.waitForLoadState("domcontentloaded");
+  await expect(nav.getByRole("link", { name: "我的方案" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "开始配置" })).not.toHaveAttribute("aria-current");
 });
 
 test("M34 硬件资料：先理解类别，再检索具体型号", async ({ page }) => {

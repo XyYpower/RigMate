@@ -685,21 +685,27 @@
    顶栏修订输入 + 摘要卡 + 清单表 + 决策条 + 右栏双卡 + 状态条
    ========================================================================== */
 
-/* 顶栏修订输入（参考图第一排） */
-.header-revision { display: flex; align-items: center; gap: 8px; width: min(640px, 100%); }
-.header-revision input {
+/* 内容区修订输入（2026-10-08：修订输入移出顶栏，由方案页内容区承载） */
+.revision-inline { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.revision-inline input {
   flex: 1; min-width: 0;
-  padding: 9px 14px;
+  padding: 10px 16px;
   border: 1px solid var(--wb-hairline-strong);
   border-radius: 999px;
-  background: var(--wb-surface-subtle);
+  background: var(--wb-surface);
   color: var(--wb-ink); font-size: 13px;
   transition: border-color var(--wb-fast), background var(--wb-fast), box-shadow var(--wb-fast);
 }
-.header-revision input::placeholder { color: var(--wb-ink-faint); }
-.header-revision input:focus { outline: none; border-color: var(--wb-accent); background: var(--wb-surface); box-shadow: 0 0 0 3px var(--wb-accent-soft); }
-.header-revision-submit { padding: 9px 14px !important; border-radius: 999px !important; }
+.revision-inline input::placeholder { color: var(--wb-ink-faint); }
+.revision-inline input:focus { outline: none; border-color: var(--wb-accent); background: var(--wb-surface); box-shadow: 0 0 0 3px var(--wb-accent-soft); }
+.revision-inline-submit { border-radius: 999px !important; padding: 10px 14px !important; }
 .header-title-version { color: var(--wb-ink-faint); font-weight: 600; font-size: 14px; }
+.header-budget-summary {
+  color: var(--wb-ink-muted);
+  font: 600 12.5px ui-monospace, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .history-banner { color: var(--wb-warn); font-size: 12.5px; font-weight: 600; }
 .version-picker select {
   padding: 7px 30px 7px 12px; border: 1px solid var(--wb-hairline-strong); border-radius: var(--wb-radius-control);

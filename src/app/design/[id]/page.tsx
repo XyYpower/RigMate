@@ -150,10 +150,10 @@ export default function DesignPage() {
   const status = workspaceStatusOf(viewedProposal);
   const pendingItems = viewedProposal.items.filter((item) => item.confirmationRequired);
   const revisionForm = (
-    <form className="header-revision" onSubmit={(event) => void submitRevision(event)}>
-      <label className="sr-only" htmlFor="header-revision-input">继续调整这套方案</label>
+    <form className="revision-inline" onSubmit={(event) => void submitRevision(event)}>
+      <label className="sr-only" htmlFor="revision-inline-input">继续调整这套方案</label>
       <input
-        id="header-revision-input"
+        id="revision-inline-input"
         name="instruction"
         value={revision}
         onChange={(event) => setRevision(event.target.value)}
@@ -162,11 +162,15 @@ export default function DesignPage() {
         maxLength={500}
         disabled={revising || isHistoryView}
       />
-      <button className="button primary header-revision-submit" type="submit" disabled={revising || revision.trim().length < 2} aria-label="提交修改">
+      <button className="button secondary revision-inline-submit" type="submit" disabled={revising || revision.trim().length < 2} aria-label="提交修改">
         {revising ? "…" : <span aria-hidden>→</span>}
       </button>
     </form>
   );
+
+  const budgetSummary = viewedProposal.budgetCents !== null
+    ? `预算 ${formatYuanParts(viewedProposal.budgetCents)}${estimateMidpoint !== null ? ` · 估中值 ${formatYuanParts(estimateMidpoint)}` : ""}`
+    : "预算从描述中识别";
 
   const requirementItems = [
     { label: "预算", value: viewedProposal.budgetCents !== null ? `${formatYuanParts(viewedProposal.budgetCents)} 以内` : "从描述中识别" },
@@ -186,22 +190,26 @@ export default function DesignPage() {
       <WorkspaceHeader
         title={<>{viewedProposal.title} <span className="header-title-version">· 方案 v{viewedProposal.version}{isHistoryView ? " · 历史版本" : ""}</span></>}
         status={status}
-        center={!isHistoryView ? revisionForm : <span className="history-banner">正在查看历史版本，切回最新版后可继续修改</span>}
+        summary={<span className="header-budget-summary">{budgetSummary}</span>}
         actions={
-          <label className="version-picker">
-            <span className="sr-only">方案版本</span>
-            <select
-              aria-label="方案版本"
-              value={String(viewedProposal.version)}
-              onChange={(event) => setViewedVersion(Number(event.target.value))}
-            >
-              {result.versions.slice().reverse().map((version) => (
-                <option key={version.id} value={version.version}>
-                  第 {version.version} 版{version.id === proposal.id ? " · 最新" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          !isHistoryView ? (
+            <label className="version-picker">
+              <span className="sr-only">方案版本</span>
+              <select
+                aria-label="方案版本"
+                value={String(viewedProposal.version)}
+                onChange={(event) => setViewedVersion(Number(event.target.value))}
+              >
+                {result.versions.slice().reverse().map((version) => (
+                  <option key={version.id} value={version.version}>
+                    第 {version.version} 版{version.id === proposal.id ? " · 最新" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <span className="history-banner">正在查看历史版本，切回最新版后可继续修改</span>
+          )
         }
       />
 
@@ -249,6 +257,8 @@ export default function DesignPage() {
               }
             />
           )}
+
+          {!isHistoryView && revisionForm}
 
           <section className="wb-panel design-notes" aria-label="搭配说明与依据">
             <details>
