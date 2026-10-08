@@ -1042,6 +1042,29 @@
 }
 
 /* ============================================================================
+   决策台语言统一（2026-10-08 UI 重置 Task 6）：辅助页面页头与审核状态
+   ========================================================================== */
+
+/* DIY 页：WorkspaceHeader 独立成行，与 .shell 内容带对齐 */
+.shell > .workbench-header {
+  margin: 0 -2px 14px;
+  padding-inline: 2px;
+}
+
+/* 证据台账：审核状态徽章（待复核不是通过，已驳回为红） */
+.ev-review {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ev-review.verified { background: var(--wb-pass-soft); color: var(--wb-pass); }
+.ev-review.unreviewed { background: var(--wb-unknown-soft); color: var(--wb-unknown); }
+.ev-review.rejected { background: var(--wb-block-soft); color: var(--wb-block); }
+
+/* ============================================================================
    补齐（参考图对照审计）：项目分组 / 尺寸对比条 / DIY 底部状态条
    ========================================================================== */
 

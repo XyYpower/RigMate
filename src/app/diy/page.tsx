@@ -15,6 +15,7 @@ import { StatusChip } from "@/ui/components/status-chip";
 import type { BudgetSummary, Finding, FindingStatus } from "@/domain/build/types";
 import type { CheckRunSummary } from "@/infra/db/repositories/build-repository";
 import { SizeCompare } from "@/ui/workbench/size-compare";
+import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
 
 type Category = keyof typeof CATEGORY_META;
 
@@ -548,6 +549,11 @@ export default function Home() {
 
   return (
     <main className="shell">
+      <WorkspaceHeader
+        title="高级 DIY"
+        meta={build ? `${build.name} · ${build.items.length} 配件 · 更新于 ${formatTime(build.updatedAt)}` : "逐件录入，规则逐条核验"}
+        summary={findings.length > 0 ? <span className="header-budget-summary">{findings.length} 条检查结论</span> : undefined}
+      />
       <section className="projbar">
         {projects.length > 0 && (
           <label className="field">

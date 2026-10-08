@@ -218,7 +218,7 @@ export default function EvidencePage() {
         </div>
         {formMessage && <p className="review-msg">{formMessage}</p>}
         <div className="review-bar">
-          <button className="button secondary" onClick={() => void submitEvidence()} disabled={submitting}>
+          <button className="button primary" onClick={() => void submitEvidence()} disabled={submitting}>
             {submitting ? "记录中…" : "记录这条证据"}
           </button>
         </div>
@@ -264,29 +264,34 @@ export default function EvidencePage() {
               </tr>
             </thead>
             <tbody>
-              {records.map((record) => (
-                <tr key={record.id}>
-                  <td>{formatTime(record.capturedAt)}</td>
-                  <td>{CATEGORY_LABELS[record.category] ?? record.category}</td>
-                  <td>{record.productName}</td>
-                  <td className="num">{formatYuan(record.priceCents)}</td>
-                  <td>
-                    {[record.priceBasis, record.platform, record.shop].filter(Boolean).join(" · ") || "—"}
-                  </td>
-                  <td>{record.condition ?? "—"}</td>
-                  <td>{record.region ?? "中国大陆"}</td>
-                  <td>{REVIEW_LABELS[record.reviewStatus] ?? record.reviewStatus}</td>
-                  <td>
-                    {record.evidenceUrl ? (
-                      <a href={record.evidenceUrl} target="_blank" rel="noreferrer" className="pj-open">
-                        链接
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {records.map((record) => {
+                const reviewStatus = record.reviewStatus in REVIEW_LABELS ? record.reviewStatus : "unreviewed";
+                return (
+                  <tr key={record.id}>
+                    <td>{formatTime(record.capturedAt)}</td>
+                    <td>{CATEGORY_LABELS[record.category] ?? record.category}</td>
+                    <td>{record.productName}</td>
+                    <td className="num">{formatYuan(record.priceCents)}</td>
+                    <td>
+                      {[record.priceBasis, record.platform, record.shop].filter(Boolean).join(" · ") || "—"}
+                    </td>
+                    <td>{record.condition ?? "—"}</td>
+                    <td>{record.region ?? "中国大陆"}</td>
+                    <td>
+                      <span className={`ev-review ${reviewStatus}`}>{REVIEW_LABELS[reviewStatus]}</span>
+                    </td>
+                    <td>
+                      {record.evidenceUrl ? (
+                        <a href={record.evidenceUrl} target="_blank" rel="noreferrer" className="pj-open">
+                          链接
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
