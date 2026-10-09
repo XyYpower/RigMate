@@ -28,6 +28,9 @@ import {
   findPreviousProposal,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
+import { createAgentAttempt, orchestrateDesignGeneration } from "@/application/agent/orchestrator";
+import { CATALOG_SELECTION_PROMPT_VERSION } from "./intent-llm";
+import type { VerifiedPriceFact } from "@/domain/catalog/ranking";
 import type { BuildItemCategory } from "@/domain/build/types";
 
 function now(): string {
@@ -60,6 +63,8 @@ const CANDIDATE_CATEGORIES: BuildItemCategory[] = ["cpu", "motherboard", "gpu", 
 /** 内核恢复管线（Task A/B/C）：目录 → 质量门 + 排序 → 价格上下文 → 候选池 + 字段质量层 */
 function retrieveCandidateContext(intent: StructuredIntent): {
   catalogSize: number;
+  entries: ReturnType<typeof loadSourcedCatalog>["entries"];
+  priceByCanonicalId: Map<string, VerifiedPriceFact>;
   pool: ReturnType<typeof buildCandidatePool>["pool"];
   missingCategories: BuildItemCategory[];
   qualityByCanonicalId: Map<string, CandidateQualityContext>;
@@ -78,7 +83,7 @@ function retrieveCandidateContext(intent: StructuredIntent): {
       }
     }
   }
-  return { catalogSize: entries.length, pool, missingCategories, qualityByCanonicalId };
+  return { catalogSize: entries.length, entries, priceByCanonicalId, pool, missingCategories, qualityByCanonicalId };
 }
 
 /** 生成或诚实追问：候选池为空（或生成器判定不足）时不硬凑方案 */
@@ -188,26 +193,71 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     return { request, proposal: null, run, changes: [], versions: [] };
   }
   events.push(event(run.id, "retrieving", "started", "正在检索目录和已核验规格。"));
-  const context = retrieveCandidateContext(intent);
-  let preferredIds;
-  let rationaleByCategory;
-  if (llmConfig) {
-    const selection = await selectCatalogCandidatesWithLlm({ intent, candidates: context.pool, config: llmConfig });
-    if (selection.ok) {
-      preferredIds = selection.data.selectedIds;
-      rationaleByCategory = selection.data.rationaleByCategory;
-      events.push(event(run.id, "composing", "completed", `大模型只在 ${Object.keys(preferredIds).length} 个质量达标候选类别中提出选择，规格和兼容性仍由系统核验。`));
-    } else {
-      events.push(event(run.id, "composing", "waiting", `大模型选件不可用（${selection.reason}），已回退到本地规则式候选。`));
-    }
+  // Phase 5：生成流程接入 Agent Runtime（可审计状态机 + 守卫回退 + Claim Ledger）；
+  // 本 service 是兼容 adapter——UX 文案与 DesignResult 结构保持不变。
+  const attempt = createAgentAttempt({
+    model: llmConfig?.model ?? "rule-engine",
+    promptVersion: CATALOG_SELECTION_PROMPT_VERSION,
+    deadlineMs: 20_000,
+  });
+  let rationaleByCategory: Partial<Record<BuildItemCategory, string>> | undefined;
+  let modelNote: string | null = null;
+  const outcome = await orchestrateDesignGeneration({
+    requestId,
+    intent,
+    attempt,
+    categories: CANDIDATE_CATEGORIES,
+    retrieve: () => {
+      const context = retrieveCandidateContext(intent);
+      return { catalogSize: context.catalogSize, entries: context.entries, priceByCanonicalId: context.priceByCanonicalId };
+    },
+    tryModelSelection: llmConfig
+      ? async (pool) => {
+          const selection = await selectCatalogCandidatesWithLlm({ intent, candidates: pool, config: llmConfig });
+          if (!selection.ok) return null;
+          rationaleByCategory = selection.data.rationaleByCategory;
+          modelNote = `大模型只在 ${Object.keys(selection.data.selectedIds).length} 个质量达标候选类别中提出选择，规格和兼容性仍由系统核验。`;
+          return selection.data.selectedIds;
+        }
+      : undefined,
+  });
+  events.push(
+    event(
+      run.id,
+      "retrieving",
+      "completed",
+      `本地目录就绪（${outcome.catalogSize.toLocaleString("zh-CN")} 条）；质量门（verified/supported）后有效候选 ${outcome.poolSize} 条${
+        outcome.missingCategories.length > 0 ? `，缺类别：${outcome.missingCategories.join("、")}` : ""
+      }。`,
+    ),
+  );
+  if (modelNote) {
+    events.push(event(run.id, "composing", "completed", modelNote));
+  } else if (llmConfig) {
+    events.push(event(run.id, "composing", "waiting", `大模型选件不可用（${outcome.fallbackReason ?? "无可用输出"}），已回退到本地规则式候选。`));
   }
-  const proposal = composeOrAsk({ requestId, intent, context, preferredIds, rationaleByCategory, run, events });
+
+  const proposal = outcome.proposal;
   if (!proposal) {
+    // Runtime 判定不可回答（池空 / 候选不足 / grounding 阻断）：如实转为追问，绝不硬凑
+    const questionMessage =
+      outcome.status === "empty_pool"
+        ? "目录中暂时没有通过质量门的候选（verified/supported），不能凑出可信方案。请先在目录审核流程中补充证据，再回来生成方案。"
+        : outcome.status === "insufficient"
+          ? `以下类别没有通过质量门的目录候选：${outcome.missingCategories.join("、")}。方案不会用资料不足的型号凑数；可在目录中补充证据后重试。`
+          : "方案存在无法回溯来源的主张，已被验证器阻止。请稍后重试或调整目标。";
+    events.push(event(run.id, "question", "waiting", questionMessage));
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
     return { request, proposal: null, run, changes: [], versions: [] };
   }
+
+  events.push(event(run.id, "composing", "completed", `已生成 ${proposal.items.length} 个核心配件候选。`));
+  events.push(event(run.id, "validating", "started", "正在自动检查主要硬件之间的兼容关系。"));
+  events.push(event(run.id, "validating", "completed", proposal.compatibility.message));
+  events.push(event(run.id, "validating", "completed", "候选、价格与兼容事实由本地目录、价格证据和规则引擎核验，模型不参与事实判断。"));
+  events.push(event(run.id, "completed", "completed", "方案已准备好，可以接受、调整或进入高级 DIY。"));
 
   saveDesignProposal(proposal);
   run.proposalId = proposal.id;

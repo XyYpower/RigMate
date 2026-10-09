@@ -156,7 +156,7 @@ export const CANDIDATES_PER_CATEGORY = 8;
 export function buildCandidatePool(
   entries: RankedCandidate[],
   intent: StructuredIntent,
-  allCategories: BuildItemCategory[],
+  allCategories: readonly BuildItemCategory[],
   priceByCanonicalId: Map<string, VerifiedPriceFact> = new Map(),
   now: string = new Date().toISOString(),
 ): { pool: CandidateSummary[]; missingCategories: BuildItemCategory[] } {

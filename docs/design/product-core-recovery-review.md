@@ -33,6 +33,14 @@
 
 **自研薄运行时，不引入 Pi 依赖**（详见 `docs/design/agent-harness-decision.md`）。四条硬门在 `tests/application/agent-harness-spike.test.ts` 验证通过：候选 ID-only、封闭只读工具注册表（调用前后库行数不变）、模型失败回退规则、压缩后结构化事实存活。
 
+## 4b. Agent Runtime 与 Claim Ledger（Phase 5）
+
+- 状态机 `received → screened → understanding → retrieved → composed → validated → answered`（`run-state.ts`），异常以 `anomaly` 事件单独记录并带 errorCode / fallback（from/to）；
+- 事件审计字段：attemptId、promptVersion、model、deadline（attempt）、retrievalIds、toolCalls、fallback、errorCode；
+- 工具注册表**类型级封闭**：仅 searchCatalog / searchEvidence / runCompatibilityCheck 三个只读工具（`tools/registry.ts`），无索引签名，写工具无法注册；
+- Claim Ledger：七类主张（catalog/price/rule/user/experience/unknown/question），精确事实必须带来源；方案 grounding 验证器把每个方案项入账为 catalog_fact + price_fact、每条发现入账为 rule_result；price_fact 缺来源自动降级 unknown，catalog_fact 缺来源（无 canonicalId）阻塞回答；
+- `design/service.ts` 已作为兼容 adapter 接入编排器：createDesignRequest 走 orchestrateDesignGeneration（UX 文案与 DesignResult 结构不变），reviseDesign 保持原路径待收敛。
+
 ## 5. 已知限制（诚实记录）
 
 1. **增益演示依赖脚本化模型输出**：本轮评测不调用真实模型（守卫/规则路径与生产一致）；真实模型的增益数字要在接入 LLM 后用同一 harness 复测；
