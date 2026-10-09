@@ -21,7 +21,37 @@
 
 模型只接收经过筛选的候选摘要，不能直接读取数据库或写入正式方案。暂不把 RSC 重写、Drizzle 迁移、Tailwind 清理、DIY 拆分和公开多用户认证混入本轮；这些另立技术债计划。
 
-## 3. Task A：质量状态进入方案候选
+## 2. 模型智力边界：固定事实，不固定选件
+
+本项目不应该把“文档里的推荐配置”当成产品智能。需要固定的是事实和安全边界：
+
+- 插槽、尺寸、接口、功耗、质量状态、价格证据和兼容规则必须来自系统数据或确定性规则；
+- partial、conflicting、stale、unknown 不能被模型改写成通过；
+- 模型不能创造型号、规格、价格或证据；
+- 模型不能直接写正式 Build、接受方案、删除数据或调用任意工具。
+
+可以交给模型动态判断的内容：
+
+- 从用户语言中理解用途、偏好、预算弹性和取舍；
+- 在检索得到的候选集合中按当前目标排序；
+- 在多个可行组合之间解释性能、噪音、外观、扩展性和价格取舍；
+- 发现候选不足时提出最小澄清问题；
+- 生成多个明确不同的方案方向，例如“性能优先”“安静优先”“预算优先”；
+- 根据最新目录和价格证据重新评估，而不是依赖固定型号表。
+
+规则层是硬约束和事实裁判，模型是软目标优化器和解释器。产品是否与时俱进，取决于目录、证据、价格和模型可替换性，而不是把新型号写进 prompt。
+
+## 3. Task 0：Agent harness 兼容性 spike
+
+文件：新增 docs/design/agent-harness-decision.md、新增 tests/application/agent-harness-spike.test.ts，不改线上 API。
+
+- [ ] 明确当前实现是 EvaluationHarness 还是 AgentRuntime。src/application/design/evals.ts 只能负责固定样本、候选池、模型输出守卫和指标，不承担线上会话或数据库写入。
+- [ ] 调查 Pi 或同类 Agent 模板，只借鉴事件循环、Provider adapter、Tool Registry、session/attempt、deadline 和流式事件接口；先做许可证和依赖审查，不直接引入通用 shell、文件、浏览器或任意 URL 工具。
+- [ ] 用三个只读工具做最小 spike：searchCatalog、searchEvidence、runCompatibilityCheck。
+- [ ] 验证四条硬门：模型只能返回候选 ID；模型不能写数据库；模型失败能回退规则式路径；上下文压缩后 evidence IDs、qualityStatus、价格状态和规则结果不丢失。
+- [ ] 产出复用决策：复用代码、只模仿接口，或自研薄运行时。未完成 spike 前不把 Pi 作为生产依赖。
+
+## 4. Task A：质量状态进入方案候选
 
 文件：src/contracts/design.ts、src/domain/design/proposal.ts、src/application/design/service.ts、src/infra/catalog-import/load.ts、相关 application/domain tests。
 
@@ -32,7 +62,7 @@
 - [ ] 接受方案时把字段质量和证据引用传入 BuildItem，使 gateFieldQuality 真正生效。
 - [ ] 回归覆盖不存在型号、商家自拟名、partial/conflicting 候选、候选不足和质量变 stale 后重新检查。
 
-## 4. Task B：真实目录检索与排序
+## 5. Task B：真实目录检索与排序
 
 文件：src/domain/catalog/search.ts、新增 src/domain/catalog/ranking.ts、src/application/design/service.ts、src/domain/design/proposal.ts、检索与流水线测试。
 
@@ -42,7 +72,7 @@
 - [ ] 重新设计 candidatePool，不能依赖数据库加载顺序或固定 seed 前 12 条。
 - [ ] 先用可测量的规范化线性检索；只有评测显示延迟或召回不足，才单独规划 FTS5。
 
-## 5. Task C：移除方案生成中的伪价格事实
+## 6. Task C：移除方案生成中的伪价格事实
 
 文件：src/domain/design/proposal.ts、新增 src/application/design/price-context.ts、src/infra/db/repositories/price-evidence-repository.ts、设计契约和价格测试。
 
@@ -52,7 +82,7 @@
 - [ ] 没有已审核价格证据时，价格上下限为 null，priceBasis=unknown，界面显示暂无已审核价格证据。
 - [ ] unreviewed/rejected/跨地区价格不能进入方案预算结论。
 
-## 6. Task D：真实受约束模型选件与评测
+## 7. Task D：真实受约束模型选件与评测
 
 文件：src/application/design/intent-llm.ts、src/application/design/service.ts、模型选择测试、新增 data/evals/design-selection-cases.json 和评测测试。
 
@@ -62,7 +92,7 @@
 - [ ] 精确型号/规格/价格 unsupported claim rate 为 0；模型关闭、失败或超时时规则式路径仍可运行。
 - [ ] 保存检索候选、最终选择、质量状态、价格证据、规则结果和 unknown 项，形成 5–10 个脱敏目标报告。
 
-## 7. Task E：可复现数据基线与部署边界
+## 8. Task E：可复现数据基线与部署边界
 
 文件：README.md、scripts/data-release-gate.ts、新增 fixture 脚本和测试、package.json。
 
@@ -71,7 +101,7 @@
 - [ ] 保留真实库 G1–G6 门禁语义。
 - [ ] 过程型 verify-batch-* 脚本先保留为可审计重放记录，暂不为了清理而移动或删除。
 
-## 8. 后置技术债
+## 9. 后置技术债
 
 以下问题确认存在，但不阻塞本计划：
 
@@ -85,7 +115,7 @@
 
 每项都应在产品内核恢复后独立成计划，避免再次把工程清理误当成产品能力。
 
-## 9. 恢复 UI 迭代的门槛
+## 10. 恢复 UI 迭代的门槛
 
 只有同时满足以下条件，才继续新增 UI 组件或视觉功能：
 
@@ -95,7 +125,7 @@
 4. 模型候选池相对规则回退有可测量增益；
 5. 5–10 个真实脱敏目标完成检索、价格、质量和规则结果记录。
 
-## 10. 验收
+## 11. 验收
 
 运行：
 
