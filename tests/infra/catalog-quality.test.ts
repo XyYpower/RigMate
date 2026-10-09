@@ -13,7 +13,7 @@ const repo = await import("@/infra/db/repositories/catalog-repository");
 const evidenceRepo = await import("@/infra/db/repositories/evidence-repository");
 const qualityRepo = await import("@/infra/db/repositories/quality-repository");
 const { closeDatabase, ensureDatabase } = await import("@/infra/db/client");
-const { migrateSchema, readSchemaVersion } = await import("@/infra/db/migrate");
+const { migrateSchema, readSchemaVersion, LATEST_SCHEMA_VERSION } = await import("@/infra/db/migrate");
 
 afterAll(() => {
   closeDatabase();
@@ -58,12 +58,12 @@ function addSource(status: "unreviewed" | "verified" = "unreviewed") {
 }
 
 describe("目录数据质量仓储（v8/v9 迁移 + 证据/事件/队列）", () => {
-  it("迁移幂等：重复执行不再产生新步骤，版本停在 v10", () => {
+  it("迁移幂等：重复执行不再产生新步骤，版本停在最新版", () => {
     const db = ensureDatabase();
-    expect(readSchemaVersion(db)).toBe(10);
+    expect(readSchemaVersion(db)).toBe(LATEST_SCHEMA_VERSION);
     const second = migrateSchema(db);
     expect(second.applied).toEqual([]);
-    expect(second.from).toBe(10);
+    expect(second.from).toBe(LATEST_SCHEMA_VERSION);
   });
 
   it("证据追加式：同字段冲突证据并存，旧证据不被覆盖", () => {
@@ -280,6 +280,6 @@ describe("目录数据质量仓储（v8/v9 迁移 + 证据/事件/队列）", ()
     // ensureDatabase 会按 RIGMATE_DB_PATH 重新建连并跑幂等迁移
     const rows = evidenceRepo.listFieldEvidence(gpuId, "spec.lengthMm");
     expect(rows).toHaveLength(2);
-    expect(readSchemaVersion(ensureDatabase())).toBe(10);
+    expect(readSchemaVersion(ensureDatabase())).toBe(LATEST_SCHEMA_VERSION);
   });
 });

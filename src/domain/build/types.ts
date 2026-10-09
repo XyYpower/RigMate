@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { FieldQualityStatus } from "@/domain/catalog/quality";
+import { fieldQualityStatusSchema } from "@/domain/catalog/quality";
 import {
   caseSpecSchema,
   coolerSpecSchema,
@@ -49,11 +50,16 @@ export const createBuildInputSchema = z.object({
 const labelSchema = z.string().trim().min(1).max(160);
 const sourceSchema = z.string().trim().max(500);
 const priceCentsSchema = z.number().int().positive();
+const fieldQualitySchema = z.record(z.string(), fieldQualityStatusSchema);
 
 const itemBaseSchema = {
   label: labelSchema,
   source: sourceSchema.optional(),
   priceCents: priceCentsSchema.optional(),
+  /** 字段质量层（内核恢复 Task A）：verified/supported 之外的字段在规则引擎中按资料不足处理 */
+  fieldQuality: fieldQualitySchema.optional(),
+  /** 证据来源引用（product_sources.id）：可回溯到具体来源链 */
+  evidenceSourceIds: z.array(z.string().trim().min(1).max(80)).max(40).optional(),
 };
 
 export const buildItemInputSchema = z.discriminatedUnion("category", [
@@ -109,8 +115,10 @@ export type BuildItem = BuildItemInput & {
   id: string;
   buildId: string;
   createdAt: string;
-  /** 目录字段质量覆盖层（非持久化）：规则引擎据此把 conflicting/stale/unknown 等不可用字段按资料不足处理 */
+  /** 目录字段质量覆盖层（v11 起持久化）：规则引擎据此把 conflicting/stale/unknown 等不可用字段按资料不足处理 */
   fieldQuality?: Record<string, FieldQualityStatus>;
+  /** 支撑规格的证据来源引用（v11 起持久化，product_sources.id） */
+  evidenceSourceIds?: string[];
 };
 
 export type Build = {

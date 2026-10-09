@@ -133,6 +133,30 @@ export function computeProductFieldStatuses(canonicalProductId: string): Product
   };
 }
 
+/**
+ * 内核恢复计划 Task A：方案候选的质量层。
+ * 只返回**有证据事实**的字段状态——没有证据的字段不进映射（保留"无质量层"语义，
+ * 规则引擎按历史行为处理），避免把无证据字段误判成 unknown 而阻断本可用的规则。
+ * evidenceSourceIds 为该产品证据引用到的来源 id（product_sources.id），随方案项透出以便回溯。
+ */
+export function computeEvidenceBackedFieldStatuses(canonicalProductId: string): {
+  fieldQuality: Record<string, FieldQualityResult["status"]>;
+  evidenceSourceIds: string[];
+} {
+  const snapshot = requireLiveProduct(canonicalProductId);
+  const bundle = loadFactBundle(canonicalProductId);
+  const fieldQuality: Record<string, FieldQualityResult["status"]> = {};
+  for (const [fieldPath, facts] of bundle.byFieldPath) {
+    if (facts.length === 0) continue;
+    const fieldName = fieldPath.replace(/^spec\./, "");
+    fieldQuality[fieldName] = computeFieldQuality(snapshot.category, fieldName, facts).status;
+  }
+  const evidenceSourceIds = [
+    ...new Set(listFieldEvidence(canonicalProductId).map((evidence) => evidence.sourceId)),
+  ];
+  return { fieldQuality, evidenceSourceIds };
+}
+
 // ---- 来源与证据操作 ----
 
 export type AddReviewSourceInput = {

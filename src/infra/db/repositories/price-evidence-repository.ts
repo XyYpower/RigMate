@@ -102,6 +102,23 @@ export function reviewPriceEvidence(
   return toRecord(updated!);
 }
 
+/** 方案价格上下文专用（内核恢复计划 Task C）：指定地区内已审核、已绑定产品的价格快照，新→旧 */
+export function listVerifiedPriceEvidence(options: { region: string }): PriceEvidenceRecord[] {
+  return ensureDatabase()
+    .select()
+    .from(priceEvidence)
+    .where(
+      and(
+        eq(priceEvidence.reviewStatus, "verified"),
+        eq(priceEvidence.region, options.region),
+      ),
+    )
+    .orderBy(desc(priceEvidence.capturedAt))
+    .limit(500)
+    .all()
+    .map(toRecord);
+}
+
 /** 价格证据统计（发布门禁 Task 9 用）：带 canonicalId 绑定的比例、过期占比 */
 export function priceEvidenceStats(options: { now?: string } = {}): {
   total: number;

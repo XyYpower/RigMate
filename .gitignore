@@ -24,7 +24,11 @@
 /build
 
 # local runtime data（数据库 / 目录导入产物 / 上游数据克隆等本地数据层）
-/data/
+/data/*
+# 受约束选件固定评测案例（内核恢复 Task D）：案例入库，运行报告不入库
+!/data/evals/
+/data/evals/*
+!/data/evals/design-selection-cases.json
 
 # misc
 .DS_Store

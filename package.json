@@ -19,7 +19,10 @@
     "catalog:quality": "tsx scripts/catalog-quality-report.ts",
     "gate:data": "npm run typecheck && npm run lint && npm test && tsx scripts/data-release-gate.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/migrate-db.ts"
+    "db:migrate": "tsx scripts/migrate-db.ts",
+    "gate:data:fixture": "tsx scripts/fixture-gate.ts",
+    "db:fixture": "tsx scripts/seed-catalog-fixture.ts",
+    "evals:design": "tsx scripts/run-design-evals.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { buildItemCategorySchema, findingStatusSchema } from "@/domain/build/types";
+import { fieldQualityStatusSchema, publishStatusSchema } from "@/domain/catalog/quality";
 
 export const designRequestStatusSchema = z.enum([
   "received",
@@ -33,6 +34,8 @@ export const agentEventTypeSchema = z.enum([
 ]);
 export const sourceLevelSchema = z.enum([
   "verified_catalog",
+  /** 有参考资料目录型号（质量门 supported）：可用但未经人工核验，绝不冒充 verified */
+  "supported_catalog",
   "user_input",
   "price_evidence",
   "model_experience",
@@ -64,6 +67,12 @@ export const proposalItemSchema = z.object({
   catalogId: z.string().trim().min(1).optional(),
   spec: z.record(z.string(), z.unknown()),
   sourceLevel: sourceLevelSchema,
+  /** 证据链上的产品级质量状态（仅 verified/supported 可进入方案；旧引擎历史行缺省 unknown） */
+  qualityStatus: publishStatusSchema.or(z.literal("unknown")).default("unknown"),
+  /** 支撑该部件规格的字段证据状态（spec 字段 → 质量状态）；无证据链时为空 = 无质量层 */
+  fieldQuality: z.record(z.string(), fieldQualityStatusSchema).default({}),
+  /** 支撑该部件规格的证据来源（product_sources.id） */
+  evidenceSourceIds: z.array(z.string().trim().min(1)).max(40).default([]),
   priceEstimateLowCents: z.number().int().positive().nullable(),
   priceEstimateHighCents: z.number().int().positive().nullable(),
   priceBasis: z.enum(["evidence", "experience_estimate", "unknown"]),

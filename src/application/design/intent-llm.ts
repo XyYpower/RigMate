@@ -1,13 +1,16 @@
 import { z } from "zod";
 import { structuredIntentSchema, type StructuredIntent } from "@/contracts/design";
 import { completeJson, type LlmConfig, type LlmJsonResult } from "@/infra/llm/client";
-import type { CatalogEntry } from "@/domain/catalog/seed";
+import type { CandidateSummary } from "@/domain/catalog/ranking";
 import type { BuildItemCategory } from "@/domain/build/types";
 
 /**
- * LLM 意图解析（M30）：模型只负责把自然语言目标整理成结构化偏好；
- * 产出必须过 Zod 校验，且最终预算以表单显式输入优先。候选、价格、兼容事实
- * 不经过模型——那是目录和规则引擎的职责（业务规格 V2 §6.2/§10）。
+ * LLM 意图解析（M30）与受约束选件（M37 / 内核恢复计划 Task D）。
+ *
+ * 模型只负责把自然语言目标整理成结构化偏好、并在**质量门过滤后的候选摘要**里挑选；
+ * 产出必须过 Zod 严格校验，候选、价格、兼容事实不经过模型。
+ * 选件守卫（validateSelectionOutput）：非法 ID、类别不符、重复类别、质量不达标、
+ * 越权字段（输出 schema 之外的键）一律拒绝，调用方回退规则式排序。
  */
 
 const llmIntentOutputSchema = z.object({
@@ -104,13 +107,21 @@ export async function reviseIntentWithLlm(input: {
   return { ok: true, data: mapLlmIntent(result.data, null) };
 }
 
+// ---- 受约束选件（Task D）----
+
+/** 严格 schema：selections 之外的任何键（越权字段/编造规格）都会让校验失败 */
 const llmSelectionOutputSchema = z.object({
-  selections: z.array(z.object({
-    category: z.string().trim().min(1).max(40),
-    catalogId: z.string().trim().min(1).max(120),
-    reason: z.string().trim().min(1).max(300),
-  })).max(8).default([]),
-});
+  selections: z
+    .array(
+      z.object({
+        category: z.string().trim().min(1).max(40),
+        catalogId: z.string().trim().min(1).max(120),
+        reason: z.string().trim().min(1).max(300),
+      }),
+    )
+    .max(8)
+    .default([]),
+}).strict();
 
 export type CatalogSelection = {
   selectedIds: Partial<Record<BuildItemCategory, string>>;
@@ -119,24 +130,61 @@ export type CatalogSelection = {
 
 const CATEGORIES: BuildItemCategory[] = ["cpu", "motherboard", "gpu", "ram", "storage", "psu", "cooler", "case"];
 
-export const CATALOG_SELECTION_SYSTEM_PROMPT = `你是受约束的装机候选选择器。你只能从用户提供的 catalogId 中选择，不能创造型号、规格、价格或新的 ID。只输出 JSON：{"selections":[{"category":"cpu","catalogId":"已有 ID","reason":"一句选择理由"}]}。每个类别最多选一个，缺少合适候选时不要选择。`;
+export const CATALOG_SELECTION_SYSTEM_PROMPT = `你是受约束的装机候选选择器。你只能从用户提供的候选列表中选择（catalogId 必须原样照抄），不能创造型号、规格、价格或新的 ID，也不能输出列表之外的任何字段。每个候选都标注了质量状态（verified=已核验 / supported=有参考资料）与缺失字段；优先选择缺失字段少、已审核价格与预算匹配的候选。只输出 JSON：{"selections":[{"category":"cpu","catalogId":"已有 ID","reason":"一句选择理由"}]}。每个类别最多选一个，缺少合适候选时不要选择。`;
 
+/** 候选摘要 → 模型提示词：只透出 Task B 产出的有限字段，不暴露数据库或全量目录 */
 export function renderCatalogSelectionPrompt(input: {
   intent: StructuredIntent;
-  candidates: CatalogEntry[];
+  candidates: CandidateSummary[];
 }): string {
-  return `用户意图：${JSON.stringify(input.intent)}\n可选目录候选：${JSON.stringify(input.candidates.map((entry) => ({
-    id: entry.id,
-    category: entry.category,
-    name: entry.name,
-    aliases: entry.aliases,
-    spec: entry.spec,
-  })))}\n请只在这些候选中选择。`;
+  return `用户意图：${JSON.stringify(input.intent)}\n可选候选（均已通过质量门）：${JSON.stringify(
+    input.candidates.map((candidate) => ({
+      catalogId: candidate.canonicalId,
+      category: candidate.category,
+      name: candidate.name,
+      qualityStatus: candidate.qualityStatus,
+      spec: candidate.spec,
+      missingFields: candidate.missingFields,
+      verifiedPriceCents: candidate.priceCents,
+      retrievalReasons: candidate.retrievalReasons,
+    })),
+  )}\n请只在这些候选中选择。`;
+}
+
+/**
+ * 选件守卫（纯函数，评测与运行时共用）：
+ * - 非法 ID / 类别不符 / 质量状态缺失（候选池外）→ 整体拒绝；
+ * - 重复类别 → 忽略后续（保留首个）；
+ * - 未知类别 → 忽略该条；
+ * 返回 ok=false 时调用方必须回退规则式排序。
+ */
+export function validateSelectionOutput(
+  candidates: CandidateSummary[],
+  selections: Array<{ category: string; catalogId: string; reason: string }>,
+): LlmJsonResult<CatalogSelection> {
+  const allowed = new Map(candidates.map((candidate) => [candidate.canonicalId, candidate]));
+  const selectedIds: Partial<Record<BuildItemCategory, string>> = {};
+  const rationaleByCategory: Partial<Record<BuildItemCategory, string>> = {};
+  for (const selection of selections) {
+    if (!CATEGORIES.includes(selection.category as BuildItemCategory)) continue;
+    const entry = allowed.get(selection.catalogId);
+    if (!entry || entry.category !== selection.category) {
+      return { ok: false, reason: "模型选择了候选列表之外的型号或不匹配的类别" };
+    }
+    if (entry.qualityStatus !== "verified" && entry.qualityStatus !== "supported") {
+      return { ok: false, reason: "模型选择了未通过质量门的候选" };
+    }
+    const category = entry.category;
+    if (selectedIds[category]) continue;
+    selectedIds[category] = entry.canonicalId;
+    rationaleByCategory[category] = selection.reason;
+  }
+  return { ok: true, data: { selectedIds, rationaleByCategory } };
 }
 
 export async function selectCatalogCandidatesWithLlm(input: {
   intent: StructuredIntent;
-  candidates: CatalogEntry[];
+  candidates: CandidateSummary[];
   config: LlmConfig;
   fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
 }): Promise<LlmJsonResult<CatalogSelection>> {
@@ -148,17 +196,5 @@ export async function selectCatalogCandidatesWithLlm(input: {
     fetchImpl: input.fetchImpl,
   });
   if (!result.ok) return result;
-  const allowed = new Map(input.candidates.map((entry) => [entry.id, entry]));
-  const selectedIds: Partial<Record<BuildItemCategory, string>> = {};
-  const rationaleByCategory: Partial<Record<BuildItemCategory, string>> = {};
-  for (const selection of result.data.selections) {
-    if (!CATEGORIES.includes(selection.category as BuildItemCategory)) continue;
-    const entry = allowed.get(selection.catalogId);
-    if (!entry || entry.category !== selection.category) return { ok: false, reason: "模型选择了不存在的目录型号" };
-    const category = entry.category;
-    if (selectedIds[category]) continue;
-    selectedIds[category] = entry.id;
-    rationaleByCategory[category] = selection.reason;
-  }
-  return { ok: true, data: { selectedIds, rationaleByCategory } };
+  return validateSelectionOutput(input.candidates, result.data.selections);
 }

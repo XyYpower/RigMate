@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { BuildItem, BuildItemCategory, Finding } from "@/domain/build/types";
 import { buildItemInputSchema } from "@/domain/build/types";
 import { runBuildChecks } from "@/domain/rules/engine";
-import type { CatalogEntry } from "@/domain/catalog/seed";
+import type { FieldQualityStatus } from "@/domain/catalog/quality";
+import type { CandidateSummary } from "@/domain/catalog/ranking";
 import {
   designProposalSchema,
   type CompatibilitySummary,
@@ -12,6 +13,15 @@ import {
 } from "@/contracts/design";
 import { designTitle } from "./intent";
 import { existingPartCategories } from "./revision";
+
+/**
+ * 方案生成（内核恢复计划 Task A/B/C 重写）：
+ * - 候选空间只来自质量门（verified/supported，由 ranking.buildCandidatePool 产出）；
+ *   partial/conflicting/stale/rejected 一律不在本文件出现，更不会冒充 verified_catalog；
+ * - 价格只认已审核（verified）价格证据：没有证据时上下限为 null、priceBasis=unknown，
+ *   源码常量估价（旧 ITEM_PRICE_ESTIMATES / PRICE_ESTIMATES）已删除；
+ * - 候选不足返回 insufficient + 缺失类别，不用 partial 凑齐八类。
+ */
 
 const CATEGORY_ORDER: BuildItemCategory[] = [
   "cpu",
@@ -24,41 +34,15 @@ const CATEGORY_ORDER: BuildItemCategory[] = [
   "case",
 ];
 
-const PREFERRED_IDS: Record<BuildItemCategory, string[]> = {
-  cpu: ["cpu-9800x3d", "cpu-7800x3d", "cpu-i7-14700k"],
-  motherboard: ["mb-asus-tuf-b650-plus", "mb-msi-b650m-mortar", "mb-gigabyte-b760m-elite"],
-  gpu: ["gpu-rtx4090", "gpu-rtx4070s", "gpu-rx7800xt"],
-  ram: ["ram-gskill-32-ddr5", "ram-kf-32-ddr5"],
-  storage: ["ssd-990pro-1t", "ssd-sn770-1t", "ssd-rc20-1t"],
-  psu: ["psu-tuf-850-atx3", "psu-gx-750"],
-  cooler: ["cooler-pa120se", "cooler-frozen-prism-240"],
-  case: ["case-gt502", "case-pingtouge-m2"],
-};
-
-const ITEM_PRICE_ESTIMATES: Record<string, [number, number]> = {
-  "cpu-9600x": [219900, 269900],
-  "cpu-9800x3d": [349900, 399900],
-  "gpu-rtx4060": [219900, 279900],
-  "gpu-rtx4070s": [449900, 599900],
-  "gpu-rtx4090": [1299900, 1699900],
-  "mb-asus-tuf-b650-plus": [139900, 179900],
-  "ram-gskill-32-ddr5": [69900, 109900],
-  "ssd-sn770-1t": [49900, 79900],
-  "psu-sx-650": [39900, 59900],
-  "psu-tuf-850-atx3": [99900, 149900],
-  "cooler-pa120se": [19900, 29900],
-  "case-gt502": [79900, 129900],
-};
-
-const PRICE_ESTIMATES: Record<BuildItemCategory, [number, number]> = {
-  cpu: [299900, 349900],
-  motherboard: [119900, 169900],
-  gpu: [899900, 1199900],
-  ram: [69900, 129900],
-  storage: [49900, 89900],
-  psu: [69900, 119900],
-  cooler: [19900, 49900],
-  case: [69900, 139900],
+const CATEGORY_LABELS: Record<BuildItemCategory, string> = {
+  cpu: "处理器",
+  motherboard: "主板",
+  gpu: "显卡",
+  ram: "内存",
+  storage: "存储",
+  psu: "电源",
+  cooler: "散热器",
+  case: "机箱",
 };
 
 const RATIONALE: Record<BuildItemCategory, string> = {
@@ -72,55 +56,28 @@ const RATIONALE: Record<BuildItemCategory, string> = {
   case: "优先侧透和内部空间，保证高端显卡与散热器有调整余地。",
 };
 
-function chooseEntry(
-  entries: CatalogEntry[],
-  category: BuildItemCategory,
-  intent: StructuredIntent,
-  preferredIds?: Partial<Record<BuildItemCategory, string>>,
-): CatalogEntry | undefined {
-  const budget = intent.budgetCents ?? 2_000_000;
-  const cpuId = budget < 1_400_000 ? "cpu-9600x" : "cpu-9800x3d";
-  const gpuId = budget < 1_400_000 ? "gpu-rtx4060" : budget < 2_300_000 ? "gpu-rtx4070s" : "gpu-rtx4090";
-  const selectedIds: Partial<Record<BuildItemCategory, string>> = {
-    cpu: cpuId,
-    motherboard: "mb-asus-tuf-b650-plus",
-    gpu: gpuId,
-    ram: "ram-gskill-32-ddr5",
-    storage: "ssd-sn770-1t",
-    psu: budget < 1_400_000 ? "psu-sx-650" : "psu-tuf-850-atx3",
-    cooler: "cooler-pa120se",
-    case: "case-gt502",
-  };
-  const categoryEntries = entries.filter((entry) => entry.category === category);
-  const preferredId = preferredIds?.[category] ?? selectedIds[category];
-  const preferred = preferredId ? categoryEntries.find((entry) => entry.id === preferredId) : undefined;
-  if (preferred) return preferred;
-  for (const id of PREFERRED_IDS[category]) {
-    const fallback = categoryEntries.find((entry) => entry.id === id);
-    if (fallback) return fallback;
-  }
-  return categoryEntries[0];
-}
+/** 每个候选随行的质量上下文（service 从字段证据链解析；无证据链候选为空映射） */
+export type CandidateQualityContext = {
+  fieldQuality: Record<string, FieldQualityStatus>;
+  evidenceSourceIds: string[];
+};
 
-function buildTransientItems(
-  entries: CatalogEntry[],
-  intent: StructuredIntent,
-  exclude: Set<BuildItemCategory>,
-  preferredIds?: Partial<Record<BuildItemCategory, string>>,
-): BuildItem[] {
-  return CATEGORY_ORDER.flatMap((category) => {
-    if (exclude.has(category)) return [];
-    const entry = chooseEntry(entries, category, intent, preferredIds);
-    if (!entry) return [];
-    const input = buildItemInputSchema.parse({
-      category,
-      label: entry.name,
-      spec: entry.spec,
-      source: `catalog:${entry.id}`,
-    });
-    return [{ ...input, id: randomUUID(), buildId: "proposal", createdAt: new Date().toISOString() }];
-  });
-}
+export type DesignGenerationInput = {
+  requestId: string;
+  intent: StructuredIntent;
+  /** Task B 排序后的候选池；本函数只在其中挑选，绝不回退到质量门之外的目录 */
+  candidates: CandidateSummary[];
+  /** canonicalId → 字段质量层（用于规则门 gateFieldQuality 与方案项透出） */
+  qualityContextByCanonicalId?: Map<string, CandidateQualityContext>;
+  version?: number;
+  /** Task D 受约束模型选择：只允许指向候选池内已有 ID（校验已在 intent-llm 完成，这里兜底） */
+  preferredIds?: Partial<Record<BuildItemCategory, string>>;
+  rationaleByCategory?: Partial<Record<BuildItemCategory, string>>;
+};
+
+export type DesignGenerationResult =
+  | { status: "ok"; proposal: DesignProposal; findings: Finding[] }
+  | { status: "insufficient"; missingCategories: BuildItemCategory[] };
 
 function summarizeCompatibility(findings: Finding[]): CompatibilitySummary {
   const counts = { blockCount: 0, warnCount: 0, unknownCount: 0, passCount: 0 };
@@ -154,30 +111,29 @@ function summarizeCompatibility(findings: Finding[]): CompatibilitySummary {
   return { status: "ok", message: "主要硬件组合通过自动校验。", ...counts };
 }
 
-const CATEGORY_LABELS: Record<BuildItemCategory, string> = {
-  cpu: "处理器",
-  motherboard: "主板",
-  gpu: "显卡",
-  ram: "内存",
-  storage: "存储",
-  psu: "电源",
-  cooler: "散热器",
-  case: "机箱",
-};
-
-function proposalItem(entry: CatalogEntry, intent: StructuredIntent, rationaleOverride?: string): ProposalItem {
-  const [low, high] = ITEM_PRICE_ESTIMATES[entry.id] ?? PRICE_ESTIMATES[entry.category];
-  const needsAppearanceConfirmation = intent.appearance.includes("白色") && ["gpu", "case"].includes(entry.category);
+function candidateToItem(
+  candidate: CandidateSummary,
+  intent: StructuredIntent,
+  quality: CandidateQualityContext | undefined,
+  rationaleOverride?: string,
+): ProposalItem {
+  const needsAppearanceConfirmation = intent.appearance.includes("白色") && ["gpu", "case"].includes(candidate.category);
+  // 价格只认已审核证据：候选摘要的 priceCents 来自 verified 价格证据（Task C）；无证据 = null + unknown
+  const priceCents = candidate.priceCents;
+  const sourceLevel = candidate.qualityStatus === "verified" ? "verified_catalog" as const : "supported_catalog" as const;
   return {
-    category: entry.category,
-    label: entry.name,
-    catalogId: entry.id,
-    spec: entry.spec,
-    sourceLevel: "verified_catalog",
-    priceEstimateLowCents: low,
-    priceEstimateHighCents: high,
-    priceBasis: "experience_estimate",
-    rationale: rationaleOverride ?? RATIONALE[entry.category],
+    category: candidate.category,
+    label: candidate.name,
+    catalogId: candidate.canonicalId,
+    spec: candidate.spec,
+    sourceLevel,
+    qualityStatus: candidate.qualityStatus,
+    fieldQuality: quality?.fieldQuality ?? {},
+    evidenceSourceIds: quality?.evidenceSourceIds ?? candidate.sourceIds,
+    priceEstimateLowCents: priceCents,
+    priceEstimateHighCents: priceCents,
+    priceBasis: priceCents !== null ? "evidence" : "unknown",
+    rationale: rationaleOverride ?? RATIONALE[candidate.category],
     confirmationRequired: needsAppearanceConfirmation,
     ...(needsAppearanceConfirmation
       ? { confirmationReason: "目录当前没有完整的外观颜色字段，建议确认白色版本或在高级 DIY 中替换。" }
@@ -185,46 +141,96 @@ function proposalItem(entry: CatalogEntry, intent: StructuredIntent, rationaleOv
   };
 }
 
-export function generateDesignProposal(input: {
-  requestId: string;
-  intent: StructuredIntent;
-  entries: CatalogEntry[];
-  version?: number;
-  preferredIds?: Partial<Record<BuildItemCategory, string>>;
-  rationaleByCategory?: Partial<Record<BuildItemCategory, string>>;
-}): { proposal: DesignProposal; findings: Finding[] } {
+export function generateDesignProposal(input: DesignGenerationInput): DesignGenerationResult {
   // 已有硬件的类别不再生成购置候选（"我已有电源"→ 方案不含电源）
   const exclude = new Set(existingPartCategories(input.intent.existingParts));
-  const excludedLabels = [...exclude].map((category) => CATEGORY_LABELS[category] ?? category);
-  const transientItems = buildTransientItems(input.entries, input.intent, exclude, input.preferredIds);
+  // 候选池由 buildCandidatePool 按排序名次产出（每类别内即排名序）；这里直接消费名次
+  const byCategory = new Map<BuildItemCategory, CandidateSummary[]>();
+  for (const candidate of input.candidates) {
+    const bucket = byCategory.get(candidate.category);
+    if (bucket) bucket.push(candidate);
+    else byCategory.set(candidate.category, [candidate]);
+  }
+
+  const picked: Array<{ candidate: CandidateSummary; item: ProposalItem }> = [];
+  const missingCategories: BuildItemCategory[] = [];
+  for (const category of CATEGORY_ORDER) {
+    if (exclude.has(category)) continue;
+    const bucket = byCategory.get(category) ?? [];
+    const preferredId = input.preferredIds?.[category];
+    const candidate =
+      (preferredId ? bucket.find((entry) => entry.canonicalId === preferredId) : undefined) ?? bucket[0];
+    if (!candidate) {
+      missingCategories.push(category);
+      continue;
+    }
+    picked.push({
+      candidate,
+      item: candidateToItem(candidate, input.intent, input.qualityContextByCanonicalId?.get(candidate.canonicalId), input.rationaleByCategory?.[category]),
+    });
+  }
+
+  if (picked.length === 0) {
+    return { status: "insufficient", missingCategories };
+  }
+
+  // 规则检查在带字段质量层的瞬态配件上运行：质量不可用的字段只能得到 unknown 结论
+  const transientItems: BuildItem[] = picked.map(({ candidate, item }) => {
+    const parsed = buildItemInputSchema.parse({
+      category: candidate.category,
+      label: candidate.name,
+      spec: candidate.spec,
+      source: `catalog:${candidate.canonicalId}`,
+    });
+    return {
+      ...parsed,
+      id: randomUUID(),
+      buildId: "proposal",
+      createdAt: new Date().toISOString(),
+      fieldQuality: Object.keys(item.fieldQuality).length > 0 ? item.fieldQuality : undefined,
+    };
+  });
   const findings = runBuildChecks(transientItems);
-  const items = transientItems.map((item) => {
-    const entry = input.entries.find((candidate) => candidate.id === item.source?.slice("catalog:".length));
-    return entry ? proposalItem(entry, input.intent, input.rationaleByCategory?.[entry.category]) : null;
-  }).filter((item): item is ProposalItem => item !== null);
-  const ranges = items.reduce(
-    (total, item) => ({
+
+  // 价格结论只汇总已审核证据价格；未计价件不按零元计入（与预算余量计同一纪律）
+  const priced = picked.filter(({ item }) => item.priceEstimateLowCents !== null && item.priceEstimateHighCents !== null);
+  const ranges = priced.reduce(
+    (total, { item }) => ({
       low: total.low + (item.priceEstimateLowCents ?? 0),
       high: total.high + (item.priceEstimateHighCents ?? 0),
     }),
     { low: 0, high: 0 },
   );
+  const estimatedLowCents = priced.length > 0 ? ranges.low : null;
+  const estimatedHighCents = priced.length > 0 ? ranges.high : null;
+
   const compatibility = summarizeCompatibility(findings);
-  const confirmationItems = items.filter((item) => item.confirmationRequired);
+  const confirmationItems = picked.filter(({ item }) => item.confirmationRequired);
   const budget = input.intent.budgetCents;
+  const excludedLabels = [...exclude].map((category) => CATEGORY_LABELS[category] ?? category);
+  const missingLabels = missingCategories.map((category) => CATEGORY_LABELS[category] ?? category);
   const budgetFit =
     budget === null
       ? null
-      : ranges.high <= budget
-        ? "估算区间在预算内，剩余空间可优先升级显卡或存储。"
-        : ranges.low > budget
-          ? "估算下限已超出预算，建议进入 DIY 下调显卡或存储档位。"
-          : "估算区间横跨预算线，最终价格以购买前核实为准。";
+      : estimatedHighCents === null || estimatedLowCents === null
+        ? "暂无已审核价格证据，预算结论待价格证据录入。"
+        : estimatedHighCents <= budget
+          ? "已审核价格合计在预算内，剩余空间可优先升级显卡或存储。"
+          : estimatedLowCents > budget
+            ? "已审核价格合计已超出预算，建议进入 DIY 下调显卡或存储档位。"
+            : "价格合计横跨预算线，最终价格以购买前核实为准。";
+
   const unknowns = [
-    "价格区间是基于当前可用资料和经验估算，不等同于实时成交价。",
+    estimatedLowCents === null
+      ? "暂无已审核价格证据：价格上下限为空，不会用源码常量或经验值代替。"
+      : "价格来自已审核证据快照，非实时成交价；购买前请再核实。",
+    ...(missingLabels.length > 0
+      ? [`以下类别暂无质量达标（verified/supported）的目录候选：${missingLabels.join("、")}。`]
+      : []),
     ...(input.intent.appearance.includes("白色") ? ["当前目录没有完整颜色字段，白色外观需要在购买前确认具体 SKU。"] : []),
     ...(findings.some((finding) => finding.status === "unknown") ? ["有些尺寸、接口或平台支持资料尚未核实。"] : []),
   ];
+
   const title = designTitle(input.intent);
   const now = new Date().toISOString();
   const proposal = designProposalSchema.parse({
@@ -233,11 +239,11 @@ export function generateDesignProposal(input: {
     version: input.version ?? 1,
     status: compatibility.status === "conflict" || confirmationItems.length > 0 ? "needs_confirmation" : "ready",
     title,
-    summary: `根据“${input.intent.useCases.join("、") || "综合使用"}”和${input.intent.appearance.join("、") || "实用优先"}目标，先给出一套可编辑的均衡方案。`,
+    summary: `根据“${input.intent.useCases.join("、") || "综合使用"}”和${input.intent.appearance.join("、") || "实用优先"}目标，从质量达标的目录候选中搭配出一套可编辑方案。`,
     budgetCents: input.intent.budgetCents,
-    estimatedLowCents: ranges.low,
-    estimatedHighCents: ranges.high,
-    items,
+    estimatedLowCents,
+    estimatedHighCents,
+    items: picked.map(({ item }) => item),
     fitNotes: [
       ...(input.intent.useCases.includes("视频剪辑") ? ["剪辑优先：保留较高的处理器、显卡和内存余量。"] : []),
       ...(input.intent.useCases.includes("游戏") ? ["游戏场景：显卡是主要预算与体验支点。"] : []),
@@ -245,6 +251,9 @@ export function generateDesignProposal(input: {
       ...(budgetFit ? [budgetFit] : []),
       ...(excludedLabels.length > 0
         ? [`已有硬件（${excludedLabels.join("、")}）未计入购置清单；建议在高级 DIY 中录入其型号以参与兼容检查。`]
+        : []),
+      ...(missingLabels.length > 0
+        ? [`候选不足：${missingLabels.join("、")}没有通过质量门的目录候选，方案不含这些类别。`]
         : []),
     ],
     tradeoffs: [
@@ -256,5 +265,5 @@ export function generateDesignProposal(input: {
     createdAt: now,
     updatedAt: now,
   });
-  return { proposal, findings };
+  return { status: "ok", proposal, findings };
 }

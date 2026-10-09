@@ -32,7 +32,17 @@ function mapItemRow(row: typeof buildItems.$inferSelect): BuildItem {
     priceCents: row.priceCents ?? undefined,
     spec: row.spec && row.spec.trim() !== "" ? JSON.parse(row.spec) : {},
   });
-  return { ...input, id: row.id, buildId: row.buildId, createdAt: row.createdAt };
+  return {
+    ...input,
+    id: row.id,
+    buildId: row.buildId,
+    createdAt: row.createdAt,
+    // 字段质量层与证据引用（v11）：接受方案时下传，使 gateFieldQuality 在复检/重开后仍生效
+    ...(row.fieldQuality ? { fieldQuality: JSON.parse(row.fieldQuality) as BuildItem["fieldQuality"] } : {}),
+    ...(row.evidenceSourceIds
+      ? { evidenceSourceIds: JSON.parse(row.evidenceSourceIds) as string[] }
+      : {}),
+  };
 }
 
 export function saveBuild(build: Build): void {
@@ -81,6 +91,8 @@ export function saveBuildItem(item: BuildItem): void {
       spec: JSON.stringify(item.spec),
       priceCents: item.priceCents,
       source: item.source,
+      fieldQuality: item.fieldQuality ? JSON.stringify(item.fieldQuality) : null,
+      evidenceSourceIds: item.evidenceSourceIds ? JSON.stringify(item.evidenceSourceIds) : null,
       createdAt: item.createdAt,
     })
     .run();
@@ -102,6 +114,8 @@ export function updateBuildItemRow(item: BuildItem): void {
       spec: JSON.stringify(item.spec),
       priceCents: item.priceCents ?? null,
       source: item.source ?? null,
+      fieldQuality: item.fieldQuality ? JSON.stringify(item.fieldQuality) : null,
+      evidenceSourceIds: item.evidenceSourceIds ? JSON.stringify(item.evidenceSourceIds) : null,
     })
     .where(eq(buildItems.id, item.id))
     .run();

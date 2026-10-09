@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 10;
+export const LATEST_SCHEMA_VERSION = 11;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -354,6 +354,26 @@ export const MIGRATIONS: Migration[] = [
       }
       if (!names.includes("review_status")) {
         db.run(sql`ALTER TABLE price_evidence ADD COLUMN review_status text NOT NULL DEFAULT 'unreviewed'`);
+      }
+    },
+  },
+  {
+    version: 11,
+    name: "产品内核恢复：方案项质量上下文 + 配件字段质量/证据引用（内核恢复计划 Task A）",
+    up: (db) => {
+      const proposalColumns = db.all<{ name: string }>(sql`PRAGMA table_info(proposal_items)`);
+      // 方案项质量上下文（qualityStatus / evidenceSourceIds / fieldQuality）整体 JSON；
+      // null = 旧引擎写出的历史行，读取时按 unknown 质量处理，不冒充已核。
+      if (!proposalColumns.map((column) => column.name).includes("quality_json")) {
+        db.run(sql`ALTER TABLE proposal_items ADD COLUMN quality_json text`);
+      }
+      const itemColumns = db.all<{ name: string }>(sql`PRAGMA table_info(build_items)`);
+      // 接受方案时下传的字段质量层与证据引用：让 gateFieldQuality 在重开/复检后仍然生效
+      if (!itemColumns.map((column) => column.name).includes("field_quality")) {
+        db.run(sql`ALTER TABLE build_items ADD COLUMN field_quality text`);
+      }
+      if (!itemColumns.map((column) => column.name).includes("evidence_source_ids")) {
+        db.run(sql`ALTER TABLE build_items ADD COLUMN evidence_source_ids text`);
       }
     },
   },

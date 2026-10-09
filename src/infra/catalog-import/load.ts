@@ -4,6 +4,7 @@ import { z } from "zod";
 import { specSchemaByCategory } from "@/domain/build/specs";
 import { buildItemCategorySchema } from "@/domain/build/types";
 import { CATALOG as CATALOG_SEED, type CatalogEntry } from "@/domain/catalog/seed";
+import type { PublishStatus } from "@/domain/catalog/quality";
 import { loadCatalogEntries, resetCatalogDbCacheForTests } from "@/infra/db/repositories/catalog-repository";
 import { manualCatalogFileSchema } from "./manual-csv";
 
@@ -126,9 +127,13 @@ export function mergedCatalogEntries(seed: CatalogEntry[]): CatalogEntry[] {
 /**
  * 统一目录入口（M29）：自有规格库（canonical_products 表）优先；
  * 库为空（未跑过入库/全新 e2e 库）时回退到 JSON 三层合并，行为与历史版本一致。
+ *
+ * 质量状态（内核恢复计划 Task A）：DB 行携带各自的 quality_status；
+ * JSON 回退路径没有证据链，一律 partial——质量门（verified/supported 才能成为方案候选）
+ * 因此在 JSON 回退下天然收缩候选空间，直到入库/审核流程补齐证据。
  */
 export function loadSourcedCatalog(): {
-  entries: (CatalogEntry & { source: "seed" | "manual" | "buildcores" | "zol" })[];
+  entries: (CatalogEntry & { source: "seed" | "manual" | "buildcores" | "zol"; qualityStatus: PublishStatus })[];
   dbBacked: boolean;
 } {
   const dbEntries = loadCatalogEntries();
@@ -137,9 +142,9 @@ export function loadSourcedCatalog(): {
   const buildcores = loadBuildcoresCatalog();
   return {
     entries: [
-      ...CATALOG_SEED.map((entry) => ({ ...entry, source: "seed" as const })),
-      ...(manual?.entries ?? []).map((entry) => ({ ...entry, source: "manual" as const })),
-      ...(buildcores?.entries ?? []).map((entry) => ({ ...entry, source: "buildcores" as const })),
+      ...CATALOG_SEED.map((entry) => ({ ...entry, source: "seed" as const, qualityStatus: "partial" as const })),
+      ...(manual?.entries ?? []).map((entry) => ({ ...entry, source: "manual" as const, qualityStatus: "partial" as const })),
+      ...(buildcores?.entries ?? []).map((entry) => ({ ...entry, source: "buildcores" as const, qualityStatus: "partial" as const })),
     ],
     dbBacked: false,
   };

@@ -1,0 +1,106 @@
+{
+  "$comment": "受约束选件固定评测（内核恢复计划 Task D）。goal 走本地意图解析；candidates 来自 fixture 池 + 已审核价格；model.* 为受控模型输出（评测不调用真实模型）。unsupportedClaimRate 必须为 0。",
+  "cases": [
+    {
+      "id": "budget-high",
+      "goal": "2 万预算，剪辑和游戏",
+      "expectTopPick": {
+        "category": "gpu",
+        "canonicalId": "gpu-rtx4070s"
+      },
+      "expectProposalContains": {
+        "category": "gpu",
+        "labelContains": "4070 SUPER"
+      }
+    },
+    {
+      "id": "clip-and-game-tier",
+      "goal": "2 万预算，白色海景房，主要做视频剪辑和玩 3A 游戏",
+      "expectTopPick": {
+        "category": "cpu",
+        "canonicalId": "cpu-9800x3d"
+      },
+      "expectProposalContains": {
+        "category": "motherboard",
+        "labelContains": "B650"
+      }
+    },
+    {
+      "id": "white-appearance-confirm",
+      "goal": "2 万预算，白色主机，剪辑和游戏",
+      "expectTopPick": {
+        "category": "gpu",
+        "canonicalId": "gpu-rtx4070s"
+      }
+    },
+    {
+      "id": "existing-psu-excluded",
+      "goal": "2 万预算，剪辑和游戏，我已有电源",
+      "expectProposalExcludes": [
+        "psu"
+      ]
+    },
+    {
+      "id": "budget-tight-downgrade",
+      "goal": "预算 4000，玩游戏",
+      "expectTopPick": {
+        "category": "gpu",
+        "canonicalId": "gpu-rtx4060"
+      }
+    },
+    {
+      "id": "merchant-invented-name",
+      "goal": "9000 预算，配一台『闪电侠电竞神器 MAX』主机",
+      "expectTopPick": {
+        "category": "gpu",
+        "canonicalId": "gpu-rtx4070s"
+      },
+      "$comment": "商家自拟名不会被目录收录：意图照常解析，检索只回质量达标候选，方案不包含自拟型号"
+    },
+    {
+      "id": "model-illegal-id",
+      "goal": "2 万预算，剪辑和游戏",
+      "model": {
+        "selections": [
+          {
+            "category": "gpu",
+            "catalogId": "gpu-rtx5090-invented",
+            "reason": "模型编造的新卡"
+          }
+        ]
+      },
+      "expectModelRejected": true
+    },
+    {
+      "id": "model-extra-fields",
+      "goal": "2 万预算，剪辑和游戏",
+      "model": {
+        "selections": [
+          {
+            "category": "cpu",
+            "catalogId": "cpu-9800x3d",
+            "reason": "ok"
+          }
+        ],
+        "extraFields": {
+          "inventedSpec": {
+            "socket": "AM6"
+          }
+        }
+      },
+      "expectModelRejected": true
+    },
+    {
+      "id": "model-timeout-fallback",
+      "goal": "2 万预算，剪辑和游戏",
+      "model": {
+        "fail": "timeout"
+      },
+      "expectTopPick": {
+        "category": "gpu",
+        "canonicalId": "gpu-rtx4070s"
+      },
+      "$comment": "模型超时：规则式路径仍可产出完整方案"
+    }
+  ]
+}

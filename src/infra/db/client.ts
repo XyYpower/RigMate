@@ -23,6 +23,10 @@ export const buildItems = sqliteTable("build_items", {
   spec: text("spec").notNull().default("{}"),
   priceCents: integer("price_cents"),
   source: text("source"),
+  /** 字段质量层 JSON（v11，内核恢复 Task A）：接受方案时下传，gateFieldQuality 依据 */
+  fieldQuality: text("field_quality"),
+  /** 证据来源引用 JSON 数组（v11）：product_sources.id 列表，可回溯 */
+  evidenceSourceIds: text("evidence_source_ids"),
   createdAt: text("created_at").notNull(),
 });
 
@@ -114,6 +118,8 @@ export const proposalItems = sqliteTable("proposal_items", {
   catalogId: text("catalog_id"),
   spec: text("spec").notNull().default("{}"),
   sourceLevel: text("source_level").notNull(),
+  /** 方案项质量上下文 JSON（v11，内核恢复 Task A）：qualityStatus/fieldQuality/evidenceSourceIds */
+  qualityJson: text("quality_json"),
   priceEstimateLowCents: integer("price_estimate_low_cents"),
   priceEstimateHighCents: integer("price_estimate_high_cents"),
   priceBasis: text("price_basis").notNull(),

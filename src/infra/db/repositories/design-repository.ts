@@ -34,6 +34,13 @@ function mapRequest(row: typeof designRequests.$inferSelect): DesignRequest {
   };
 }
 
+/** 方案项质量上下文（v11 quality_json）；null = 旧引擎历史行，交由 schema 缺省为 unknown */
+type ItemQualityContext = {
+  qualityStatus?: "verified" | "supported" | "unknown";
+  fieldQuality?: Record<string, string>;
+  evidenceSourceIds?: string[];
+};
+
 function mapProposal(row: typeof designProposals.$inferSelect, rows: (typeof proposalItems.$inferSelect)[]): DesignProposal {
   return designProposalSchema.parse({
     id: row.id,
@@ -46,19 +53,25 @@ function mapProposal(row: typeof designProposals.$inferSelect, rows: (typeof pro
     estimatedLowCents: row.estimatedLowCents,
     estimatedHighCents: row.estimatedHighCents,
     acceptedBuildId: row.acceptedBuildId,
-    items: rows.map((item) => ({
-      category: item.category,
-      label: item.label,
-      catalogId: item.catalogId ?? undefined,
-      spec: parseJson<Record<string, unknown>>(item.spec),
-      sourceLevel: item.sourceLevel,
-      priceEstimateLowCents: item.priceEstimateLowCents,
-      priceEstimateHighCents: item.priceEstimateHighCents,
-      priceBasis: item.priceBasis,
-      rationale: item.rationale,
-      confirmationRequired: item.confirmationRequired,
-      confirmationReason: item.confirmationReason ?? undefined,
-    })),
+    items: rows.map((item) => {
+      const quality = item.qualityJson
+        ? (JSON.parse(item.qualityJson) as ItemQualityContext)
+        : undefined;
+      return {
+        category: item.category,
+        label: item.label,
+        catalogId: item.catalogId ?? undefined,
+        spec: parseJson<Record<string, unknown>>(item.spec),
+        sourceLevel: item.sourceLevel,
+        ...(quality ?? {}),
+        priceEstimateLowCents: item.priceEstimateLowCents,
+        priceEstimateHighCents: item.priceEstimateHighCents,
+        priceBasis: item.priceBasis,
+        rationale: item.rationale,
+        confirmationRequired: item.confirmationRequired,
+        confirmationReason: item.confirmationReason ?? undefined,
+      };
+    }),
     fitNotes: parseJson<string[]>(row.fitNotes),
     tradeoffs: parseJson<string[]>(row.tradeoffs),
     unknowns: parseJson<string[]>(row.unknowns),
@@ -119,6 +132,11 @@ export function saveDesignProposal(proposal: DesignProposal): void {
       catalogId: item.catalogId ?? null,
       spec: JSON.stringify(item.spec),
       sourceLevel: item.sourceLevel,
+      qualityJson: JSON.stringify({
+        qualityStatus: item.qualityStatus,
+        fieldQuality: item.fieldQuality,
+        evidenceSourceIds: item.evidenceSourceIds,
+      }),
       priceEstimateLowCents: item.priceEstimateLowCents,
       priceEstimateHighCents: item.priceEstimateHighCents,
       priceBasis: item.priceBasis,

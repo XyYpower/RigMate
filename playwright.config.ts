@@ -18,7 +18,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: `node scripts/reset-e2e-db.mjs && npm run dev -- --hostname 127.0.0.1 --port ${E2E_PORT}`,
+    command: `npx tsx scripts/reset-e2e-db.ts && npm run dev -- --hostname 127.0.0.1 --port ${E2E_PORT}`,
     url: `http://127.0.0.1:${E2E_PORT}`,
     reuseExistingServer: true,
     timeout: 120_000,
