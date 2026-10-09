@@ -3,6 +3,7 @@ import { structuredIntentSchema, type StructuredIntent } from "@/contracts/desig
 import { completeJson, type LlmConfig, type LlmJsonResult } from "@/infra/llm/client";
 import type { CandidateSummary } from "@/domain/catalog/ranking";
 import type { BuildItemCategory } from "@/domain/build/types";
+import { getAgentPrompt } from "@/application/agent/prompts/registry";
 
 /**
  * LLM 意图解析（M30）与受约束选件（M37 / 内核恢复计划 Task D）。
@@ -130,12 +131,14 @@ export type CatalogSelection = {
 
 const CATEGORIES: BuildItemCategory[] = ["cpu", "motherboard", "gpu", "ram", "storage", "psu", "cooler", "case"];
 
-export const CATALOG_SELECTION_SYSTEM_PROMPT = `你是受约束的装机候选选择器。你只能从用户提供的候选列表中选择（catalogId 必须原样照抄），不能创造型号、规格、价格或新的 ID，也不能输出列表之外的任何字段。每个候选都标注了质量状态（verified=已核验 / supported=有参考资料）与缺失字段；优先选择缺失字段少、已审核价格与预算匹配的候选。只输出 JSON：{"selections":[{"category":"cpu","catalogId":"已有 ID","reason":"一句选择理由"}]}。每个类别最多选一个，缺少合适候选时不要选择。`;
+/** 提示词原文与版本由 prompts/registry 管理（版本随 AgentEvent 落库） */
+export const CATALOG_SELECTION_PROMPT_VERSION = getAgentPrompt("catalog-selection").version;
+const CATALOG_SELECTION_SYSTEM_PROMPT = getAgentPrompt("catalog-selection").system;
 
 /** 候选摘要 → 模型提示词：只透出 Task B 产出的有限字段，不暴露数据库或全量目录 */
 export function renderCatalogSelectionPrompt(input: {
   intent: StructuredIntent;
-  candidates: CandidateSummary[];
+  candidates: readonly CandidateSummary[];
 }): string {
   return `用户意图：${JSON.stringify(input.intent)}\n可选候选（均已通过质量门）：${JSON.stringify(
     input.candidates.map((candidate) => ({
@@ -159,10 +162,10 @@ export function renderCatalogSelectionPrompt(input: {
  * 返回 ok=false 时调用方必须回退规则式排序。
  */
 export function validateSelectionOutput(
-  candidates: CandidateSummary[],
+  candidates: readonly CandidateSummary[],
   selections: Array<{ category: string; catalogId: string; reason: string }>,
 ): LlmJsonResult<CatalogSelection> {
-  const allowed = new Map(candidates.map((candidate) => [candidate.canonicalId, candidate]));
+  const allowed = new Map(candidates.map((candidate) => [candidate.canonicalId, candidate] as const));
   const selectedIds: Partial<Record<BuildItemCategory, string>> = {};
   const rationaleByCategory: Partial<Record<BuildItemCategory, string>> = {};
   for (const selection of selections) {
@@ -184,7 +187,7 @@ export function validateSelectionOutput(
 
 export async function selectCatalogCandidatesWithLlm(input: {
   intent: StructuredIntent;
-  candidates: CandidateSummary[];
+  candidates: readonly CandidateSummary[];
   config: LlmConfig;
   fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
 }): Promise<LlmJsonResult<CatalogSelection>> {

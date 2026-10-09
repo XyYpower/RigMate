@@ -1,5 +1,5 @@
 import { parseDesignIntent } from "@/domain/design/intent";
-import { buildCandidatePool, type RankedCandidate, type VerifiedPriceFact } from "@/domain/catalog/ranking";
+import { buildCandidatePool, type CandidateSummary, type RankedCandidate, type VerifiedPriceFact } from "@/domain/catalog/ranking";
 import { validateSelectionOutput } from "./intent-llm";
 import { generateDesignProposal } from "@/domain/design/proposal";
 import type { DesignProposal } from "@/contracts/design";
@@ -171,6 +171,50 @@ export function summarizeEvalResults(results: DesignEvalCaseResult[]): {
     failed,
     unsupportedClaimRate: results.length === 0 ? 0 : results.reduce((sum, result) => sum + result.unsupportedClaims.length, 0) / results.length,
   };
+}
+
+/**
+ * 可测量增益（v2 Phase 6）：同一 CandidateSet 上，模型选择相对规则排序的逐类价格差。
+ * 约定：只有当模型选择与规则选择都通过全部质量/守卫验证时才计入；
+ * gain = 规则价 − 模型价（正数 = 模型在同一质量约束下更省）。不做质量加权——
+ * 两个选择都必须来自质量门候选池，质量维度没有可让渡空间。
+ */
+export function measureSelectionGain(
+  pool: CandidateSummary[],
+  rulePick: Partial<Record<string, string>>,
+  modelPick: Partial<Record<string, string>>,
+): {
+  categories: string[];
+  /** 各类别增益（分）；null = 该类别无法比较（一侧未选或无价格） */
+  byCategory: Record<string, number | null>;
+  /** 可比较类别上的总增益（分）；无可比较类别时为 0 */
+  totalCents: number;
+  comparable: number;
+} {
+  const byId = new Map(pool.map((candidate) => [candidate.canonicalId, candidate]));
+  const categories = [...new Set([...Object.keys(rulePick), ...Object.keys(modelPick)])].sort();
+  const byCategory: Record<string, number | null> = {};
+  let totalCents = 0;
+  let comparable = 0;
+  for (const category of categories) {
+    const ruleId = rulePick[category];
+    const modelId = modelPick[category];
+    if (!ruleId || !modelId) {
+      byCategory[category] = null;
+      continue;
+    }
+    const rulePrice = byId.get(ruleId)?.priceCents ?? null;
+    const modelPrice = byId.get(modelId)?.priceCents ?? null;
+    if (rulePrice === null || modelPrice === null) {
+      byCategory[category] = null;
+      continue;
+    }
+    const gain = rulePrice - modelPrice;
+    byCategory[category] = gain;
+    totalCents += gain;
+    comparable += 1;
+  }
+  return { categories, byCategory, totalCents, comparable };
 }
 
 export type EvalProposalSnapshot = DesignProposal;
