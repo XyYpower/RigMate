@@ -11,9 +11,19 @@ function extractTags(fitNotes: string[]): string[] {
   return [...new Set(tags)].slice(0, 4);
 }
 
+/** 价格口径说明：有价格看证据占比，全无价格诚实说"暂无已审核价格证据" */
+function priceBasisNote(proposal: DesignProposal): string {
+  const priced = proposal.items.filter((item) => item.priceEstimateLowCents !== null && item.priceEstimateHighCents !== null);
+  if (priced.length === 0) return "暂无已审核价格证据";
+  const allEvidence = priced.every((item) => item.priceBasis === "evidence");
+  return allEvidence
+    ? "价格来自已审核证据，非实时成交价"
+    : "价格含估算成分，非实时成交价";
+}
+
 /**
  * 推荐摘要卡（参考图：浅橙底摘要区）。
- * 诚实边界：总价为估算中值并明示区间；特性标签来自 fitNotes；无机箱渲染图。
+ * 诚实边界：总价只汇总已审核证据价格并明示区间；特性标签来自 fitNotes；无机箱渲染图。
  */
 export function BuildSummaryCard({ proposal }: { proposal: DesignProposal }) {
   const low = proposal.estimatedLowCents;
@@ -43,9 +53,9 @@ export function BuildSummaryCard({ proposal }: { proposal: DesignProposal }) {
             </span>
           </>
         ) : (
-          <strong className="build-summary-price-unknown">待估</strong>
+          <strong className="build-summary-price-unknown">待证据</strong>
         )}
-        <small>经验估算，非实时成交价</small>
+        <small>{priceBasisNote(proposal)}</small>
       </div>
     </section>
   );

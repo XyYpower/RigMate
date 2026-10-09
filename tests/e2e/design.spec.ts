@@ -14,7 +14,7 @@ test("M27 目标驱动主链路：自然语言生成方案、自动校验并接�
   await expect(page.locator(".build-summary")).toBeVisible();
   await expect(page.getByRole("heading", { name: "配置清单" })).toBeVisible();
   await expect(page.locator(".wb-status-badge")).toBeVisible();
-  await expect(page.getByText("经验估算，非实时成交价").first()).toBeVisible();
+  await expect(page.getByText("价格来自已审核证据，非实时成交价").first()).toBeVisible();
 
   // 配置清单核验状态：逐行真实来源，白色外观待确认可读
   await expect(page.locator(".build-parts-verify").first()).toBeVisible();
@@ -53,13 +53,13 @@ test("M31 自然语言修订：顶栏输入，预算跨档位生成第 2 版并�
   // 参考图：修订输入在顶栏
   const headerEditor = page.getByRole("textbox", { name: "继续调整这套方案" });
   await expect(headerEditor).toBeVisible();
-  await headerEditor.fill("预算压到 1.2 万");
+  await headerEditor.fill("预算压到 4000");
   await page.getByRole("button", { name: "提交修改" }).click();
 
   // 处理记录（折叠）承载真实事件；展开后可读
   const visibleDesk = page.locator(".verification-desk").filter({ visible: true });
   await visibleDesk.locator(".verification-log summary").click();
-  await expect(visibleDesk.getByText(/已理解调整：预算调整为 12,000 元/)).toBeVisible();
+  await expect(visibleDesk.getByText(/已理解调整：预算调整为 4,000 元/)).toBeVisible();
   await expect(page.locator(".header-title-version")).toContainText("方案 v2");
   // 版本差异区：预算跌破档位线，CPU/显卡/电源应出现 旧件→新件 的变化
   const diff = page.locator(".proposal-diff");
@@ -73,7 +73,7 @@ test("M35 可以切换查看历史方案并展开单件依据", async ({ page })
   await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("2 万预算，剪辑和游戏");
   await page.getByRole("button", { name: "开始搭配" }).click();
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
-  await page.getByRole("textbox", { name: "继续调整这套方案" }).fill("预算压到 1.2 万");
+  await page.getByRole("textbox", { name: "继续调整这套方案" }).fill("预算压到 4000");
   await page.getByRole("button", { name: "提交修改" }).click();
   await expect(page.locator(".header-title-version")).toContainText("方案 v2");
 

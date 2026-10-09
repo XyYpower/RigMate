@@ -13,17 +13,20 @@ const CATEGORY_LABELS: Record<string, string> = {
   case: "机箱",
 };
 
-/** 核验列与详情里的真实来源文案：unknown / 待确认不得显示为已核 */
+/** 核验列与详情里的真实来源文案：supported/unknown/待确认不得显示为已核 */
 const SOURCE_LABEL: Record<SourceLevel, string> = {
   verified_catalog: "已核目录",
+  supported_catalog: "有参考资料",
   price_evidence: "证据价格",
   user_input: "你的输入",
   model_experience: "经验推断",
   unknown: "资料不足",
 };
 
-function sourceSeverity(sourceLevel: SourceLevel): "pass" | "warn" | "unknown" {
+/** supported = 有参考资料（可用但未经人工核验）→ 蓝灰资料色，绝不冒充已核的绿色 */
+function sourceSeverity(sourceLevel: SourceLevel): "pass" | "warn" | "supported" | "unknown" {
   if (sourceLevel === "verified_catalog" || sourceLevel === "price_evidence") return "pass";
+  if (sourceLevel === "supported_catalog") return "supported";
   if (sourceLevel === "unknown") return "unknown";
   return "warn";
 }
@@ -33,6 +36,8 @@ function sourceSentence(sourceLevel: SourceLevel): string {
   switch (sourceLevel) {
     case "verified_catalog":
       return "已核目录型号（规格经证据链核验）";
+    case "supported_catalog":
+      return "有参考资料目录型号（可用，但未经人工核验）";
     case "price_evidence":
       return "价格证据绑定的目录型号";
     case "user_input":
@@ -41,6 +46,18 @@ function sourceSentence(sourceLevel: SourceLevel): string {
       return "经验推断型号，未经目录核验";
     default:
       return "资料不足，待补充";
+  }
+}
+
+/** 价格口径文案：unknown = 暂无已审核价格证据（不得写成估算或已核） */
+function priceBasisLabel(basis: ProposalItem["priceBasis"]): string {
+  switch (basis) {
+    case "evidence":
+      return "已审核价格证据";
+    case "experience_estimate":
+      return "经验估算";
+    default:
+      return "暂无已审核价格证据";
   }
 }
 
@@ -80,10 +97,14 @@ export function BuildPartsTable({ items }: { items: ProposalItem[] }) {
                 </span>
               </span>
               <span className={`build-parts-verify verify-${item.confirmationRequired ? "warn" : sourceSeverity(item.sourceLevel)}`}>
-                {item.confirmationRequired ? "待确认" : sourceLabel}
+                {item.confirmationRequired ? "待确认" : SOURCE_LABEL[item.sourceLevel]}
               </span>
               <span className="num build-parts-qty-col">1</span>
-              <span className="num build-parts-price">{formatYuanRange(item.priceEstimateLowCents, item.priceEstimateHighCents)}</span>
+              <span className="num build-parts-price">
+                {item.priceEstimateLowCents !== null && item.priceEstimateHighCents !== null
+                  ? formatYuanRange(item.priceEstimateLowCents, item.priceEstimateHighCents)
+                  : "暂无已审核价格"}
+              </span>
               <span className="build-parts-arrow" aria-hidden>›</span>
             </summary>
             <div className="build-parts-detail">
@@ -91,7 +112,7 @@ export function BuildPartsTable({ items }: { items: ProposalItem[] }) {
               <p>
                 来源：{sourceSentence(item.sourceLevel)}
                 {item.catalogId && <> · 型号 ID <code>{item.catalogId}</code></>}
-                {" · "}价格口径：{item.priceBasis === "experience_estimate" ? "经验估算" : item.priceBasis}
+                {" · "}价格口径：{priceBasisLabel(item.priceBasis)}
               </p>
               {item.confirmationRequired && item.confirmationReason && (
                 <p className="build-parts-confirm-reason">需要确认：{item.confirmationReason}</p>

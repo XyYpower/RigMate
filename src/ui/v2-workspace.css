@@ -814,6 +814,7 @@
   font-size: 10.5px; font-weight: 700; white-space: nowrap;
 }
 .build-parts-verify.verify-pass { background: var(--wb-pass-soft); color: var(--wb-pass); }
+.build-parts-verify.verify-supported { background: var(--wb-slate-soft); color: var(--wb-slate); }
 .build-parts-verify.verify-warn { background: var(--wb-warn-soft); color: var(--wb-warn); }
 .build-parts-verify.verify-unknown { background: var(--wb-unknown-soft); color: var(--wb-unknown); }
 .build-parts-confirm {
