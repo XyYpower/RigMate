@@ -7,7 +7,12 @@ import { buildItemCategorySchema, type BuildItemCategory } from "../src/domain/b
  * 京东联盟价格采集（next-phase 计划 Task C 价格管道的数据入口）。
  *
  * 只使用用户账号**已开通**的接口（2026-10-10 控制台确认）：
- * - mode=rank：jd.union.open.goods.rank.query——实时热销榜，发现热门 SKU（req: rankId/sortType/pageIndex/pageSize）；
+ * - mode=rank：jd.union.open.goods.rank.query——实时热销榜。
+ *   2026-10-10 实测：参数键为 `RankGoodsReq`（SDK 属性名大写开头）、schema 已通过
+ *   （rankId "1"-"40" + sortType 24 均返回"已达到最后一页"= 合法但空），**卡在合法 rankId 取值**——
+ *   榜单 ID 对照表在联盟控制台该接口的"查看文档"页（需登录）。拿到真实 rankId 后本模式即可出数据；
+ *   - mode=promotion-sku：jd.union.open.goods.promotiongoodsinfo.query——已开通但对个人媒体返回
+ *   67/403（实测含正式 OAuth token），暂时不可用；
  * - mode=promotion-sku：jd.union.open.goods.promotiongoodsinfo.query——批量 skuId 查名称/价格；
  * - mode=selling：jd.union.open.selling.goods.query——商羚批量查询（名称/价格/30天销量）；
  * - mode=keyword：jd.union.open.goods.query——关键词搜索（不在已开通列表，可能 403，保留尝试）。
