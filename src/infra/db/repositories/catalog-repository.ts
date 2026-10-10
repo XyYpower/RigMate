@@ -338,6 +338,7 @@ export type CatalogQualityRow = {
   spec: Record<string, unknown>;
   source: CatalogSourceTag;
   qualityStatus: PublishStatus;
+  createdAt: string;
 };
 
 export function listCatalogQualityRows(): CatalogQualityRow[] {
@@ -348,6 +349,7 @@ export function listCatalogQualityRows(): CatalogQualityRow[] {
       spec: canonicalProducts.spec,
       source: canonicalProducts.source,
       qualityStatus: canonicalProducts.qualityStatus,
+      createdAt: canonicalProducts.createdAt,
     })
     .from(canonicalProducts)
     .where(isNull(canonicalProducts.mergedInto))
@@ -358,5 +360,6 @@ export function listCatalogQualityRows(): CatalogQualityRow[] {
       spec: JSON.parse(row.spec) as Record<string, unknown>,
       source: row.source as CatalogSourceTag,
       qualityStatus: row.qualityStatus as PublishStatus,
+      createdAt: row.createdAt,
     }));
 }
