@@ -5,7 +5,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-10-10 ｜ 当前阶段：**上游 25-26 代际刷新完成，质量门内 3113 条（八类全覆盖 + RTX 50 系/Ryzen 9000/Arrow Lake 确定性入池）**——上游 buildcores-open-db 昨日仍在更新（commit 50059f5e），已重新导入合入（新增 46 条 25-26 产品：9950X3D/Ultra 285K/RTX 50 系/RX 9000 系/Z890/B850/X870）；`promote-minimal-pool` 升级"最新入库优先 + --must-include 指定代际必收"，质量门内 3113 条 supported（cpu 423 / gpu 579 / psu 423 / ram 420 / storage 420 / cooler 421 / case 421 / mb 6），9950X3D×2、RTX 5090×49、RX 9070 XT×47 确定性在池。**短板如实：Z890/X870 主板缺 m2Slots/sataPorts 等字段，只能走人工查证补齐（不能自动编造）；价格证据仍 0 行，预算排序待京东联盟等价格源接入（需用户注册资质）。下一步：接 key 跑 `evals:live` 真实模型增益、主板字段人工查证、多方向方案。**
+> 最后更新：2026-10-10 ｜ 当前阶段：**上游 25-26 代际刷新完成，质量门内 3113 条（八类全覆盖 + RTX 50 系/Ryzen 9000/Arrow Lake 确定性入池）**——上游 buildcores-open-db 昨日仍在更新（commit 50059f5e），已重新导入合入（新增 46 条 25-26 产品：9950X3D/Ultra 285K/RTX 50 系/RX 9000 系/Z890/B850/X870）；`promote-minimal-pool` 升级"最新入库优先 + --must-include 指定代际必收"，质量门内 3113 条 supported（cpu 423 / gpu 579 / psu 423 / ram 420 / storage 420 / cooler 421 / case 421 / mb 6），9950X3D×2、RTX 5090×49、RX 9070 XT×47 确定性在池。**短板如实：Z890/X870 主板缺 m2Slots/sataPorts 等字段，只能走人工查证补齐（不能自动编造）；价格证据仍 0 行，预算排序待京东联盟等价格源接入（需用户注册资质）。下一步：提供 JOS 凭证跑 `prices:fetch-jd -- --live` 采集价格证据（用户在台账人工审核 verified 后激活预算排序）+ 接 key 跑 `evals:live` 真实模型增益、主板字段人工查证、多方向方案。**
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
@@ -473,6 +473,8 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-10-10 v4.24：**京东联盟价格采集管道接入（本窗口，用户提供 JOS SDK）**——用户注册京东联盟被拒（无订单量）但拿到了 JOS Python SDK；审计后确认其中 `jd.union.open.goods.query`（关键词/sku/价格区间查询，响应含 priceInfo）正是价格证据需要的“渠道+口径+价格+时间”数据源；“无订单量”限制的是订单/结算类 API，商品查询类通常应用审核通过即可调。落地：① `src/infra/jd/client.ts` TS 版 JOS 网关客户端（签名协议：参数排序 + secret 包裹 MD5 大写；响应节点名 = 方法名点换下划线 + _responce）；② price sourceType 新增 `platform_api`（机器采集未经人工，入账即 unreviewed，人工审核 verified 后才进方案预算区间——Task C 纪律闭环）；③ `scripts/fetch-jd-prices.ts` + `npm run prices:fetch-jd`（dry-run 默认，--live 需 JOS_APP_KEY/JOS_APP_SECRET 环境变量，key 不落盘）；④ JOS 签名协议单测 3 例。308 单测 + build 全绿。**待用户提供 appKey/secret 后 --live 实测权限（商品查询类预计可用）。**
+
 - 2026-10-10 v4.23：**上游 25-26 代际刷新 + 指定代际必收（本窗口，响应“数据太薄弱”）**——① 重新导入上游最新 buildcores-open-db（commit 50059f5e，昨日更新；本地旧库 9-21 版本），新增 46 条 25-26 产品（9950X3D/Ultra 285K/RTX 50 系/RX 9000 系/Z890/B850/X870，含国行技嘉 B850 小雕）；② promote-minimal-pool 升级：最新入库优先排序 + `--must-include` 指定代际必收（关键词命中不受配额，每词上限 40）；③ 质量门内 3113 条 supported（八类覆盖，9950X3D×2/RTX 5090×49/RX 9070 XT×47 确定性在池）；④ 诚实短板记录：Z890/X870 主板缺 m2Slots/sataPorts 字段无法入池（需人工查证，不自动编造）；三方 API 调研结论：规格数据继续用 BuildCores 许可管道（上游活跃），中国价格接入首选京东联盟开放平台（需用户注册资质），不做违 ToS 爬虫。305 单测 + 55 E2E + gate:data + build 全绿。
 
 - 2026-10-10 v4.22：**最小候选池补齐 + 换件有限迭代（本窗口，响应用户“数据有很大问题”反馈）**——① 数据补齐：`scripts/promote-minimal-pool.ts` 把导入规格本身的出处走成证据链（BuildCores=S3/ODC-By、种子/人工=S4，未人工复核→supported，永不 verified），426+420 条入链发布，八类全覆盖 846 条 supported；发现并修复两个数据/代码缺陷：⒠ 62 条目录名称超 160 字符使方案生成 zod 崩潜被 TOOL_UNAVAILABLE 吞掉（候选池现排除超长名称，catch 带入原因但不入审计事件）；⒡ 兼容工具重新编号条目导致 findings.itemIds 与类别映射断链（工具保留调用方 id）；③ 候选集扩容每类 12；④ 换件有限迭代：swap-v1 提示词 + `proposeSwapWithLlm`（空选择=诚实无更优，池外 ID/越权拒绝），编排器遍历被点名类别（修双侧冲突只取首类别的缺陷），最多 2 轮、只采纳减少阻断/警告的换件，否则保留原组合；同相位过程事件改用 `run-state.log`（不再冒充相位推进）；⑤ `npm run evals:live -- --live` 真实模型评测脚本（默认离线、key 不落盘，同一 CandidateSet 对比阻断数/超预算）。验收：gate:data 6/6（真实库）+ 305 单测 + 55 E2E + build 全绿；真实库生成方案恢复为 8 件 supported_catalog（无价格证据时仍诚实无价）。

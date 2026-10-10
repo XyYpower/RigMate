@@ -8,7 +8,12 @@ import { buildItemCategorySchema } from "../build/types";
  * 价格的审核状态独立于规格质量状态，价格永远不会写入/提升 spec 的 verified。
  */
 
-export const priceEvidenceSourceSchema = z.enum(["manual_entry", "user_submission"]);
+export const priceEvidenceSourceSchema = z.enum([
+  "manual_entry",
+  "user_submission",
+  /** 平台开放 API 采集（如京东联盟 goods.query）：机器采集未经人工，入账即 unreviewed */
+  "platform_api",
+]);
 export type PriceEvidenceSource = z.infer<typeof priceEvidenceSourceSchema>;
 
 /** 价格审核状态：与规格字段质量状态完全独立（价格核对通过 ≠ 规格已核验） */

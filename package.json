@@ -23,7 +23,8 @@
     "gate:data:fixture": "tsx scripts/fixture-gate.ts",
     "db:fixture": "tsx scripts/seed-catalog-fixture.ts",
     "evals:design": "tsx scripts/run-design-evals.ts",
-    "evals:live": "tsx scripts/run-live-selection-eval.ts"
+    "evals:live": "tsx scripts/run-live-selection-eval.ts",
+    "prices:fetch-jd": "tsx scripts/fetch-jd-prices.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
