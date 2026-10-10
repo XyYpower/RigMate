@@ -201,3 +201,82 @@ export async function selectCatalogCandidatesWithLlm(input: {
   if (!result.ok) return result;
   return validateSelectionOutput(input.candidates, result.data.selections);
 }
+
+// ---- 检查结果驱动的换件（next-phase：检查 → 模型换件 → 再检查 有限迭代）----
+
+export type SwapProposal = {
+  category: BuildItemCategory;
+  catalogId: string;
+  reason: string;
+};
+
+export const SWAP_PROMPT_VERSION = getAgentPrompt("swap").version;
+const SWAP_SYSTEM_PROMPT = getAgentPrompt("swap").system;
+
+export function renderSwapPrompt(input: {
+  findings: ReadonlyArray<{ ruleId: string; status: string; conclusion: string; suggestedAction: string }>;
+  currentItem: { category: BuildItemCategory; label: string; spec: Record<string, unknown> };
+  candidates: readonly CandidateSummary[];
+}): string {
+  return `兼容检查发现：${JSON.stringify(input.findings)}\n被点名部件：${JSON.stringify(input.currentItem)}\n该类别可选替换（均已通过质量门）：${JSON.stringify(
+    input.candidates.map((candidate) => ({
+      catalogId: candidate.canonicalId,
+      name: candidate.name,
+      qualityStatus: candidate.qualityStatus,
+      spec: candidate.spec,
+      missingFields: candidate.missingFields,
+      verifiedPriceCents: candidate.priceCents,
+    })),
+  )}\n请选择一个替换件，或输出空 selections 表示池内没有更合适的候选。`;
+}
+
+const llmSwapOutputSchema = z
+  .object({
+    selections: z
+      .array(
+        z.object({
+          category: z.string().trim().min(1).max(40),
+          catalogId: z.string().trim().min(1).max(120),
+          reason: z.string().trim().min(1).max(300),
+        }),
+      )
+      .max(1)
+      .default([]),
+  })
+  .strict();
+
+/**
+ * 换件提案（有限迭代的核心步骤）：从同类别候选池（不含当前件）选一个替换。
+ * 空选择 = 模型诚实认为池内没有更合适的候选；池外 ID / 类别错配 / 越权字段整体拒绝。
+ */
+export async function proposeSwapWithLlm(input: {
+  findings: ReadonlyArray<{ ruleId: string; status: string; conclusion: string; suggestedAction: string }>;
+  currentItem: { category: BuildItemCategory; label: string; spec: Record<string, unknown> };
+  candidates: readonly CandidateSummary[];
+  config: LlmConfig;
+  fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
+}): Promise<LlmJsonResult<SwapProposal | null>> {
+  const result = await completeJson({
+    config: input.config,
+    system: SWAP_SYSTEM_PROMPT,
+    user: renderSwapPrompt(input),
+    schema: llmSwapOutputSchema,
+    fetchImpl: input.fetchImpl,
+  });
+  if (!result.ok) return result;
+  const selection = result.data.selections[0];
+  if (!selection) return { ok: true, data: null };
+  if (selection.category !== input.currentItem.category) {
+    return { ok: false, reason: "换件提案的类别与被点名部件不符" };
+  }
+  const guard = validateSelectionOutput(input.candidates, [selection]);
+  if (!guard.ok) return guard;
+  return {
+    ok: true,
+    data: {
+      category: input.currentItem.category,
+      catalogId: guard.data.selectedIds[input.currentItem.category]!,
+      reason: selection.reason,
+    },
+  };
+}

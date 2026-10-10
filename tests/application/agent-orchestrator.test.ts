@@ -92,7 +92,8 @@ describe("Agent 编排器（Phase 5）", () => {
     expect(outcome.usedModelPath).toBe(false);
     expect(outcome.grounding?.ok).toBe(true);
 
-    const phases = outcome.runtimeEvents.map((event) => event.phase);
+    // 主链相位按序推进（同相位过程事件如工具复核留痕会复用相位名，按去重序列比对）
+    const phases = [...new Set(outcome.runtimeEvents.map((event) => event.phase))];
     expect(phases).toEqual([
       "received",
       "screened",
@@ -218,5 +219,83 @@ describe("Agent 编排器（Phase 5）", () => {
     expect(modelCalled).toBe(false);
     expect(outcome.status).toBe("ok");
     expect(outcome.fallbackReason).toContain("截止时间");
+  });
+});
+
+describe("有限迭代：检查 → 模型换件 → 再检查", () => {
+  // 合成池：AM4 主板 + AM5 CPU 必然产生 R-CPU-MB-001 阻断；换 AM5 主板即解除
+  const incompatiblePool: RankedCandidate[] = [
+    { id: "cpu-am5-a", category: "cpu", name: "AM5 CPU A", aliases: [], spec: { socket: "AM5", tdpWatts: 120 }, qualityStatus: "supported" },
+    { id: "mb-am4-x", category: "motherboard", name: "AM4 Board X", aliases: [], spec: { socket: "AM4", ramType: "DDR5", formFactor: "ATX", ramSlots: 4, m2Slots: 2, sataPorts: 4, pcieX16Slots: 1 }, qualityStatus: "supported" },
+    { id: "mb-am4-z", category: "motherboard", name: "AM4 Board Z", aliases: [], spec: { socket: "AM4", ramType: "DDR5", formFactor: "ATX", ramSlots: 2, m2Slots: 1, sataPorts: 2, pcieX16Slots: 1 }, qualityStatus: "supported" },
+    { id: "mb-am5-y", category: "motherboard", name: "AM5 Board Y", aliases: [], spec: { socket: "AM5", ramType: "DDR5", formFactor: "ATX", ramSlots: 4, m2Slots: 3, sataPorts: 4, pcieX16Slots: 1 }, qualityStatus: "supported" },
+    { id: "case-x", category: "case", name: "Case X", aliases: [], spec: { supportedFormFactors: ["ATX"], maxGpuLengthMm: 400, maxCoolerHeightMm: 180 }, qualityStatus: "supported" },
+  ];
+
+  function incompatibleRetrieve() {
+    return { catalogSize: incompatiblePool.length, entries: incompatiblePool, priceByCanonicalId: new Map() };
+  }
+
+  it("换件减少阻断：采纳并在事件中留痕", async () => {
+    const outcome = await orchestrateDesignGeneration({
+      requestId: "00000000-0000-4000-8000-00000000b001",
+      intent: INTENT,
+      attempt: attempt(),
+      categories: ["cpu", "motherboard", "case"],
+      retrieve: incompatibleRetrieve,
+      tryModelSwap: async (input) => {
+        expect(input.findings[0]?.ruleId).toBe("R-CPU-MB-001");
+        // 规则同时点名 CPU 与主板：cpu 无替换候选不会进入换件询问；
+        // 模型对 motherboard 给出 AM5 替换
+        expect(["cpu", "motherboard"]).toContain(input.currentItem.category);
+        if (input.currentItem.category !== "motherboard") return null;
+        return { category: "motherboard", catalogId: "mb-am5-y", reason: "改用 AM5 主板解除插槽冲突" };
+      },
+    });
+    expect(outcome.status).toBe("ok");
+    expect(outcome.proposal?.compatibility.blockCount).toBe(0);
+    expect(outcome.proposal?.items.find((item) => item.category === "motherboard")?.label).toBe("AM5 Board Y");
+    const swapEvent = outcome.runtimeEvents.find((event) => event.message.includes("第 1 轮换件"));
+    expect(swapEvent?.message).toContain("阻断 1→0");
+    expect(swapEvent?.retrievalIds).toContain("mb-am5-y");
+  });
+
+  it("换件未减少阻断：保留原组合并停止迭代", async () => {
+    const outcome = await orchestrateDesignGeneration({
+      requestId: "00000000-0000-4000-8000-00000000b002",
+      intent: INTENT,
+      attempt: attempt(),
+      categories: ["cpu", "motherboard", "case"],
+      retrieve: incompatibleRetrieve,
+      tryModelSwap: async (input) =>
+        input.currentItem.category === "motherboard"
+          ? { category: "motherboard", catalogId: "mb-am4-z", reason: "换成另一块 AM4（不解决问题）" }
+          : null,
+    });
+    expect(outcome.status).toBe("ok");
+    // 阻断保留：换件没有改善就不得采纳
+    expect(outcome.proposal?.compatibility.blockCount).toBe(1);
+    expect(outcome.proposal?.items.find((item) => item.category === "motherboard")?.label).toBe("AM4 Board X");
+    const stopEvent = outcome.runtimeEvents.find((event) => event.message.includes("未产生可采纳的更优组合"));
+    expect(stopEvent).toBeTruthy();
+  });
+
+  it("迭代有界：模型反复提议也最多 2 轮", async () => {
+    let calls = 0;
+    const outcome = await orchestrateDesignGeneration({
+      requestId: "00000000-0000-4000-8000-00000000b003",
+      intent: INTENT,
+      attempt: attempt(),
+      categories: ["cpu", "motherboard", "case"],
+      retrieve: incompatibleRetrieve,
+      tryModelSwap: async (input) => {
+        if (input.currentItem.category !== "motherboard") return null;
+        calls += 1;
+        return { category: "motherboard", catalogId: "mb-am5-y", reason: "持续提议" };
+      },
+    });
+    expect(outcome.status).toBe("ok");
+    expect(outcome.proposal?.compatibility.blockCount).toBe(0);
+    expect(calls).toBe(1); // 第一轮已解决阻断，后续无发现即停止
   });
 });

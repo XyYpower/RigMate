@@ -68,6 +68,11 @@ export class AgentRunState {
     return this.append("anomaly", message, input);
   }
 
+  /** 同相位过程事件（工具调用留痕、换件迭代等）：不改主链相位 */
+  log(message: string, input: Omit<AgentRunEventInput, "attemptId" | "message"> = {}): AgentRuntimeEvent {
+    return this.append(this.currentPhase, message, input);
+  }
+
   private append(phase: AgentPhase | "anomaly", message: string, input: Omit<AgentRunEventInput, "attemptId" | "message"> = {}): AgentRuntimeEvent {
     const event: AgentRuntimeEvent = {
       id: `evt-${randomUUID()}`,

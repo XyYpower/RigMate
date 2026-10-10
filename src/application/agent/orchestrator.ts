@@ -66,6 +66,12 @@ export async function orchestrateDesignGeneration(input: {
   tryModelSelection?: (pool: readonly CandidateSummary[]) => Promise<ModelSelection | null>;
   /** 受限只读工具；未传入时由 Runtime 根据同一检索上下文装配 */
   tools?: AgentToolRegistry;
+  /** 检查结果驱动的换件提案（有限迭代）：返回 null = 模型认为池内没有更优候选 */
+  tryModelSwap?: (input: {
+    findings: Array<{ ruleId: string; status: string; conclusion: string; suggestedAction: string }>;
+    currentItem: { category: BuildItemCategory; label: string; spec: Record<string, unknown> };
+    candidates: readonly CandidateSummary[];
+  }) => Promise<{ category: BuildItemCategory; catalogId: string; reason: string } | null>;
 }): Promise<DesignGenerationOrchestration> {
   const runState = new AgentRunState(input.attempt.attemptId);
   const attempts = [input.attempt];
@@ -186,6 +192,7 @@ export async function orchestrateDesignGeneration(input: {
     compatibilityCheck: (items) => {
       const findings = tools.runCompatibilityCheck({
         items: items.map((item) => ({
+          id: item.id,
           category: item.category,
           label: item.label,
           spec: item.spec,
@@ -206,26 +213,117 @@ export async function orchestrateDesignGeneration(input: {
       runtimeEvents: runState.all(),
     };
   }
-  runState.advance(`已组合 ${generated.proposal.items.length} 个核心配件候选。`);
+  if (generated.status !== "ok") {
+    runState.anomaly("生成器返回了未知状态。", { errorCode: "GENERATION_UNKNOWN" });
+    return { ...base, status: "blocked", fallbackReason, runtimeEvents: runState.all() };
+  }
 
-  runState.advance("已通过只读兼容工具复核组合。", {
-    toolCalls: [{
-      tool: "runCompatibilityCheck",
-      attemptId: input.attempt.attemptId,
-      startedAt: new Date().toISOString(),
-      finishedAt: new Date().toISOString(),
-      resultIds: compatibilityToolRuleIds,
-    }],
-  });
+  let proposal = generated.proposal;
+  let findings = generated.findings;
+  runState.advance(`已组合 ${proposal.items.length} 个核心配件候选。`);
+  // 有限迭代（next-phase）：检查 → 模型换件 → 再检查，最多 2 轮。
+  // 只有当换件确实减少阻断（或阻断持平且警告减少）时才采纳，否则保留原组合——
+  // 模型不能让冲突或 unknown 变成通过，迭代也不能把方案越改越差。
+  if (input.tryModelSwap && !isDeadlineExceeded(input.attempt)) {
+    const MAX_SWAP_ITERATIONS = 2;
+    for (let iteration = 1; iteration <= MAX_SWAP_ITERATIONS; iteration += 1) {
+      const actionable = findings
+        .filter((finding) => finding.status === "block" || finding.status === "warn")
+        .sort((a, b) => (a.status === "block" ? -1 : 1) - (b.status === "block" ? -1 : 1));
+      if (actionable.length === 0) break;
 
-  // validated：grounding 验证 + 价格事实降级
+      // 规则可能同时点名冲突双方（如 CPU 与主板）；逐个被点名类别让模型判断，
+      // 只考虑有替换候选的类别。模型对该类别认为无更优时返回 null，尝试下一个。
+      const implicated: Array<{
+        category: BuildItemCategory;
+        currentItem: { category: BuildItemCategory; label: string; spec: Record<string, unknown> };
+        candidates: CandidateSummary[];
+      }> = [];
+      for (const category of [
+        ...new Set(
+          actionable.flatMap((finding) => finding.itemIds.map((itemId) => generated.categoryByItemId[itemId])).filter(Boolean),
+        ),
+      ]) {
+        const currentItem = proposal.items.find((item) => item.category === category);
+        if (!currentItem) continue;
+        const candidates = pool.filter(
+          (candidate) => candidate.category === category && candidate.canonicalId !== currentItem.catalogId,
+        );
+        if (candidates.length > 0) {
+          implicated.push({ category, currentItem: { category, label: currentItem.label, spec: currentItem.spec }, candidates });
+        }
+      }
+      if (implicated.length === 0) break;
+
+      let adopted = false;
+      for (const entry of implicated) {
+        const swap = await input.tryModelSwap({
+          findings: actionable.map((finding) => ({
+            ruleId: finding.ruleId,
+            status: finding.status,
+            conclusion: finding.conclusion,
+            suggestedAction: finding.suggestedAction,
+          })),
+          currentItem: entry.currentItem,
+          candidates: entry.candidates,
+        });
+        if (!swap) continue; // 模型认为该类别没有更优候选
+        if (swap.category !== entry.category) continue; // 类别错配的提案忽略
+        const candidate = entry.candidates.find((candidate) => candidate.canonicalId === swap.catalogId);
+        if (!candidate) continue; // 兜底：池外 ID 不采纳
+
+        const regenerated = generateDesignProposal({
+          requestId: input.requestId,
+          intent: input.intent,
+          candidates: pool,
+          version: 1,
+          preferredIds: { ...preferredIds, [entry.category]: swap.catalogId },
+          rationaleByCategory: { ...rationaleByCategory, [entry.category]: swap.reason },
+          qualityContextByCanonicalId: qualityByCanonicalId,
+          compatibilityCheck: (items) => {
+            const checked = tools.runCompatibilityCheck({
+              items: items.map((item) => ({
+                category: item.category,
+                label: item.label,
+                spec: item.spec,
+                fieldQuality: item.fieldQuality,
+              })),
+            });
+            compatibilityToolRuleIds = checked.map((item) => item.ruleId);
+            return [...checked];
+          },
+        });
+        if (regenerated.status !== "ok") continue;
+        const before = proposal.compatibility;
+        const after = regenerated.proposal.compatibility;
+        const improved =
+          after.blockCount < before.blockCount ||
+          (after.blockCount === before.blockCount && after.warnCount < before.warnCount);
+        if (!improved) continue; // 未减少阻断/警告的换件不采纳
+        proposal = regenerated.proposal;
+        findings = regenerated.findings;
+        adopted = true;
+        runState.log(
+          `第 ${iteration} 轮换件：${entry.category} → ${swap.catalogId}（阻断 ${before.blockCount}→${after.blockCount}，警告 ${before.warnCount}→${after.warnCount}）。`,
+          { retrievalIds: [swap.catalogId] },
+        );
+        break;
+      }
+      if (!adopted) {
+        runState.log(`第 ${iteration} 轮换件未产生可采纳的更优组合，保留原方案。`);
+        break;
+      }
+      if (proposal.compatibility.status === "ok") break;
+    }
+  }
+
+  // validated：grounding 验证 + 价格事实降级（基于迭代后的方案与发现）
   const grounding = validateProposalGrounding({
-    proposal: generated.proposal,
+    proposal,
     priceByCanonicalId,
-    findings: generated.findings,
+    findings,
     attemptId: input.attempt.attemptId,
   });
-  let proposal = generated.proposal;
   if (grounding.downgradedCategories.length > 0) {
     proposal = downgradeUnverifiedPrices(proposal, grounding.downgradedCategories);
     runState.anomaly(`价格主张缺少证据来源，已降级为 unknown：${grounding.downgradedCategories.join("、")}。`, {
@@ -245,9 +343,19 @@ export async function orchestrateDesignGeneration(input: {
       runtimeEvents: runState.all(),
     };
   }
-  runState.advance(`兼容性与主张验证完成（${generated.proposal.compatibility.message}）。`, {
+  runState.advance(`兼容性与主张验证完成（${proposal.compatibility.message}）。`, {
     retrievalIds: pool.map((candidate) => candidate.canonicalId),
+    toolCalls: [
+      {
+        tool: "runCompatibilityCheck",
+        attemptId: input.attempt.attemptId,
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        resultIds: compatibilityToolRuleIds,
+      },
+    ],
   });
+  runState.advance("方案已就绪。");
   return {
     ...base,
     status: "ok",
@@ -259,7 +367,9 @@ export async function orchestrateDesignGeneration(input: {
     grounding,
     runtimeEvents: runState.all(),
   };
-  } catch {
+  } catch (error) {
+    // 内部错误细节只进服务器日志：审计事件不携带可泄露内部实现的文本
+    console.error("[agent-orchestrator] 只读工具不可用：", error);
     runState.anomaly("只读工具暂时不可用，已阻止回答。", {
       errorCode: "TOOL_UNAVAILABLE",
     });

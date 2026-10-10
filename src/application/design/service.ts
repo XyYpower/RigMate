@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { designRequestInputSchema, designRevisionInputSchema, type AgentEvent, type AgentRun, type DesignRequest, type DesignResult, type StructuredIntent } from "@/contracts/design";
 import { loadSourcedCatalog } from "@/infra/catalog-import/load";
 import { resolveLlmConfigFromEnv } from "@/infra/llm/client";
-import { parseIntentWithLlm, reviseIntentWithLlm, selectCatalogCandidatesWithLlm } from "./intent-llm";
+import { parseIntentWithLlm, proposeSwapWithLlm, reviseIntentWithLlm, selectCatalogCandidatesWithLlm } from "./intent-llm";
 import { loadPriceContext } from "./price-context";
 import { parseDesignIntent, intentNeedsInput } from "@/domain/design/intent";
 import { reviseIntentWithRules } from "@/domain/design/revision";
@@ -224,6 +224,13 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
             selectedIds: selection.data.selectedIds,
             rationaleByCategory: selection.data.rationaleByCategory,
           };
+        }
+      : undefined,
+    tryModelSwap: llmConfig
+      ? async (swapInput) => {
+          const proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig });
+          if (!proposal.ok) return null;
+          return proposal.data;
         }
       : undefined,
   });

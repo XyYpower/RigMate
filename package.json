@@ -22,7 +22,8 @@
     "db:migrate": "tsx scripts/migrate-db.ts",
     "gate:data:fixture": "tsx scripts/fixture-gate.ts",
     "db:fixture": "tsx scripts/seed-catalog-fixture.ts",
-    "evals:design": "tsx scripts/run-design-evals.ts"
+    "evals:design": "tsx scripts/run-design-evals.ts",
+    "evals:live": "tsx scripts/run-live-selection-eval.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

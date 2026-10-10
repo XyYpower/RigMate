@@ -78,7 +78,13 @@ export type DesignGenerationInput = {
 };
 
 export type DesignGenerationResult =
-  | { status: "ok"; proposal: DesignProposal; findings: Finding[] }
+  | {
+      status: "ok";
+      proposal: DesignProposal;
+      findings: Finding[];
+      /** 瞬态配件 id → 类别（供编排器把 finding.itemIds 映射回类别，驱动换件迭代） */
+      categoryByItemId: Record<string, BuildItemCategory>;
+    }
   | { status: "insufficient"; missingCategories: BuildItemCategory[] };
 
 function summarizeCompatibility(findings: Finding[]): CompatibilitySummary {
@@ -267,5 +273,7 @@ export function generateDesignProposal(input: DesignGenerationInput): DesignGene
     createdAt: now,
     updatedAt: now,
   });
-  return { status: "ok", proposal, findings };
+  const categoryByItemId: Record<string, BuildItemCategory> = {};
+  for (const item of transientItems) categoryByItemId[item.id] = item.category;
+  return { status: "ok", proposal, findings, categoryByItemId };
 }

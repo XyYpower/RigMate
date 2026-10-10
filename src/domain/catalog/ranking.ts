@@ -47,9 +47,20 @@ export type CandidateSummary = {
 
 /** 候选摘要可携带的来源等级：sourceIds 由应用层按证据链回填，领域层保持纯函数 */
 
-/** 质量硬过滤：verified/supported 之外一律不进候选空间 */
+/** 候选名称必须能作为方案项/配件标签（≤160，与 build_items.label 上限一致）；超长名称 = 导入脏数据，不进候选空间 */
+export const MAX_CANDIDATE_NAME_LENGTH = 160;
+
+function isCandidateNameUsable(name: unknown): boolean {
+  return typeof name === "string" && name.trim().length > 0 && name.trim().length <= MAX_CANDIDATE_NAME_LENGTH;
+}
+
+/** 质量硬过滤：verified/supported 之外一律不进候选空间；超长名称条目一并排除 */
 export function filterQualityCandidates<T extends { qualityStatus: PublishStatus }>(entries: T[]): T[] {
-  return entries.filter((entry) => entry.qualityStatus === "verified" || entry.qualityStatus === "supported");
+  return entries.filter(
+    (entry) =>
+      (entry.qualityStatus === "verified" || entry.qualityStatus === "supported") &&
+      isCandidateNameUsable((entry as { name?: unknown }).name),
+  );
 }
 
 function missingFieldsOf(candidate: RankedCandidate): string[] {
@@ -148,8 +159,9 @@ export function rankCandidates(
     });
 }
 
-/** 每类别保留的候选数（模型候选池上限；规则式只消费第一名） */
-export const CANDIDATES_PER_CATEGORY = 8;
+/** 每类别保留的候选数（模型动态组合的工作集；规则式只消费第一名）。
+ *  提升到 12：候选池扩容后给模型更大的组合空间，96 条摘要约 8-10k tokens 可控。 */
+export const CANDIDATES_PER_CATEGORY = 12;
 
 /** 组装候选池：质量硬过滤 → 按类别排序 → 每类取前 N；附带无候选类别的缺失清单。
  *  已有硬件的类别排除发生在方案生成层（候选池保持完整，模型可见全局）。 */

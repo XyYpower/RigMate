@@ -5,7 +5,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-10-10 ｜ 当前阶段：**产品内核与 Agent Runtime 收口**——质量门候选、已审核价格、字段质量回溯、Claim Ledger 和自研薄 Runtime 已落地；本轮进一步让 Runtime 通过封闭只读工具注册表执行目录/证据/兼容复核，并把模型理由写入方案项。真实开发库已迁移到 schema v11，`npm run gate:data` 6/6 通过。**生产库 26k partial 只有 2 verified，真实模型增益尚未评测，多方案方向尚未实现；下一步按 `docs/superpowers/plans/2026-10-10-rigmate-next-phase.md` 做真实模型评测、最小推荐池补齐和多方向编排。**
+> 最后更新：2026-10-10 ｜ 当前阶段：**最小候选池已补齐 + 换件有限迭代已上线（next-phase Task B/E 完成，C/D 待真实模型）**——真实开发库 846 条 supported（八类全覆盖：cpu 120 / mb 6 / gpu 121 / ram 120 / storage 120 / psu 120 / cooler 121 / case 120 + 2 verified），走 S3/S4 证据链批量入链 + publish 发布（`scripts/promote-minimal-pool.ts`，幂等、署名必填）；候选空间排除 >160 字符超长名称（62 条脏数据 discovered）；模型候选集扩到每类 12；Runtime 新增"检查 → 模型换件 → 再检查"有限迭代（swap-v1，最多 2 轮，只采纳减少阻断/警告的换件；修复兼容工具条目 id 断链导致 itemIds 无法回溯类别的缺陷）；`npm run evals:live -- --live` 真实模型评测脚本就绪（默认离线，key 不落盘）。**待办：配置 RIGMATE_LLM_API_KEY 后跑 live 评测出真实增益结论；主板仅 6 条候选偏薄；多方向方案未实现。**
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 
@@ -473,6 +473,8 @@ npm run import-manual      # 逐行校验，整包通过才写入；产物 data/
 ---
 
 **版本记录**
+- 2026-10-10 v4.22：**最小候选池补齐 + 换件有限迭代（本窗口，响应用户“数据有很大问题”反馈）**——① 数据补齐：`scripts/promote-minimal-pool.ts` 把导入规格本身的出处走成证据链（BuildCores=S3/ODC-By、种子/人工=S4，未人工复核→supported，永不 verified），426+420 条入链发布，八类全覆盖 846 条 supported；发现并修复两个数据/代码缺陷：⒠ 62 条目录名称超 160 字符使方案生成 zod 崩潜被 TOOL_UNAVAILABLE 吞掉（候选池现排除超长名称，catch 带入原因但不入审计事件）；⒡ 兼容工具重新编号条目导致 findings.itemIds 与类别映射断链（工具保留调用方 id）；③ 候选集扩容每类 12；④ 换件有限迭代：swap-v1 提示词 + `proposeSwapWithLlm`（空选择=诚实无更优，池外 ID/越权拒绝），编排器遍历被点名类别（修双侧冲突只取首类别的缺陷），最多 2 轮、只采纳减少阻断/警告的换件，否则保留原组合；同相位过程事件改用 `run-state.log`（不再冒充相位推进）；⑤ `npm run evals:live -- --live` 真实模型评测脚本（默认离线、key 不落盘，同一 CandidateSet 对比阻断数/超预算）。验收：gate:data 6/6（真实库）+ 305 单测 + 55 E2E + build 全绿；真实库生成方案恢复为 8 件 supported_catalog（无价格证据时仍诚实无价）。
+
 - 2026-10-10 v4.21：**Runtime 收口（本窗口）**——Runtime 现在通过封闭只读工具注册表执行 `searchCatalog`、`searchEvidence` 和 `runCompatibilityCheck`，工具调用写入真实事件；字段质量上下文和模型理由传入 proposal，兼容工具复核携带 `fieldQuality`，避免规则复核绕过质量门；工具失败阻止回答并记录 anomaly；真实开发库迁移到 schema v11，`gate:data` 6/6 通过。测试基线 302 单测 + 55 E2E；下一步是真实模型增益评测、最小推荐池补齐和多方案方向编排。
 - 2026-10-09 v4.20：**Phase 5 Agent Runtime 与 Claim Ledger（本窗口）**——① `contracts/agent.ts` 七类主张契约（精确事实必须带 sourceIds）；② `domain/agent/claims.ts` append-only 账本；③ `application/agent/run-state.ts` 状态机（received→screened→understanding→retrieved→composed→validated→answered，异常走 anomaly 事件，事件携带 attemptId/promptVersion/model/retrievalIds/toolCalls/fallback/errorCode）；④ `context.ts` 事实保留压缩（只裁解释文本）；⑤ `fallback.ts` 截止回退器；⑥ `tools/{catalog,evidence,compatibility}-tools.ts + registry.ts` 类型级封闭只读三工具；⑦ `validator.ts` 方案 grounding 验证（catalog_fact/每项、price_fact/有证据价、rule_result/每发现；price 缺源自动降级 unknown，catalog 缺源阻塞回答）；⑧ `orchestrator.ts` 串起全流程，`design/service.ts` 作为兼容 adapter 接入（UX 文案与 DesignResult 不变，reviseDesign 暂保留原路径）。测试 +12：orchestrator 6（相位顺序/审计字段/模型回退/池空/候选不足/截止跳过）+ claims/validator 6。300 单测 + 55 E2E + build 全绿。
 

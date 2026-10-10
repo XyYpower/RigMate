@@ -31,6 +31,7 @@ export type SearchEvidenceTool = (input: { canonicalProductId: string }) => Read
 /** 只读：对给定组合跑确定性兼容规则，返回发现（不落库） */
 export type RunCompatibilityCheckTool = (input: {
   items: ReadonlyArray<{
+    id?: string;
     category: BuildItemCategory;
     label: string;
     spec: Record<string, unknown>;
