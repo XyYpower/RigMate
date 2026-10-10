@@ -80,6 +80,7 @@ describe("JOS 网关签名协议", () => {
         timestamp: form.get("timestamp")!,
         v: "1.0",
         format: "json",
+        sign_method: "md5",
         "360buy_param_json": JSON.stringify({ keyword: "RTX" }),
       },
       {},

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { parseBulkEvidenceLines } from "@/ui/evidence-bulk";
 
 type EvidenceRecord = {
   id: string;
@@ -142,6 +143,53 @@ export default function EvidencePage() {
     }
   }
 
+  // ---- 批量粘贴录入 ----
+  const [bulkText, setBulkText] = useState("");
+  const [bulkDefaultCategory, setBulkDefaultCategory] = useState("cpu");
+  const [bulkPreview, setBulkPreview] = useState<{ results: Array<{ category: string; productName: string; priceYuan: number }>; errors: Array<{ line: string; reason: string }> } | null>(null);
+  const [submittingBulk, setSubmittingBulk] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState("");
+
+  function parseBulk() {
+    const lines = parseBulkEvidenceLines(bulkText, bulkDefaultCategory as never);
+    setBulkPreview({
+      results: lines.filter((line) => line.ok).map((line) => line as { category: string; productName: string; priceYuan: number }),
+      errors: lines.filter((line) => !line.ok).map((line) => ({ line: line.line, reason: line.reason })),
+    });
+  }
+
+  async function submitBulk() {
+    if (!bulkPreview || bulkPreview.results.length === 0) return;
+    setSubmittingBulk(true);
+    setBulkMessage("");
+    let ok = 0;
+    for (const row of bulkPreview.results) {
+      try {
+        const response = await fetch("/api/evidence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: row.category,
+            productName: row.productName,
+            priceCents: Math.round(row.priceYuan * 100),
+            sourceType: "manual_entry",
+            platform: "京东",
+            condition: "全新",
+            region: "中国大陆",
+          }),
+        });
+        if (response.ok) ok += 1;
+      } catch {
+        // 单条失败不中断批量
+      }
+    }
+    setBulkMessage(`已录入 ${ok}/${bulkPreview.results.length} 条（待复核）。`);
+    setBulkText("");
+    setBulkPreview(null);
+    setSubmittingBulk(false);
+    await loadList(filterCategory);
+  }
+
   return (
     <main className="hw-page">
       <header className="hw-head">
@@ -150,6 +198,78 @@ export default function EvidencePage() {
           价格证据的追加式台账（规格 §8.2）：只增不改，每条注明渠道、口径与时间。V1 仅手动来源。
         </p>
       </header>
+
+      <section className="sec">
+        <div className="hw-sec-head">
+          <h2>批量粘贴录入</h2>
+          <span className="hw-total">逛京东时随手记录：每行一条「类别 型号 价格」，类别可省略（用默认类别）</span>
+        </div>
+        <textarea
+          className="review-paste"
+          value={bulkText}
+          onChange={(event) => setBulkText(event.target.value)}
+          rows={4}
+          aria-label="批量粘贴价格"
+          placeholder="每行一条：[类别] 型号 价格。例如：gpu RTX 5090 8999（类别可省略，用默认类别）"
+        />
+        <div className="review-bar">
+          <label className="ev-field" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <span>默认类别</span>
+            <select value={bulkDefaultCategory} onChange={(event) => setBulkDefaultCategory(event.target.value)}>
+              {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="button secondary" onClick={parseBulk} disabled={!bulkText.trim()}>
+            解析预览
+          </button>
+        </div>
+        {bulkPreview && (
+          <>
+            {bulkPreview.errors.length > 0 && (
+              <ul className="helper" aria-label="解析错误">
+                {bulkPreview.errors.map((error, index) => (
+                  <li key={index}>✗ {error.line}：{error.reason}</li>
+                ))}
+              </ul>
+            )}
+            {bulkPreview.results.length > 0 && (
+              <table className="hw-table" aria-label="批量录入预览">
+                <thead>
+                  <tr>
+                    <th>类别</th>
+                    <th>型号</th>
+                    <th className="num">价格（元）</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bulkPreview.results.map((row, index) => (
+                    <tr key={index}>
+                      <td>{CATEGORY_LABELS[row.category] ?? row.category}</td>
+                      <td>{row.productName}</td>
+                      <td className="num">{row.priceYuan}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <div className="review-bar">
+              <span className="helper">解析 {bulkPreview.results.length} 条有效，{bulkPreview.errors.length} 条错误。录入后为「待复核」，人工复核 verified 后才进方案预算。</span>
+              <button
+                className="button primary"
+                onClick={() => void submitBulk()}
+                disabled={submittingBulk || bulkPreview.results.length === 0}
+              >
+                {submittingBulk ? "录入中…" : `全部录入（${bulkPreview.results.length} 条）`}
+              </button>
+            </div>
+          </>
+        )}
+        {bulkMessage && <p className="review-msg">{bulkMessage}</p>}
+      </section>
 
       <section className="sec">
         <div className="hw-sec-head">
