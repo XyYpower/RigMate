@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, like, sql } from "drizzle-orm";
 import { priceEvidence, ensureDatabase } from "../client";
 import type { PriceEvidenceInput, PriceEvidenceRecord, PriceReviewStatus } from "@/domain/price/evidence";
+export type { PriceEvidenceInput };
 
 /**
  * price_evidence 仓储（规格 §8.2 + Task 8 隔离强化）：**追加式**——价格值只有插入与查询，

@@ -45,6 +45,49 @@ export function josTimestamp(now: Date = new Date()): string {
   );
 }
 
+/** OAuth 授权码换 access_token（JOS 标准流程：浏览器授权后地址栏 code → 这里换取） */
+export async function exchangeJosOAuthCode(input: {
+  appKey: string;
+  appSecret: string;
+  /** 浏览器授权后跳转地址栏里的 code 参数 */
+  code: string;
+  redirectUri?: string;
+  fetchImpl?: typeof fetch;
+}): Promise<{ ok: boolean; accessToken?: string; refreshToken?: string; expiresIn?: number; error?: string }> {
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const params = new URLSearchParams({
+    app_key: input.appKey,
+    app_secret: input.appSecret,
+    grant_type: "authorization_code",
+    code: input.code,
+  });
+  if (input.redirectUri) params.set("redirect_uri", input.redirectUri);
+  const response = await fetchImpl(`https://oauth.jd.com/oauth/token?${params.toString()}`);
+  const payload = (await response.json().catch(() => undefined)) as
+    | { access_token?: string; refresh_token?: string; expires_in?: number; error?: string; error_description?: string }
+    | undefined;
+  if (!payload?.access_token) {
+    return { ok: false, error: payload?.error_description ?? payload?.error ?? "未返回 access_token" };
+  }
+  return {
+    ok: true,
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+    expiresIn: payload.expires_in,
+  };
+}
+
+/** 生成授权页地址：用户在浏览器打开、登录并同意后，地址栏会变成 redirect_uri?code=xxx */
+export function buildJosAuthorizeUrl(appKey: string, redirectUri: string): string {
+  const params = new URLSearchParams({
+    app_key: appKey,
+    response_type: "code",
+    redirect_uri: redirectUri,
+    state: "rigmate",
+  });
+  return `https://oauth.jd.com/oauth/authorize?${params.toString()}`;
+}
+
 export type JosCallResult = {
   ok: boolean;
   /** 网关返回的业务结果（成功时为各 API 的 result 节点） */
@@ -74,6 +117,7 @@ export async function callJosApi(input: {
     timestamp: josTimestamp(),
     v: input.version ?? "1.0",
     format: "json",
+    sign_method: "md5",
     "360buy_param_json": apiParamsJson,
   };
   const sign = signJosRequest(input.config.appSecret, systemParams, {});
@@ -111,12 +155,23 @@ export async function callJosApi(input: {
   // 成功响应形如 { <method 去掉 open 加 _responce>: { result: ... , code: "0" } }
   // JOS 约定：方法名所有点替换为下划线 + _responce（jd.union.open.goods.query → jd_union_open_goods_query_responce）
   const responseNodeKey = `${input.method.replaceAll(".", "_")}_responce`;
-  const responseNode = payload[responseNodeKey] as { result?: unknown; code?: string; msg?: string } | undefined;
+  const responseNode = payload[responseNodeKey] as { result?: unknown; code?: string; msg?: string; queryResult?: unknown } | undefined;
   if (!responseNode) {
     return { ok: false, errorCode: "BAD_RESPONSE_SHAPE", errorMessage: `响应缺少 ${responseNodeKey} 节点` };
   }
   if (responseNode.code && responseNode.code !== "0") {
     return { ok: false, errorCode: responseNode.code, errorMessage: responseNode.msg ?? "业务错误" };
   }
-  return { ok: true, data: responseNode.result };
+  // 多数 API 业务结果在 result 节点；联盟部分 API（如 rank.query）是 queryResult 字符串（内嵌 JSON）
+  if (responseNode.result !== undefined) {
+    return { ok: true, data: responseNode.result };
+  }
+  if (typeof responseNode.queryResult === "string") {
+    try {
+      return { ok: true, data: JSON.parse(responseNode.queryResult) };
+    } catch {
+      return { ok: true, data: responseNode.queryResult };
+    }
+  }
+  return { ok: true, data: responseNode };
 }
