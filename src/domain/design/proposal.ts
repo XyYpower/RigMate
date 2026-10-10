@@ -73,6 +73,8 @@ export type DesignGenerationInput = {
   /** Task D 受约束模型选择：只允许指向候选池内已有 ID（校验已在 intent-llm 完成，这里兜底） */
   preferredIds?: Partial<Record<BuildItemCategory, string>>;
   rationaleByCategory?: Partial<Record<BuildItemCategory, string>>;
+  /** Runtime 可注入同一确定性只读检查器，默认领域规则路径保持兼容。 */
+  compatibilityCheck?: (items: BuildItem[]) => Finding[];
 };
 
 export type DesignGenerationResult =
@@ -190,7 +192,7 @@ export function generateDesignProposal(input: DesignGenerationInput): DesignGene
       fieldQuality: Object.keys(item.fieldQuality).length > 0 ? item.fieldQuality : undefined,
     };
   });
-  const findings = runBuildChecks(transientItems);
+  const findings = (input.compatibilityCheck ?? runBuildChecks)(transientItems);
 
   // 价格结论只汇总已审核证据价格；未计价件不按零元计入（与预算余量计同一纪律）
   const priced = picked.filter(({ item }) => item.priceEstimateLowCents !== null && item.priceEstimateHighCents !== null);

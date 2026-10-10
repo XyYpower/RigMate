@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { createAgentAttempt, orchestrateDesignGeneration } from "@/application/agent/orchestrator";
 import { parseDesignIntent } from "@/domain/design/intent";
 import type { RankedCandidate } from "@/domain/catalog/ranking";
+import { createAgentTools } from "@/application/agent/tools/registry";
 
 /**
  * Agent 编排器测试（v2 Phase 5 §8）：
@@ -47,6 +48,37 @@ function fixtureRetrieve() {
 }
 
 describe("Agent 编排器（Phase 5）", () => {
+  it("工具复核是方案摘要和主张的唯一检查来源，调用一次", async () => {
+    const context = fixtureRetrieve();
+    const tools = createAgentTools(context);
+    const realCheck = tools.runCompatibilityCheck;
+    let checkCalls = 0;
+    tools.runCompatibilityCheck = (input) => {
+      checkCalls += 1;
+      return realCheck(input).map((finding) => ({ ...finding, status: "unknown" as const }));
+    };
+    const result = await orchestrateDesignGeneration({
+      requestId: "00000000-0000-4000-8000-00000000a007", intent: INTENT,
+      attempt: attempt(), categories: CATEGORIES, retrieve: () => context, tools,
+    });
+    expect(checkCalls).toBe(1);
+    expect(result.proposal?.compatibility.passCount).toBe(0);
+    expect(result.proposal?.compatibility.status).toBe("unknown");
+  });
+
+  it("工具故障阻止回答并记录异常，不伪装成候选为空", async () => {
+    const context = fixtureRetrieve();
+    const tools = createAgentTools(context);
+    tools.searchCatalog = () => { throw new Error("internal database detail"); };
+    const result = await orchestrateDesignGeneration({
+      requestId: "00000000-0000-4000-8000-00000000a008", intent: INTENT,
+      attempt: attempt(), categories: CATEGORIES, retrieve: () => context, tools,
+    });
+    expect(result.status).toBe("blocked");
+    expect(result.runtimeEvents.some((event) => event.errorCode === "TOOL_UNAVAILABLE")).toBe(true);
+    expect(JSON.stringify(result)).not.toContain("internal database detail");
+  });
+
   it("正常路径：相位按主链推进，事件携带审计字段，主张全部入账", async () => {
     const outcome = await orchestrateDesignGeneration({
       requestId: "00000000-0000-4000-8000-00000000a001",
@@ -81,6 +113,8 @@ describe("Agent 编排器（Phase 5）", () => {
       expect(retrieved?.retrievalIds).toContain(item.catalogId);
     }
     expect(retrieved?.toolCalls?.[0]?.tool).toBe("searchCatalog");
+    expect(retrieved?.toolCalls?.some((call) => call.tool === "searchEvidence")).toBe(true);
+    expect(outcome.runtimeEvents.find((event) => event.phase === "validated")?.toolCalls?.[0]?.tool).toBe("runCompatibilityCheck");
 
     // 主张：8 条 catalog_fact + 8 条 price_fact + 规则结果若干
     const kinds = outcome.claims.map((claim) => claim.kind);
@@ -101,13 +135,14 @@ describe("Agent 编排器（Phase 5）", () => {
         for (const candidate of pool) {
           selected[candidate.category] ??= candidate.canonicalId;
         }
-        return selected;
+        return { selectedIds: selected, rationaleByCategory: { cpu: "模型选择的理由" } };
       },
     });
     expect(outcome.status).toBe("ok");
     expect(outcome.usedModelPath).toBe(true);
     expect(outcome.selectedCategoryCount).toBe(8);
     expect(outcome.fallbackReason).toBeNull();
+    expect(outcome.proposal?.items.find((item) => item.category === "cpu")?.rationale).toBe("模型选择的理由");
   });
 
   it("守卫拒绝 → 回退规则排序：anomaly + fallback 事件留痕，方案照常产出", async () => {

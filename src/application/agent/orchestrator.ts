@@ -3,13 +3,21 @@ import type { StructuredIntent } from "@/contracts/design";
 import type { DesignProposal } from "@/contracts/design";
 import type { BuildItemCategory } from "@/domain/build/types";
 import type { RankedCandidate, VerifiedPriceFact } from "@/domain/catalog/ranking";
-import { buildCandidatePool, type CandidateSummary } from "@/domain/catalog/ranking";
+import type { CandidateSummary } from "@/domain/catalog/ranking";
 import { generateDesignProposal } from "@/domain/design/proposal";
 import { AgentRunState } from "./run-state";
 import { withModelFallback } from "./fallback";
 import { validateProposalGrounding, downgradeUnverifiedPrices, type GroundingReport } from "./validator";
 import { isDeadlineExceeded, type AgentAttempt, type AgentRuntimeEvent } from "./runtime-types";
 import type { AgentClaim } from "@/contracts/agent";
+import type { AgentToolRegistry } from "./tool-contracts";
+import { createAgentTools } from "./tools/registry";
+import type { CandidateQualityContext } from "@/domain/design/proposal";
+
+export type ModelSelection = {
+  selectedIds: Partial<Record<BuildItemCategory, string>>;
+  rationaleByCategory?: Partial<Record<BuildItemCategory, string>>;
+};
 
 /**
  * 方案生成编排器（v2 Phase 5 §8）。
@@ -25,6 +33,7 @@ export type RetrievalContext = {
   catalogSize: number;
   entries: RankedCandidate[];
   priceByCanonicalId: Map<string, VerifiedPriceFact>;
+  qualityByCanonicalId?: Map<string, CandidateQualityContext>;
   pool: CandidateSummary[];
   missingCategories: BuildItemCategory[];
 };
@@ -54,21 +63,39 @@ export async function orchestrateDesignGeneration(input: {
   categories: readonly BuildItemCategory[];
   retrieve: () => Omit<RetrievalContext, "pool" | "missingCategories"> & Partial<Pick<RetrievalContext, "pool" | "missingCategories">>;
   /** 守卫后的模型选择（返回 null/抛错 = 走规则回退） */
-  tryModelSelection?: (pool: readonly CandidateSummary[]) => Promise<Partial<Record<BuildItemCategory, string>> | null>;
+  tryModelSelection?: (pool: readonly CandidateSummary[]) => Promise<ModelSelection | null>;
+  /** 受限只读工具；未传入时由 Runtime 根据同一检索上下文装配 */
+  tools?: AgentToolRegistry;
 }): Promise<DesignGenerationOrchestration> {
   const runState = new AgentRunState(input.attempt.attemptId);
   const attempts = [input.attempt];
   runState.advance("目标已接收并通过安全筛查。");
   runState.advance("目标已结构化，开始检索质量门候选。");
+  let compatibilityToolRuleIds: string[] = [];
 
+  try {
   const retrieved = input.retrieve();
   const priceByCanonicalId = retrieved.priceByCanonicalId;
-  const { pool, missingCategories } = buildCandidatePool(
-    retrieved.entries,
-    input.intent,
-    input.categories,
-    priceByCanonicalId,
-  );
+  const tools = input.tools ?? createAgentTools({ entries: retrieved.entries, priceByCanonicalId });
+  const pool: CandidateSummary[] = [];
+  const missingCategories: BuildItemCategory[] = [];
+  for (const category of input.categories) {
+    const categoryPool = [...tools.searchCatalog({ category, intent: input.intent, limit: 8 })];
+    if (categoryPool.length === 0) missingCategories.push(category);
+    pool.push(...categoryPool);
+  }
+  const qualityByCanonicalId = new Map(retrieved.qualityByCanonicalId ?? []);
+  const evidenceByCanonicalId = new Map<string, ReadonlyArray<{ fieldPath: string; status: import("@/domain/catalog/quality").FieldQualityStatus; sourceIds: string[] }>>();
+  for (const candidate of pool) {
+    const evidence = tools.searchEvidence({ canonicalProductId: candidate.canonicalId });
+    evidenceByCanonicalId.set(candidate.canonicalId, evidence);
+    if (!qualityByCanonicalId.has(candidate.canonicalId) && evidence.length > 0) {
+      qualityByCanonicalId.set(candidate.canonicalId, {
+        fieldQuality: Object.fromEntries(evidence.map((item) => [item.fieldPath.replace(/^spec\./, ""), item.status])),
+        evidenceSourceIds: [...new Set(evidence.flatMap((item) => item.sourceIds))],
+      });
+    }
+  }
   runState.advance(
     `质量门后有效候选 ${pool.length} 条（目录 ${retrieved.catalogSize} 条）。`,
     {
@@ -81,6 +108,16 @@ export async function orchestrateDesignGeneration(input: {
           finishedAt: new Date().toISOString(),
           resultIds: pool.map((candidate) => candidate.canonicalId),
         },
+        ...pool.map((candidate) => {
+          const evidence = evidenceByCanonicalId.get(candidate.canonicalId) ?? [];
+          return {
+            tool: "searchEvidence",
+            attemptId: input.attempt.attemptId,
+            startedAt: new Date().toISOString(),
+            finishedAt: new Date().toISOString(),
+            resultIds: evidence.flatMap((item) => item.sourceIds),
+          };
+        }),
       ],
     },
   );
@@ -107,6 +144,7 @@ export async function orchestrateDesignGeneration(input: {
 
   // composed：模型优先（守卫内），失败回退同一 CandidateSet 的规则排序
   let preferredIds: Partial<Record<BuildItemCategory, string>> | undefined;
+  let rationaleByCategory: Partial<Record<BuildItemCategory, string>> | undefined;
   let fallbackReason: string | null = null;
   let usedModelPath = false;
   if (input.tryModelSelection && !isDeadlineExceeded(input.attempt)) {
@@ -119,7 +157,8 @@ export async function orchestrateDesignGeneration(input: {
       rule: () => null,
     });
     if (outcome.path === "model") {
-      preferredIds = outcome.value ?? undefined;
+      preferredIds = outcome.value?.selectedIds;
+      rationaleByCategory = outcome.value?.rationaleByCategory;
       usedModelPath = true;
     } else {
       fallbackReason = outcome.reason;
@@ -142,6 +181,20 @@ export async function orchestrateDesignGeneration(input: {
     candidates: pool,
     version: 1,
     preferredIds,
+    rationaleByCategory,
+    qualityContextByCanonicalId: qualityByCanonicalId,
+    compatibilityCheck: (items) => {
+      const findings = tools.runCompatibilityCheck({
+        items: items.map((item) => ({
+          category: item.category,
+          label: item.label,
+          spec: item.spec,
+          fieldQuality: item.fieldQuality,
+        })),
+      });
+      compatibilityToolRuleIds = findings.map((finding) => finding.ruleId);
+      return [...findings];
+    },
   });
   if (generated.status === "insufficient") {
     runState.anomaly(`候选不足：缺 ${generated.missingCategories.join("、")}。`, { errorCode: "INSUFFICIENT_CANDIDATES" });
@@ -154,6 +207,16 @@ export async function orchestrateDesignGeneration(input: {
     };
   }
   runState.advance(`已组合 ${generated.proposal.items.length} 个核心配件候选。`);
+
+  runState.advance("已通过只读兼容工具复核组合。", {
+    toolCalls: [{
+      tool: "runCompatibilityCheck",
+      attemptId: input.attempt.attemptId,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      resultIds: compatibilityToolRuleIds,
+    }],
+  });
 
   // validated：grounding 验证 + 价格事实降级
   const grounding = validateProposalGrounding({
@@ -185,8 +248,6 @@ export async function orchestrateDesignGeneration(input: {
   runState.advance(`兼容性与主张验证完成（${generated.proposal.compatibility.message}）。`, {
     retrievalIds: pool.map((candidate) => candidate.canonicalId),
   });
-  runState.advance("方案已就绪。");
-
   return {
     ...base,
     status: "ok",
@@ -198,6 +259,25 @@ export async function orchestrateDesignGeneration(input: {
     grounding,
     runtimeEvents: runState.all(),
   };
+  } catch {
+    runState.anomaly("只读工具暂时不可用，已阻止回答。", {
+      errorCode: "TOOL_UNAVAILABLE",
+    });
+    return {
+      status: "blocked",
+      proposal: null,
+      missingCategories: [],
+      runtimeEvents: runState.all(),
+      claims: [],
+      attempts,
+      fallbackReason: null,
+      usedModelPath: false,
+      selectedCategoryCount: 0,
+      grounding: null,
+      catalogSize: 0,
+      poolSize: 0,
+    };
+  }
 }
 
 /** 尝试构造：promptVersion 来自 prompts/registry，deadline 由调用方策略决定 */

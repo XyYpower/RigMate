@@ -1,9 +1,10 @@
 import { computeEvidenceBackedFieldStatuses } from "@/application/catalog-review/service";
+import type { FieldQualityStatus } from "@/domain/catalog/quality";
 
 /** 证据检索工具（只读）：字段证据状态 + 来源引用；无证据链返回空数组 */
 export function createSearchEvidenceTool(): (query: { canonicalProductId: string }) => Array<{
   fieldPath: string;
-  status: string;
+  status: FieldQualityStatus;
   sourceIds: string[];
 }> {
   return ({ canonicalProductId }) => {

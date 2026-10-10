@@ -200,7 +200,6 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     promptVersion: CATALOG_SELECTION_PROMPT_VERSION,
     deadlineMs: 20_000,
   });
-  let rationaleByCategory: Partial<Record<BuildItemCategory, string>> | undefined;
   let modelNote: string | null = null;
   const outcome = await orchestrateDesignGeneration({
     requestId,
@@ -209,15 +208,22 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     categories: CANDIDATE_CATEGORIES,
     retrieve: () => {
       const context = retrieveCandidateContext(intent);
-      return { catalogSize: context.catalogSize, entries: context.entries, priceByCanonicalId: context.priceByCanonicalId };
+      return {
+        catalogSize: context.catalogSize,
+        entries: context.entries,
+        priceByCanonicalId: context.priceByCanonicalId,
+        qualityByCanonicalId: context.qualityByCanonicalId,
+      };
     },
     tryModelSelection: llmConfig
       ? async (pool) => {
           const selection = await selectCatalogCandidatesWithLlm({ intent, candidates: pool, config: llmConfig });
           if (!selection.ok) return null;
-          rationaleByCategory = selection.data.rationaleByCategory;
           modelNote = `大模型只在 ${Object.keys(selection.data.selectedIds).length} 个质量达标候选类别中提出选择，规格和兼容性仍由系统核验。`;
-          return selection.data.selectedIds;
+          return {
+            selectedIds: selection.data.selectedIds,
+            rationaleByCategory: selection.data.rationaleByCategory,
+          };
         }
       : undefined,
   });
