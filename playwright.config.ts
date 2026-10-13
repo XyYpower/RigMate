@@ -34,6 +34,12 @@ export default defineConfig({
     env: {
       RIGMATE_DB_PATH: "./data/e2e.db",
       NEXT_DIST_DIR: ".next-e2e",
+      // E2E 一分钟内会创建大量方案：准入限流只防线上滥用，测试环境放宽
+      RIGMATE_LLM_MAX_INFLIGHT: "50",
+      RIGMATE_LLM_MAX_PER_WINDOW: "1000",
+      // E2E 保持确定性：显式禁用 LLM（规则路径秒级完成）；live LLM 由真实会话与 evals:live 验证
+      RIGMATE_LLM_API_KEY: "",
+      RIGMATE_LLM_ATTEMPT_DEADLINE_MS: "20000",
     },
   },
   projects: [{

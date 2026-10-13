@@ -49,12 +49,18 @@ export async function parseIntentWithLlm(input: {
   explicitBudgetYuan: number | null;
   config: LlmConfig;
   fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
+  /** 调用级思考策略（缺省随全局配置）；选件/换件的降级阶梯会显式关思考 */
+  thinking?: "enabled" | "disabled";
+  /** 输出 token 硬顶（含思考）：按调用类型给足预算，封死滥用输出面 */
+  maxTokens?: number;
 }): Promise<LlmJsonResult<StructuredIntent>> {
   const result = await completeJson({
     config: input.config,
     system: INTENT_SYSTEM_PROMPT,
     user: renderIntentUserPrompt({ rawInput: input.rawInput, explicitBudgetYuan: input.explicitBudgetYuan }),
     schema: llmIntentOutputSchema,
+    ...(input.thinking ? { thinking: input.thinking } : {}),
+    ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
     fetchImpl: input.fetchImpl,
   });
   if (!result.ok) return result;
@@ -89,6 +95,10 @@ export async function reviseIntentWithLlm(input: {
   instruction: string;
   config: LlmConfig;
   fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
+  /** 调用级思考策略（缺省随全局配置）；选件/换件的降级阶梯会显式关思考 */
+  thinking?: "enabled" | "disabled";
+  /** 输出 token 硬顶（含思考）：按调用类型给足预算，封死滥用输出面 */
+  maxTokens?: number;
 }): Promise<LlmJsonResult<StructuredIntent>> {
   const result = await completeJson({
     config: input.config,
@@ -102,6 +112,8 @@ export async function reviseIntentWithLlm(input: {
       region: input.currentIntent.region,
     })}\n调整要求：${input.instruction}`,
     schema: llmIntentOutputSchema,
+    ...(input.thinking ? { thinking: input.thinking } : {}),
+    ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
     fetchImpl: input.fetchImpl,
   });
   if (!result.ok) return result;
@@ -190,12 +202,18 @@ export async function selectCatalogCandidatesWithLlm(input: {
   candidates: readonly CandidateSummary[];
   config: LlmConfig;
   fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
+  /** 调用级思考策略（缺省随全局配置）；选件/换件的降级阶梯会显式关思考 */
+  thinking?: "enabled" | "disabled";
+  /** 输出 token 硬顶（含思考）：按调用类型给足预算，封死滥用输出面 */
+  maxTokens?: number;
 }): Promise<LlmJsonResult<CatalogSelection>> {
   const result = await completeJson({
     config: input.config,
     system: CATALOG_SELECTION_SYSTEM_PROMPT,
     user: renderCatalogSelectionPrompt(input),
     schema: llmSelectionOutputSchema,
+    ...(input.thinking ? { thinking: input.thinking } : {}),
+    ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
     fetchImpl: input.fetchImpl,
   });
   if (!result.ok) return result;
@@ -255,12 +273,18 @@ export async function proposeSwapWithLlm(input: {
   candidates: readonly CandidateSummary[];
   config: LlmConfig;
   fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
+  /** 调用级思考策略（缺省随全局配置）；选件/换件的降级阶梯会显式关思考 */
+  thinking?: "enabled" | "disabled";
+  /** 输出 token 硬顶（含思考）：按调用类型给足预算，封死滥用输出面 */
+  maxTokens?: number;
 }): Promise<LlmJsonResult<SwapProposal | null>> {
   const result = await completeJson({
     config: input.config,
     system: SWAP_SYSTEM_PROMPT,
     user: renderSwapPrompt(input),
     schema: llmSwapOutputSchema,
+    ...(input.thinking ? { thinking: input.thinking } : {}),
+    ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
     fetchImpl: input.fetchImpl,
   });
   if (!result.ok) return result;

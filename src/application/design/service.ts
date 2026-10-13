@@ -8,7 +8,7 @@ import { parseDesignIntent, intentNeedsInput } from "@/domain/design/intent";
 import { reviseIntentWithRules } from "@/domain/design/revision";
 import { diffProposals } from "@/domain/design/diff";
 import { generateDesignProposal, type CandidateQualityContext } from "@/domain/design/proposal";
-import { buildCandidatePool } from "@/domain/catalog/ranking";
+import { buildCandidatePool, type CandidateSummary } from "@/domain/catalog/ranking";
 import { computeEvidenceBackedFieldStatuses } from "@/application/catalog-review/service";
 import {
   findDesignRequest,
@@ -28,7 +28,7 @@ import {
   findPreviousProposal,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
-import { createAgentAttempt, orchestrateDesignGeneration } from "@/application/agent/orchestrator";
+import { createAgentAttempt, orchestrateDesignGeneration, type ModelSelection } from "@/application/agent/orchestrator";
 import { CATALOG_SELECTION_PROMPT_VERSION } from "./intent-llm";
 import type { AgentPhase, AgentRuntimeEvent } from "@/application/agent/runtime-types";
 import { publishRigEvent } from "@/infra/events/design-event-bus";
@@ -59,6 +59,20 @@ function createRigEmitter(requestId: string): (runId: string, payload: RigEvent)
     appendAgentEventLogEntry(envelope);
     publishRigEvent(envelope);
   };
+}
+
+/** 压缩候选池（选件降级阶梯）：每类只保留排序前 N 条——只减量不改字段，"事实存活"纪律不变 */
+function compressCandidatePoolForRetry<T extends { category: BuildItemCategory }>(
+  pool: readonly T[],
+  perCategory: number,
+): T[] {
+  const counts = new Map<BuildItemCategory, number>();
+  return pool.filter((candidate) => {
+    const seen = counts.get(candidate.category) ?? 0;
+    if (seen >= perCategory) return false;
+    counts.set(candidate.category, seen + 1);
+    return true;
+  });
 }
 
 /** runtime 审计事件 → 富事件（agent-ui P1）。同名工具的批量留痕合并为一条，避免刷屏。 */
@@ -266,6 +280,7 @@ export async function createDesignRequest(
       rawInput: data.rawInput,
       explicitBudgetYuan: data.budgetCents !== null && data.budgetCents !== undefined ? data.budgetCents / 100 : null,
       config: llmConfig,
+      maxTokens: 1500,
     });
     if (llmResult.ok) {
       intent = llmResult.data;
@@ -303,7 +318,10 @@ export async function createDesignRequest(
   const attempt = createAgentAttempt({
     model: llmConfig?.model ?? "rule-engine",
     promptVersion: CATALOG_SELECTION_PROMPT_VERSION,
-    deadlineMs: 20_000,
+    // 思考模型的选件调用实测可到 60s+：截止预算 env 化（默认 20s 保持无 LLM 场景不变）
+    deadlineMs: Number(process.env.RIGMATE_LLM_ATTEMPT_DEADLINE_MS) > 0
+      ? Number(process.env.RIGMATE_LLM_ATTEMPT_DEADLINE_MS)
+      : 20_000,
   });
   let modelNote: string | null = null;
   // 富事件侧的相位游标：区分主链推进与同相位过程事件（见 rigPayloadsFromRuntimeEvent）
@@ -330,35 +348,64 @@ export async function createDesignRequest(
     },
     tryModelSelection: llmConfig
       ? async (pool) => {
-          const selectionStartedAt = now();
-          emit(runId, {
-            type: "tool_call", runId, tool: "select_catalog_candidates", state: "running",
-            detail: "大模型在质量达标候选中挑选。", resultIds: [], startedAt: selectionStartedAt, finishedAt: null,
-          });
-          const selection = await selectCatalogCandidatesWithLlm({ intent, candidates: pool, config: llmConfig });
-          if (!selection.ok) {
+          // 策略阶梯（对齐 ZCode"分类失败 + 预算内重试 + 结构事实保留"的成熟语义）：
+          // ① 全量池 + 思考（质量优先）→ ② 超时/瞬态失败 → 压缩池（每类前 4，只减量不改字段，事实存活）
+          //    + 关思考（速度优先）→ ③ 仍失败 → null，由同一 CandidateSet 的规则排序兜底。
+          const attemptSelection = async (candidates: readonly CandidateSummary[], stage: string): Promise<{
+            ok: boolean;
+            value?: ModelSelection;
+          }> => {
+            const selectionStartedAt = now();
+            const compressedNote = stage === "compressed" ? "（压缩池 · 关思考）" : "";
             emit(runId, {
-              type: "tool_call", runId, tool: "select_catalog_candidates", state: "error",
-              detail: selection.reason, resultIds: [], startedAt: selectionStartedAt, finishedAt: now(),
+              type: "tool_call", runId, tool: "select_catalog_candidates", state: "running",
+              detail: `大模型在质量达标候选中挑选${compressedNote}。`, resultIds: [], startedAt: selectionStartedAt, finishedAt: null,
             });
-            return null;
-          }
-          modelNote = `大模型只在 ${Object.keys(selection.data.selectedIds).length} 个质量达标候选类别中提出选择，规格和兼容性仍由系统核验。`;
-          emit(runId, {
-            type: "tool_call", runId, tool: "select_catalog_candidates", state: "done",
-            detail: modelNote, resultIds: Object.values(selection.data.selectedIds),
-            startedAt: selectionStartedAt, finishedAt: now(),
-          });
-          return {
-            selectedIds: selection.data.selectedIds,
-            rationaleByCategory: selection.data.rationaleByCategory,
+            const selection = await selectCatalogCandidatesWithLlm({
+              intent,
+              candidates,
+              config: llmConfig,
+              thinking: stage === "compressed" ? "disabled" : "enabled",
+              maxTokens: 3000,
+            });
+            if (!selection.ok) {
+              emit(runId, {
+                type: "tool_call", runId, tool: "select_catalog_candidates", state: "error",
+                detail: `${selection.reason}${compressedNote}`, resultIds: [], startedAt: selectionStartedAt, finishedAt: now(),
+              });
+              return { ok: false };
+            }
+            modelNote = `大模型只在 ${Object.keys(selection.data.selectedIds).length} 个质量达标候选类别中提出选择，规格和兼容性仍由系统核验。${compressedNote}`;
+            emit(runId, {
+              type: "tool_call", runId, tool: "select_catalog_candidates", state: "done",
+              detail: modelNote, resultIds: Object.values(selection.data.selectedIds),
+              startedAt: selectionStartedAt, finishedAt: now(),
+            });
+            return {
+              ok: true,
+              value: {
+                selectedIds: selection.data.selectedIds,
+                rationaleByCategory: selection.data.rationaleByCategory,
+              },
+            };
           };
+          const full = await attemptSelection(pool, "full");
+          if (full.ok && full.value) return full.value;
+          const compressedPool = compressCandidatePoolForRetry(pool, 4);
+          if (compressedPool.length === pool.length) return null;
+          const compressed = await attemptSelection(compressedPool, "compressed");
+          return compressed.ok && compressed.value ? compressed.value : null;
         }
       : undefined,
     tryModelSwap: llmConfig
       ? async (swapInput) => {
           const swapStartedAt = now();
-          const proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig });
+          // 换件是小型决策：先按全局思考策略跑；出错（超时/瞬态）关思考再试一次——
+          // 两次都失败或模型诚实认为无更优（ok+null）→ 该类别保留原件，规则安全网不受影响
+          let proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig, maxTokens: 1200 });
+          if (!proposal.ok) {
+            proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig, thinking: "disabled", maxTokens: 1200 });
+          }
           // data = null 是模型的诚实结论（池内没有更优候选），不是错误
           if (!proposal.ok || !proposal.data) {
             emit(runId, {
@@ -551,6 +598,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
       currentIntent: request.intent,
       instruction,
       config: llmConfig,
+      maxTokens: 1200,
     });
     if (llmResult.ok) {
       updatedIntent = llmResult.data;
@@ -607,7 +655,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
       type: "tool_call", runId, tool: "select_catalog_candidates", state: "running",
       detail: `大模型在质量达标候选中调整第 ${version} 版。`, resultIds: [], startedAt: selectionStartedAt, finishedAt: null,
     });
-    const selection = await selectCatalogCandidatesWithLlm({ intent: updatedIntent, candidates: context.pool, config: llmConfig });
+    const selection = await selectCatalogCandidatesWithLlm({ intent: updatedIntent, candidates: context.pool, config: llmConfig, maxTokens: 3000 });
     if (selection.ok) {
       preferredIds = selection.data.selectedIds;
       rationaleByCategory = selection.data.rationaleByCategory;

@@ -208,7 +208,47 @@ const toolRenderers: Record<string, ToolRenderer> = {
 - **E2E 兼容**：`design` 页现有断言（region 角色、双挂载 filter visible）在 P2 改造时需同步迁移到时间线结构；P1 不影响。
 - **不做假流式**：现在的确定性管线全链路 < 2s，流式主要价值是过程可见与信任；LLM 接入后等待拉长，流式从"好看"变"刚需"——骨架先立，价值后兑。
 
-## 8. 参考
+## 8. P4 策略节：思考预算 / 失败分类 / 域封闭 / 有界自主循环（2026-10-13 live 后补）
+
+接上真实 LLM（GLM 编码套餐 glm-5.3-flash，推理模型）后实测与落地，语义对齐 ZCode `adapters/model`（retry-policy / retry-budget / empty-completion-retry / request-admission），按零依赖规模裁剪：
+
+### 8.1 思考预算（实测驱动）
+
+- glm-5.3-flash 选件级调用（64 候选 JSON）：**思考开启 ~65s**（2572 reasoning tokens），**关闭 7s**。思考是 agent 质量的一部分，默认开启，用预算消化而不是回避。
+- 单次调用 `max_tokens`（含思考）按类型给足：意图 1500 / 修订 1200 / 选件 3000 / 换件 1200——既是质量预算也是**成本硬顶**。
+- 超时 `RIGMATE_LLM_TIMEOUT_MS=70s`；整轮截止 `RIGMATE_LLM_ATTEMPT_DEADLINE_MS=300s`（env 化，默认 20s 保持无 LLM 场景不变）。
+
+### 8.2 失败分类与退避（client.ts，对齐 ZCode 语义）
+
+- **瞬态可重试**：网络错误 / 429 / 5xx / **空补全**（推理模型把输出预算耗在思考上，等价 ZCode empty-completion-retry）。
+- **不重试**：其余 4xx（提示词/鉴权问题）、**超时 abort**（预算已花完，交给调用方策略阶梯）、schema 拒绝（守卫拒绝 = 提示词问题，重试没有意义）。
+- 退避曲线：`base*factor^(n-1)` 封顶 maxDelay，jitter 0.5-1.0x，**Retry-After 合理时优先**；参数全部 `RIGMATE_LLM_RETRY_*` 环境可调。
+
+### 8.3 选件策略阶梯（超时后的"回退并重新调整策略"）
+
+```
+① 全量池（8/类×8 类=64）+ 思考        —— 质量优先
+② 失败 → 压缩池（4/类=32，只减量不改字段，事实存活纪律不变）+ 关思考 —— 速度优先
+③ 仍失败 → null → 同一 CandidateSet 的规则排序兜底（既有硬门）
+```
+每一阶都发 `select_catalog_candidates` 工具事件（running/done/error + 阶段标注），时间线上可见。换件同构：出错关思考重试一次，模型诚实认为无更优（ok+null）不重试。
+
+### 8.4 域封闭（DIY agent vs 编程 agent 的差异设计）
+
+ZCode 是编程 agent，域封闭靠封闭工具注册表 + 权限系统；RigMate 的模型没有代码执行面，封闭按层落地：
+
+1. **输出契约封闭（主边界，最硬）**：全部 LLM 调用走 `.strict()` zod schema，模型唯一出口是域内 JSON（候选 ID 选择 / 意图字段映射）。跑题输出过不了解析 → 失败降级，**系统不存在自由文本回复通道**，被注入也产不出可用输出。
+2. **max_tokens 成本顶**：单次调用输出封顶，白嫖经济学不成立。
+3. **请求准入（`infra/llm/admission.ts`，借 ZCode 票据端口形态）**：LLM 携带型 HTTP 入口（design 创建 / revisions）过并发（2）+ 窗口（6/分钟）准入，超限 429 + Retry-After；票据 release 幂等，窗口配额不回滚。
+4. **结构域门**：跑题输入最多消耗一次意图解析——映射不进意图字段即触发诚实追问，昂贵的选件/换件调用不会发生。
+5. 提示词约束只是最外层辅助，不承载封闭职责。
+
+### 8.5 有界自主循环与评测
+
+- 换件迭代：最多 2 轮、只有减少阻断（或同阻断减警告）才采纳（既有），是**有改善门的自主循环**——不做无界 agent loop。
+- 样本规模：目录 26k、质量门后池 64（压缩阶梯 32）；选择质量用 `npm run evals:live` 度量（对比 thinking on/off、池 8 vs 4 的选择质量），离线回归 `npm run evals:design`。待运行项。
+
+## 9. 参考
 
 - ZCode 源码镜像：`D:\XyyWork\zcode-oss\mirror\`（session.events.ts / event-reducer.ts / zcodeSessionProjection.ts / ToolCallBlocks/* / session-eventlog.example.jsonl）
 - 仓库：`github.com/zai-org/ZCode`（事件溯源、UI 投影、工具块注册表均出自该实现，协议为本项目原创简化版）
