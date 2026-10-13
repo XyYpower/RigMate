@@ -6,6 +6,8 @@ test("M27 目标驱动主链路：自然语言生成方案、自动校验并接�
   await page.getByRole("button", { name: "开始搭配" }).click();
 
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
+  // P2 默认视图为会话时间线；工作台断言切到 ?view=workbench
+  await page.goto(page.url() + "?view=workbench");
   // 参考图形态：预算标尺 + 摘要卡 + 配置清单 + 核验台 + 状态徽章
   await expect(page.getByRole("heading", { name: "核验台" })).toBeVisible();
   const ruler = page.locator(".budget-ruler");
@@ -39,6 +41,8 @@ test("M27 目标信息不足：不硬凑方案而是提出最小追问", async (
   await page.getByRole("button", { name: "开始搭配" }).click();
 
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
+  // P2 默认视图为会话时间线；工作台断言切到 ?view=workbench
+  await page.goto(page.url() + "?view=workbench");
   await expect(page.getByRole("heading", { name: "还差一点信息" })).toBeVisible();
   await expect(page.getByText(/缺少预算或用途/)).toBeVisible();
 });
@@ -48,6 +52,8 @@ test("M31 自然语言修订：顶栏输入，预算跨档位生成第 2 版并�
   await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("2 万预算，白色海景房，剪辑和游戏");
   await page.getByRole("button", { name: "开始搭配" }).click();
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
+  // P2 默认视图为会话时间线；工作台断言切到 ?view=workbench
+  await page.goto(page.url() + "?view=workbench");
   await expect(page.locator(".build-summary h2")).toContainText("白色");
 
   // 参考图：修订输入在顶栏
@@ -73,6 +79,8 @@ test("M35 可以切换查看历史方案并展开单件依据", async ({ page })
   await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("2 万预算，剪辑和游戏");
   await page.getByRole("button", { name: "开始搭配" }).click();
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
+  // P2 默认视图为会话时间线；工作台断言切到 ?view=workbench
+  await page.goto(page.url() + "?view=workbench");
   await page.getByRole("textbox", { name: "继续调整这套方案" }).fill("预算压到 4000");
   await page.getByRole("button", { name: "提交修改" }).click();
   await expect(page.locator(".header-title-version")).toContainText("方案 v2");
@@ -92,6 +100,8 @@ test("M31 无法理解的调整：诚实追问而不是硬猜，保留原方案"
   await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("8000 预算，玩游戏");
   await page.getByRole("button", { name: "开始搭配" }).click();
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
+  // P2 默认视图为会话时间线；工作台断言切到 ?view=workbench
+  await page.goto(page.url() + "?view=workbench");
   await expect(page.locator(".header-title-version")).toContainText("方案 v1");
 
   await page.getByRole("textbox", { name: "继续调整这套方案" }).fill("帮我随便改改");

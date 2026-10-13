@@ -3,8 +3,9 @@ import { test, expect } from "@playwright/test";
 test("M26 证据台账：录入证据出现在台账，可按类别过滤", async ({ page }) => {
   await page.goto("/evidence");
 
-  // 录入一条证据
-  await page.getByRole("combobox", { name: "类别" }).selectOption("motherboard");
+  // 录入一条证据（限录入表单：批量粘贴区还有"默认类别"下拉，避免歧义）
+  const entryForm = page.locator(".ev-form");
+  await entryForm.getByRole("combobox", { name: "类别" }).selectOption("motherboard");
   await page.getByRole("textbox", { name: "型号 / 商品名" }).fill("技嘉 B650M 小雕");
   await page.getByRole("textbox", { name: "价格（元）" }).fill("1099");
   await page.getByRole("combobox", { name: "价格口径" }).selectOption("到手价");

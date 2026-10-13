@@ -70,7 +70,7 @@ for (const viewport of BENCH_VIEWPORTS) {
   test(`决策台三件套可见：方案页 @ ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     const designId = await createDesignViaApi(page);
-    await page.goto(`/design/${designId}`);
+    await page.goto(`/design/${designId}?view=workbench`);
     await page.waitForLoadState("domcontentloaded");
 
     // 方案页：主区装配轨道 + 预算标尺 + 核验台
@@ -112,7 +112,7 @@ for (const viewport of BENCH_VIEWPORTS) {
 test("1024px 方案页：核验台摘要在配置清单之后、决策动作之前", async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 1000 });
   const designId = await createDesignViaApi(page);
-  await page.goto(`/design/${designId}`);
+  await page.goto(`/design/${designId}?view=workbench`);
   await page.locator(".build-summary").waitFor({ timeout: 60000 });
 
   // 内联核验台可见；右栏挂载点隐藏
@@ -202,7 +202,7 @@ test("键盘：目标输入 → 预算 → 主按钮一路 Tab 可达", async ({
 
 test("键盘：方案页核验台证据动作 Tab 可达", async ({ page }) => {
   const designId = await createDesignViaApi(page);
-  await page.goto(`/design/${designId}`);
+  await page.goto(`/design/${designId}?view=workbench`);
   // 核验台在 ≥1200 挂右栏、<1200 内联主区——只取可见的那一份
   const desk = page.locator(".verification-desk").filter({ visible: true });
   await expect(desk).toBeVisible();
@@ -224,7 +224,7 @@ test("reduced-motion：动画关闭时首页与方案页内容直接可读", asy
   await expect(page.locator(".budget-ruler")).toContainText("未设置预算");
 
   const designId = await createDesignViaApi(page);
-  await page.goto(`/design/${designId}`);
+  await page.goto(`/design/${designId}?view=workbench`);
   await expect(page.locator(".build-summary")).toBeVisible();
   await expect(page.getByRole("heading", { name: "核验台" })).toBeVisible();
 });

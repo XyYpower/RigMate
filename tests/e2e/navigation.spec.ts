@@ -39,7 +39,7 @@ test("决策台导航：首页与方案页的 active 状态可辨识", async ({ 
   const data = await response.json();
   const designId = data.result.request.id as string;
 
-  await page.goto(`/design/${designId}`);
+  await page.goto(`/design/${designId}?view=workbench`);
   await page.waitForLoadState("domcontentloaded");
   await expect(nav.getByRole("link", { name: "我的方案" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "开始配置" })).not.toHaveAttribute("aria-current");

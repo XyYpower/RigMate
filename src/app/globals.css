@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "../ui/theme.css";
 @import "../ui/workbench/workbench.css";
+@import "../ui/session/session.css";
 @import "../ui/v2-workspace.css";
 
 /* ============================================================================

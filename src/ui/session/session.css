@@ -1,0 +1,174 @@
+/* ============================================================================
+   会话视图（agent-ui P2）：消息时间线 + 工具块 + 方案卡 + 常驻输入框。
+   设计语言沿 workbench.css：白面板 + 发丝线 + 状态色点，无新色板。
+   ========================================================================== */
+
+.session-page {
+  width: min(880px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 18px 0 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.session-page h1 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
+.session-loading { color: var(--wb-ink-muted); padding: 40px 0; text-align: center; }
+
+/* ---------- 报头 ---------- */
+.session-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.session-header-main { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.session-header-main h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-run-status {
+  flex: none; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: var(--wb-unknown-soft); color: var(--wb-ink-muted);
+}
+.session-run-status.running { background: var(--wb-accent-soft); color: var(--wb-accent); }
+.session-run-status.completed { background: var(--wb-pass-soft); color: var(--wb-pass); }
+.session-header-actions { display: flex; gap: 8px; flex: none; }
+
+/* ---------- 时间线 ---------- */
+.session-stream { padding: 18px 18px 10px; }
+.session-timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+.session-item {
+  display: grid; grid-template-columns: 34px 14px 1fr; gap: 0 8px;
+  padding: 3px 0; align-items: start;
+}
+.session-item-time {
+  font-size: 10px; color: var(--wb-ink-faint); text-align: right;
+  padding-top: 3px; font-variant-numeric: tabular-nums;
+}
+.session-item-mark {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--wb-hairline-strong); justify-self: center; margin-top: 5px;
+  position: relative; z-index: 1;
+}
+.session-item-body { min-width: 0; padding-bottom: 7px; }
+
+.session-item-user .session-item-mark { background: var(--wb-graphite); }
+.session-user-text {
+  margin: 0; padding: 8px 12px;
+  background: var(--wb-surface-subtle); border: 1px solid var(--wb-hairline);
+  border-radius: 10px 10px 10px 2px; font-weight: 600;
+}
+
+.session-item-phase .session-item-mark { background: var(--wb-alu); }
+.session-phase-text { margin: 0; color: var(--wb-ink-muted); font-size: 12px; }
+.session-phase-label {
+  display: inline-block; font-weight: 700; color: var(--wb-ink);
+  margin-right: 7px; font-size: 12px;
+}
+
+.session-item-running .session-item-mark { background: var(--wb-accent); animation: session-pulse 1.2s ease-in-out infinite; }
+.session-running-hint { color: var(--wb-accent); font-size: 12px; font-weight: 600; }
+@keyframes session-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.session-run-divider {
+  margin: 4px 0 2px; font-size: 11px; font-weight: 700; color: var(--wb-ink-faint);
+  border-top: 1px dashed var(--wb-hairline); padding-top: 8px;
+}
+.session-item:first-child .session-run-divider { border-top: 0; padding-top: 0; }
+
+/* ---------- 工具块 ---------- */
+.session-item-tool .session-item-mark { background: var(--wb-slate); }
+.session-tool { border: 1px solid var(--wb-hairline); border-radius: 8px; background: var(--wb-surface); }
+.session-tool summary {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; cursor: pointer; list-style: none; font-size: 12px;
+  border-radius: 8px; min-height: 28px;
+}
+.session-tool summary::-webkit-details-marker { display: none; }
+.session-tool summary:hover { background: var(--wb-surface-subtle); }
+.session-tool-state { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--wb-unknown); }
+.session-tool.state-running .session-tool-state { background: var(--wb-accent); animation: session-pulse 1.2s ease-in-out infinite; }
+.session-tool.state-done .session-tool-state { background: var(--wb-pass); }
+.session-tool.state-error .session-tool-state { background: var(--wb-block); }
+.session-tool-label { flex: none; font-weight: 700; }
+.session-tool-summary {
+  color: var(--wb-ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.session-tool-detail { border-top: 1px solid var(--wb-hairline); padding: 8px 10px; }
+.session-tool-detail-label { font-size: 10px; color: var(--wb-ink-faint); font-weight: 700; }
+.session-tool-ids {
+  list-style: none; margin: 5px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 4px;
+}
+.session-tool-ids li {
+  font-size: 10px; padding: 1px 6px; border-radius: 5px;
+  background: var(--wb-surface-subtle); border: 1px solid var(--wb-hairline);
+  color: var(--wb-ink-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- 异常 / 追问 ---------- */
+.session-item-anomaly .session-item-mark { background: var(--wb-warn); }
+.session-anomaly-text { margin: 0; color: var(--wb-warn); font-size: 12px; }
+.session-anomaly-fallback { display: block; color: var(--wb-ink-faint); font-size: 11px; }
+
+.session-item-question .session-item-mark { background: var(--wb-warn); }
+.session-question-text {
+  margin: 0; padding: 10px 12px;
+  background: var(--wb-warn-soft); border: 1px solid var(--wb-warn);
+  border-radius: 10px; color: var(--wb-ink); font-weight: 600;
+}
+
+/* ---------- 方案卡 ---------- */
+.session-proposal-wrap { display: flex; flex-direction: column; gap: 4px; }
+.session-proposal-diff-hint { margin: 0; font-size: 11px; color: var(--wb-ink-faint); }
+.session-proposal-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.session-proposal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.session-proposal-head h3 { margin: 0; font-size: 15px; letter-spacing: -0.01em; }
+.session-proposal-version { flex: none; font-size: 11px; color: var(--wb-ink-faint); font-weight: 700; }
+.session-proposal-summary { margin: 0; color: var(--wb-ink-muted); font-size: 12px; }
+.session-proposal-parts {
+  list-style: none; margin: 0; padding: 0;
+  border-top: 1px solid var(--wb-hairline);
+}
+.session-proposal-parts li {
+  display: grid; grid-template-columns: 56px 1fr auto; gap: 10px;
+  padding: 4px 0; border-bottom: 1px solid var(--wb-hairline); font-size: 12px;
+  align-items: baseline;
+}
+.session-proposal-parts li:last-child { border-bottom: 0; }
+.session-part-category { color: var(--wb-ink-faint); font-size: 11px; }
+.session-part-label { font-weight: 600; }
+.session-part-price { color: var(--wb-ink-muted); }
+.session-proposal-compat { margin: 0; font-size: 12px; }
+.session-proposal-compat em { font-style: normal; font-weight: 700; }
+.session-proposal-compat em.pass { color: var(--wb-pass); }
+.session-proposal-compat em.warn { color: var(--wb-warn); }
+.session-proposal-compat em.block { color: var(--wb-block); }
+.session-proposal-compat-message { display: block; color: var(--wb-ink-muted); font-size: 11px; margin-top: 1px; }
+.session-proposal-actions {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  border-top: 1px solid var(--wb-hairline); padding-top: 10px;
+}
+.session-proposal-history-note { color: var(--wb-ink-faint); font-size: 12px; }
+.session-workbench-link {
+  margin-left: auto; font-size: 12px; color: var(--wb-accent); font-weight: 700;
+  text-decoration: none;
+}
+.session-workbench-link:hover { color: var(--wb-accent-hover); }
+
+/* ---------- 追问态 / 输入框 ---------- */
+.session-needs-input {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  border-color: var(--wb-warn);
+}
+.session-needs-input p { margin: 0; font-weight: 600; }
+.session-composer {
+  position: sticky; bottom: 12px;
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  padding: 10px 12px;
+}
+.session-composer input {
+  flex: 1; min-width: 0;
+  border: 1px solid var(--wb-hairline-strong); border-radius: 8px;
+  padding: 9px 12px; background: var(--wb-surface);
+}
+.session-composer input:focus { border-color: var(--wb-accent); outline: none; }
+.session-composer-submit { flex: none; }
+.session-composer-feedback { flex-basis: 100%; margin: 0; color: var(--wb-ink-muted); font-size: 12px; }
