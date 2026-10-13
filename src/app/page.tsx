@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { AssemblyRail, emptyAssemblySlots } from "@/ui/workbench/assembly-rail";
-import { BudgetRuler, emptyBudgetRulerView } from "@/ui/workbench/budget-ruler";
 
 type BuildSummary = {
   id: string;
@@ -27,13 +25,14 @@ const GOAL_SUGGESTIONS = [
 
 const BUDGET_PRESETS = [8000, 12000, 16000, 20000];
 
-/** 三项真实能力：不承诺做不到的事 */
-const HOME_CAPABILITIES = [
-  { title: "资料核验", detail: "型号规格来自已核目录，来源可查" },
-  { title: "兼容检查", detail: "插槽、功耗、尺寸逐项规则检查" },
-  { title: "可编辑方案", detail: "改一句重新校验，或进 DIY 换件" },
-];
+/** 三项真实能力：不承诺做不到的事（agent 会话式入口的 quiet 徽标行） */
+const HOME_CAPABILITIES = ["资料核验", "兼容检查", "可编辑方案"];
 
+/**
+ * 首页 = 会话起点（agent-ui 重设计，对齐 ZCode 空会话页模式）：
+ * 居中一列——品牌一句 + 输入框主角 + 示例词条 + quiet 能力行；
+ * 提交即进会话页看 agent 生成全程（异步），装饰性面板全部移除。
+ */
 export default function Home() {
   const router = useRouter();
   const [goal, setGoal] = useState("");
@@ -66,7 +65,7 @@ export default function Home() {
     setBusy(true);
     setMessage("");
     try {
-      // 异步模式（agent-ui P3）：请求落库即返回 requestId，生成过程在会话页流式观看
+      // 异步模式：请求落库即跳会话页，agent 生成全程在时间线上点亮
       const response = await fetch("/api/design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,138 +82,111 @@ export default function Home() {
 
   return (
     <main className="home-page">
-      <div className="page-grid">
-        <div className="page-main">
-          <section className="home-intro">
-            <h1>
-              你想配一台
-              <br />
-              什么样的电脑？
-              <span className="home-dot" aria-hidden />
-            </h1>
-          </section>
+      <div className="home-entry">
+        <span className="home-brandmark" aria-hidden>R</span>
+        <h1>你想配一台什么样的电脑？</h1>
+        <p className="home-tagline">
+          说清预算和用途，agent 从已核目录里检索候选、跑兼容规则，产出可核验的装机方案。
+        </p>
 
-          <section className="home-rail" aria-label="整机装配轨道">
-            <div className="home-rail-head">
-              <h2>八个部件位</h2>
-              <span className="home-rail-hint">← 横向滑动查看全部八类 →</span>
-            </div>
-            <AssemblyRail slots={emptyAssemblySlots(busy ? "retrieving" : "empty")} />
-          </section>
-
-          <form className="goal-composer wb-panel" onSubmit={(event) => void startDesign(event)}>
-            <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
-            <textarea
-              id="design-goal"
-              name="goal"
-              value={goal}
-              onChange={(event) => setGoal(event.target.value)}
-              onInput={(event) => setGoal(event.currentTarget.value)}
-              rows={3}
-              maxLength={4000}
-              placeholder="说说预算、用途、外观偏好，一句话就够……"
-              disabled={busy}
-            />
-            <div className="goal-toolbar">
-              <div className="goal-budget-group">
-                <input
-                  name="budget"
-                  className="goal-budget-input"
-                  aria-label="预算（元，可选）"
-                  inputMode="numeric"
-                  value={budget}
-                  onChange={(event) => setBudget(event.target.value)}
-                  onInput={(event) => setBudget(event.currentTarget.value)}
-                  placeholder="预算"
-                  disabled={busy}
-                />
-                <div className="goal-budget-seg" role="group" aria-label="预算快捷档">
-                  {BUDGET_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      className={`goal-budget-seg-btn${budget === String(preset) ? " active" : ""}`}
-                      onClick={() => setBudget(String(preset))}
-                      disabled={busy}
-                    >
-                      {preset >= 10000 && preset % 10000 === 0 ? `${preset / 10000} 万` : `${preset}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button className="button primary goal-submit" type="submit" disabled={busy}>
-                {busy ? "正在搭配…" : "开始搭配"}<span aria-hidden>→</span>
-              </button>
-            </div>
-            {busy ? (
-              <p className="agent-progress" role="status" aria-label="方案生成中">
-                正在按你的目标检索目录并搭配方案，通常几秒内完成。
-              </p>
-            ) : (
-              <div className="goal-suggestions" aria-label="示例目标">
-                {GOAL_SUGGESTIONS.map((suggestion) => (
+        <form className="home-composer wb-panel" onSubmit={(event) => void startDesign(event)}>
+          <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
+          <textarea
+            id="design-goal"
+            name="goal"
+            value={goal}
+            onChange={(event) => setGoal(event.target.value)}
+            onInput={(event) => setGoal(event.currentTarget.value)}
+            rows={3}
+            maxLength={4000}
+            placeholder="说说预算、用途、外观偏好，一句话就够……"
+            disabled={busy}
+            autoFocus
+          />
+          <div className="home-composer-toolbar">
+            <div className="home-budget-group">
+              <input
+                name="budget"
+                className="home-budget-input mono"
+                aria-label="预算（元，可选）"
+                inputMode="numeric"
+                value={budget}
+                onChange={(event) => setBudget(event.target.value)}
+                onInput={(event) => setBudget(event.currentTarget.value)}
+                placeholder="预算"
+                disabled={busy}
+              />
+              <div className="home-budget-seg" role="group" aria-label="预算快捷档">
+                {BUDGET_PRESETS.map((preset) => (
                   <button
-                    key={suggestion.tag}
+                    key={preset}
                     type="button"
-                    className="goal-suggestion"
-                    onClick={() => setGoal(suggestion.full)}
+                    className={`home-budget-seg-btn${budget === String(preset) ? " active" : ""}`}
+                    onClick={() => setBudget(String(preset))}
                     disabled={busy}
                   >
-                    <span aria-hidden>›</span>
-                    {suggestion.tag}
+                    {preset >= 10000 && preset % 10000 === 0 ? `${preset / 10000} 万` : `${preset}`}
                   </button>
                 ))}
               </div>
-            )}
-            {message && <p className="form-feedback" role="status">{message}</p>}
-          </form>
+            </div>
+            <button className="button primary home-submit" type="submit" disabled={busy}>
+              {busy ? "正在搭配…" : "开始搭配"}<span aria-hidden>→</span>
+            </button>
+          </div>
+          {message && <p className="form-feedback" role="status">{message}</p>}
+        </form>
 
-          <section className="home-ruler-row" aria-label="预算与能力">
-            <BudgetRuler view={emptyBudgetRulerView()} />
-            <ul className="home-caps wb-panel">
-              {HOME_CAPABILITIES.map((capability) => (
-                <li key={capability.title}>
-                  <strong>{capability.title}</strong>
-                  <p>{capability.detail}</p>
+        {!busy && (
+          <div className="home-suggestions" aria-label="示例目标">
+            {GOAL_SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion.tag}
+                type="button"
+                className="home-suggestion"
+                onClick={() => setGoal(suggestion.full)}
+                disabled={busy}
+              >
+                <span aria-hidden>›</span>
+                {suggestion.tag}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <ul className="home-assurances" aria-label="能力说明">
+          {HOME_CAPABILITIES.map((capability) => (
+            <li key={capability}>
+              <span className="home-assurance-dot" aria-hidden />
+              {capability}
+            </li>
+          ))}
+        </ul>
+
+        <p className="home-footer-links">
+          已有配置单？<Link href="/projects?mode=review">粘贴整单逐行查坑</Link>
+          <span aria-hidden> · </span>
+          很懂硬件？<Link href="/diy">直接进高级 DIY</Link>
+        </p>
+
+        {builds.length > 0 && (
+          <section className="home-recent" aria-labelledby="recent-title">
+            <h2 id="recent-title">最近的方案</h2>
+            <ul>
+              {builds.map((build) => (
+                <li key={build.id}>
+                  <Link href={`/diy?project=${build.id}`}>
+                    <span>{build.name}</span>
+                    <span className="home-recent-meta">{build.items.length} 件 · {formatTime(build.updatedAt)}</span>
+                  </Link>
                 </li>
               ))}
+              <li className="home-recent-more">
+                <Link href="/design">全部方案会话 <span aria-hidden>→</span></Link>
+              </li>
             </ul>
           </section>
-
-          <div className="home-entry-cards">
-            <Link href="/projects?mode=review" className="home-entry">
-              <strong>已有配置单？</strong>
-              <span>粘贴整单，逐行查坑</span>
-            </Link>
-            <Link href="/diy" className="home-entry">
-              <strong>很懂硬件？</strong>
-              <span>直接进入高级 DIY</span>
-            </Link>
-          </div>
-        </div>
-
-        <aside className="workbench-aside page-level" aria-label="最近方案">
-          <section className="wb-panel recent-designs" aria-labelledby="recent-title">
-            <div className="home-section-heading">
-              <h2 id="recent-title">最近的方案</h2>
-              {builds.length > 0 && <Link href="/projects">全部 <span aria-hidden>→</span></Link>}
-            </div>
-            {builds.length > 0 ? (
-              <ul>
-                {builds.map((build) => (
-                  <li key={build.id}>
-                    <Link href={`/diy?project=${build.id}`}>
-                      <span>{build.name}</span>
-                      <span className="recent-meta">{build.items.length} 个配件 · {formatTime(build.updatedAt)}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="recent-empty">还没有方案。描述一个目标，生成的方案会出现在这里。</p>
-            )}
-          </section>
-        </aside>
+        )}
       </div>
     </main>
   );

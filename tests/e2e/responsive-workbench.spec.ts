@@ -47,16 +47,15 @@ async function createDesignViaApi(page: import("@playwright/test").Page): Promis
 }
 
 for (const viewport of BENCH_VIEWPORTS) {
-  test(`决策台三件套可见：首页 @ ${viewport.width}x${viewport.height}`, async ({ page }) => {
+  test(`会话起点可见：首页 @ ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
 
-    await expect(page.getByRole("region", { name: "整机装配轨道" })).toBeVisible();
-    // 首页横向轨道必须带清晰的滚动提示
-    await expect(page.locator(".home-rail-hint")).toBeVisible();
-    await expect(page.locator(".budget-ruler")).toBeVisible();
-    await expect(page.locator(".home-caps")).toBeVisible();
+    // agent-ui 重设计：首页 = 居中会话起点（composer 主角 + 能力行 + 示例词条）
+    await expect(page.getByRole("textbox", { name: "描述你的装机目标" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "能力说明" })).toBeVisible();
+    await expect(page.getByLabel("示例目标").getByRole("button")).toHaveCount(3);
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(scrollWidth).toBeLessThanOrEqual(viewport.width + 1);
@@ -220,8 +219,9 @@ test("键盘：方案页核验台证据动作 Tab 可达", async ({ page }) => {
 test("reduced-motion：动画关闭时首页与方案页内容直接可读", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await expect(page.getByRole("region", { name: "整机装配轨道" })).toBeVisible();
-  await expect(page.locator(".budget-ruler")).toContainText("未设置预算");
+  // agent-ui 重设计：首页 = 会话起点，composer 与能力行静态可读
+  await expect(page.getByRole("textbox", { name: "描述你的装机目标" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "能力说明" })).toContainText("资料核验");
 
   const designId = await createDesignViaApi(page);
   await page.goto(`/design/${designId}?view=workbench`);
