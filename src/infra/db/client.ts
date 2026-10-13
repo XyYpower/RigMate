@@ -146,6 +146,20 @@ export const agentEvents = sqliteTable("agent_events", {
   createdAt: text("created_at").notNull(),
 });
 
+/**
+ * 会话事件日志（agent-ui-design §4，P1）：request 维度的富事件追加流。
+ * seq 在 request 内单调递增（跨 run 连续），是 SSE 回放/续传的游标；
+ * payload 为 contracts/agent-events.ts 的 RigEvent JSON。
+ */
+export const agentEventLog = sqliteTable("agent_event_log", {
+  id: text("id").primaryKey(),
+  requestId: text("request_id").notNull(),
+  runId: text("run_id").notNull(),
+  seq: integer("seq").notNull(),
+  payload: text("payload").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
 /** 自有规格库（M29，ADR §8.1 canonical_products 的落地表）：八类配件决策字段，导入时校验 */
 export const canonicalProducts = sqliteTable("canonical_products", {
   id: text("id").primaryKey(),

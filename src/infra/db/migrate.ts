@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 11;
+export const LATEST_SCHEMA_VERSION = 12;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -375,6 +375,22 @@ export const MIGRATIONS: Migration[] = [
       if (!itemColumns.map((column) => column.name).includes("evidence_source_ids")) {
         db.run(sql`ALTER TABLE build_items ADD COLUMN evidence_source_ids text`);
       }
+    },
+  },
+  {
+    version: 12,
+    name: "会话事件日志 agent_event_log（agent-ui P1：request 维度富事件流 + seq 续传游标）",
+    up: (db) => {
+      db.run(sql`CREATE TABLE IF NOT EXISTS agent_event_log (
+        id text PRIMARY KEY NOT NULL,
+        request_id text NOT NULL,
+        run_id text NOT NULL,
+        seq integer NOT NULL,
+        payload text NOT NULL,
+        created_at text NOT NULL
+      )`);
+      db.run(sql`CREATE INDEX IF NOT EXISTS idx_agent_event_log_request_seq
+        ON agent_event_log(request_id, seq)`);
     },
   },
 ];

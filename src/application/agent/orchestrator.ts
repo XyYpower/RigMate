@@ -66,6 +66,8 @@ export async function orchestrateDesignGeneration(input: {
   tryModelSelection?: (pool: readonly CandidateSummary[]) => Promise<ModelSelection | null>;
   /** 受限只读工具；未传入时由 Runtime 根据同一检索上下文装配 */
   tools?: AgentToolRegistry;
+  /** 实时事件钩子（agent-ui P1）：透传给 RunState，每步同步回调供总线广播 */
+  onEvent?: (event: AgentRuntimeEvent) => void;
   /** 检查结果驱动的换件提案（有限迭代）：返回 null = 模型认为池内没有更优候选 */
   tryModelSwap?: (input: {
     findings: Array<{ ruleId: string; status: string; conclusion: string; suggestedAction: string }>;
@@ -73,7 +75,7 @@ export async function orchestrateDesignGeneration(input: {
     candidates: readonly CandidateSummary[];
   }) => Promise<{ category: BuildItemCategory; catalogId: string; reason: string } | null>;
 }): Promise<DesignGenerationOrchestration> {
-  const runState = new AgentRunState(input.attempt.attemptId);
+  const runState = new AgentRunState(input.attempt.attemptId, input.onEvent);
   const attempts = [input.attempt];
   runState.advance("目标已接收并通过安全筛查。");
   runState.advance("目标已结构化，开始检索质量门候选。");
@@ -86,9 +88,26 @@ export async function orchestrateDesignGeneration(input: {
   const pool: CandidateSummary[] = [];
   const missingCategories: BuildItemCategory[] = [];
   for (const category of input.categories) {
+    const startedAt = new Date().toISOString();
     const categoryPool = [...tools.searchCatalog({ category, intent: input.intent, limit: 8 })];
     if (categoryPool.length === 0) missingCategories.push(category);
     pool.push(...categoryPool);
+    // 逐类目实时事件（agent-ui P1）：时间线上每类一个检索块，而不是只有汇总一条
+    runState.log(
+      `已检索 ${category}：命中 ${categoryPool.length} 个候选。`,
+      {
+        retrievalIds: categoryPool.map((candidate) => candidate.canonicalId),
+        toolCalls: [
+          {
+            tool: "searchCatalog",
+            attemptId: input.attempt.attemptId,
+            startedAt,
+            finishedAt: new Date().toISOString(),
+            resultIds: categoryPool.map((candidate) => candidate.canonicalId),
+          },
+        ],
+      },
+    );
   }
   const qualityByCanonicalId = new Map(retrieved.qualityByCanonicalId ?? []);
   const evidenceByCanonicalId = new Map<string, ReadonlyArray<{ fieldPath: string; status: import("@/domain/catalog/quality").FieldQualityStatus; sourceIds: string[] }>>();

@@ -30,11 +30,83 @@ import {
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
 import { createAgentAttempt, orchestrateDesignGeneration } from "@/application/agent/orchestrator";
 import { CATALOG_SELECTION_PROMPT_VERSION } from "./intent-llm";
+import type { AgentPhase, AgentRuntimeEvent } from "@/application/agent/runtime-types";
+import { publishRigEvent } from "@/infra/events/design-event-bus";
+import { appendAgentEventLogEntry, nextAgentEventSeq } from "@/infra/db/repositories/agent-event-log-repository";
+import type { RigEnvelope, RigEvent } from "@/contracts/agent-events";
 import type { VerifiedPriceFact } from "@/domain/catalog/ranking";
 import type { BuildItemCategory } from "@/domain/build/types";
 
 function now(): string {
   return new Date().toISOString();
+}
+
+/**
+ * 富事件发射器（agent-ui P1）：每条事件实时落库 + 广播，seq 在 request 内跨 run 连续。
+ * P2 起前端时间线直接消费这条流；现有 AgentEvent 降维层在 P2 切换后退役。
+ */
+function createRigEmitter(requestId: string): (runId: string, payload: RigEvent) => void {
+  let seq = nextAgentEventSeq(requestId);
+  return (runId, payload) => {
+    const envelope: RigEnvelope = {
+      id: `evt-${randomUUID()}`,
+      seq: seq++,
+      requestId,
+      runId,
+      at: now(),
+      payload,
+    };
+    appendAgentEventLogEntry(envelope);
+    publishRigEvent(envelope);
+  };
+}
+
+/** runtime 审计事件 → 富事件（agent-ui P1）。同名工具的批量留痕合并为一条，避免刷屏。 */
+export function rigPayloadsFromRuntimeEvent(
+  event: AgentRuntimeEvent,
+  runId: string,
+  lastPhase: AgentPhase | null,
+): RigEvent[] {
+  if (event.phase === "anomaly") {
+    return [{
+      type: "anomaly",
+      runId,
+      message: event.message,
+      ...(event.errorCode ? { errorCode: event.errorCode } : {}),
+      ...(event.fallback ? { fallback: event.fallback } : {}),
+    }];
+  }
+  const isAdvance = event.phase !== lastPhase;
+  if (!isAdvance && (!event.toolCalls || event.toolCalls.length === 0)) {
+    // 同相位过程注记（换件迭代等）：作为该相位下的时间线条目
+    return [{ type: "phase", runId, phase: event.phase, message: event.message }];
+  }
+  const out: RigEvent[] = [];
+  if (isAdvance) {
+    out.push({ type: "phase", runId, phase: event.phase, message: event.message });
+  }
+  if (event.toolCalls && event.toolCalls.length > 0) {
+    const resultIdsByTool = new Map<string, string[]>();
+    for (const call of event.toolCalls) {
+      const ids = resultIdsByTool.get(call.tool) ?? [];
+      ids.push(...call.resultIds);
+      resultIdsByTool.set(call.tool, ids);
+    }
+    const first = event.toolCalls[0]!;
+    for (const [tool, resultIds] of resultIdsByTool) {
+      out.push({
+        type: "tool_call",
+        runId,
+        tool,
+        state: "done",
+        detail: event.message,
+        resultIds,
+        startedAt: first.startedAt,
+        finishedAt: first.finishedAt,
+      });
+    }
+  }
+  return out;
 }
 
 function event(runId: string, type: AgentEvent["type"], status: AgentEvent["status"], message: string): AgentEvent {
@@ -96,8 +168,11 @@ function composeOrAsk(input: {
   rationaleByCategory?: Partial<Record<BuildItemCategory, string>>;
   run: AgentRun;
   events: AgentEvent[];
+  /** 富事件发射器（agent-ui P1）：与旧 AgentEvent 逐条对应；失败路径自行 emit run_completed */
+  emitRig?: (payload: RigEvent) => void;
 }): DesignResult["proposal"] {
   const context = input.context;
+  const emitRig = input.emitRig;
   input.events.push(
     event(
       input.run.id,
@@ -108,18 +183,19 @@ function composeOrAsk(input: {
       }。`,
     ),
   );
+  emitRig?.({
+    type: "phase", runId: input.run.id, phase: "retrieved",
+    message: `本地目录就绪（${context.catalogSize.toLocaleString("zh-CN")} 条）；质量门后有效候选 ${context.pool.length} 条。`,
+  });
   if (context.pool.length === 0) {
-    input.events.push(
-      event(
-        input.run.id,
-        "question",
-        "waiting",
-        "目录中暂时没有通过质量门的候选（verified/supported），不能凑出可信方案。请先在目录审核流程中补充证据，再回来生成方案。",
-      ),
-    );
+    const emptyMessage = "目录中暂时没有通过质量门的候选（verified/supported），不能凑出可信方案。请先在目录审核流程中补充证据，再回来生成方案。";
+    input.events.push(event(input.run.id, "question", "waiting", emptyMessage));
+    emitRig?.({ type: "question", runId: input.run.id, message: emptyMessage });
+    emitRig?.({ type: "run_completed", runId: input.run.id, status: "empty_pool" });
     return null;
   }
   input.events.push(event(input.run.id, "composing", "started", "正在组合一套兼顾用途、预算和外观的方案。"));
+  emitRig?.({ type: "phase", runId: input.run.id, phase: "composed", message: "正在组合一套兼顾用途、预算和外观的方案。" });
   const generated = generateDesignProposal({
     requestId: input.requestId,
     intent: input.intent,
@@ -130,14 +206,10 @@ function composeOrAsk(input: {
     rationaleByCategory: input.rationaleByCategory,
   });
   if (generated.status === "insufficient") {
-    input.events.push(
-      event(
-        input.run.id,
-        "question",
-        "waiting",
-        `以下类别没有通过质量门的目录候选：${generated.missingCategories.join("、")}。方案不会用资料不足的型号凑数；可在目录中补充证据后重试。`,
-      ),
-    );
+    const insufficientMessage = `以下类别没有通过质量门的目录候选：${generated.missingCategories.join("、")}。方案不会用资料不足的型号凑数；可在目录中补充证据后重试。`;
+    input.events.push(event(input.run.id, "question", "waiting", insufficientMessage));
+    emitRig?.({ type: "question", runId: input.run.id, message: insufficientMessage });
+    emitRig?.({ type: "run_completed", runId: input.run.id, status: "insufficient" });
     return null;
   }
   input.events.push(event(input.run.id, "composing", "completed", `已生成 ${generated.proposal.items.length} 个核心配件候选。`));
@@ -145,6 +217,7 @@ function composeOrAsk(input: {
   input.events.push(event(input.run.id, "validating", "completed", generated.proposal.compatibility.message));
   input.events.push(event(input.run.id, "validating", "completed", "候选、价格与兼容事实由本地目录、价格证据和规则引擎核验，模型不参与事实判断。"));
   input.events.push(event(input.run.id, "completed", "completed", "方案已准备好，可以接受、调整或进入高级 DIY。"));
+  emitRig?.({ type: "phase", runId: input.run.id, phase: "validated", message: generated.proposal.compatibility.message });
   return generated.proposal;
 }
 
@@ -152,11 +225,29 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
   const data = designRequestInputSchema.parse(input);
   const requestId = randomUUID();
   const timestamp = now();
+
+  // run 与富事件发射器先行（agent-ui P1）：意图解析的模型调用也实时留痕
+  const { run, events } = createRun(requestId);
+  const runId = run.id;
+  const emit = createRigEmitter(requestId);
+  emit(runId, { type: "user_message", runId, text: data.rawInput });
+
   // 意图理解：配了 LLM 用模型（失败自动降级），没配直接走本地规则——两条路都如实告知用户
   const llmConfig = resolveLlmConfigFromEnv();
+  emit(runId, {
+    type: "run_started",
+    runId,
+    model: llmConfig?.model ?? "rule-engine",
+    promptVersion: CATALOG_SELECTION_PROMPT_VERSION,
+  });
   let intent;
   let intentNote = "本地规则理解目标（未配置大模型）。";
   if (llmConfig) {
+    const intentStartedAt = now();
+    emit(runId, {
+      type: "tool_call", runId, tool: "parse_intent", state: "running",
+      detail: "大模型解析预算、用途与偏好。", resultIds: [], startedAt: intentStartedAt, finishedAt: null,
+    });
     const llmResult = await parseIntentWithLlm({
       rawInput: data.rawInput,
       explicitBudgetYuan: data.budgetCents !== null && data.budgetCents !== undefined ? data.budgetCents / 100 : null,
@@ -165,9 +256,17 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     if (llmResult.ok) {
       intent = llmResult.data;
       intentNote = `大模型（${llmConfig.model}）已解析预算、用途与偏好。`;
+      emit(runId, {
+        type: "tool_call", runId, tool: "parse_intent", state: "done",
+        detail: intentNote, resultIds: [], startedAt: intentStartedAt, finishedAt: now(),
+      });
     } else {
       intent = parseDesignIntent(data);
       intentNote = `大模型不可用（${llmResult.reason}），已用本地规则理解目标。`;
+      emit(runId, {
+        type: "tool_call", runId, tool: "parse_intent", state: "error",
+        detail: intentNote, resultIds: [], startedAt: intentStartedAt, finishedAt: now(),
+      });
     }
   } else {
     intent = parseDesignIntent(data);
@@ -182,11 +281,13 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
   };
   saveDesignRequest(request);
 
-  const { run, events } = createRun(requestId);
   events.push(event(run.id, "understanding", "started", "正在理解预算、用途和外观偏好。"));
   events.push(event(run.id, "understanding", "completed", intentNote));
+  emit(runId, { type: "phase", runId, phase: "understanding", message: intentNote });
   if (intentNeedsInput(intent)) {
     events.push(event(run.id, "question", "waiting", "还缺少预算或用途，补充一句目标后我才能开始搭配。"));
+    emit(runId, { type: "question", runId, message: "还缺少预算或用途，补充一句目标后我才能开始搭配。" });
+    emit(runId, { type: "run_completed", runId, status: "needs_input" });
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
@@ -201,11 +302,19 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     deadlineMs: 20_000,
   });
   let modelNote: string | null = null;
+  // 富事件侧的相位游标：区分主链推进与同相位过程事件（见 rigPayloadsFromRuntimeEvent）
+  let rigLastPhase: AgentPhase | null = null;
   const outcome = await orchestrateDesignGeneration({
     requestId,
     intent,
     attempt,
     categories: CANDIDATE_CATEGORIES,
+    onEvent: (runtimeEvent) => {
+      for (const payload of rigPayloadsFromRuntimeEvent(runtimeEvent, runId, rigLastPhase)) {
+        emit(runId, payload);
+      }
+      if (runtimeEvent.phase !== "anomaly") rigLastPhase = runtimeEvent.phase;
+    },
     retrieve: () => {
       const context = retrieveCandidateContext(intent);
       return {
@@ -217,9 +326,25 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     },
     tryModelSelection: llmConfig
       ? async (pool) => {
+          const selectionStartedAt = now();
+          emit(runId, {
+            type: "tool_call", runId, tool: "select_catalog_candidates", state: "running",
+            detail: "大模型在质量达标候选中挑选。", resultIds: [], startedAt: selectionStartedAt, finishedAt: null,
+          });
           const selection = await selectCatalogCandidatesWithLlm({ intent, candidates: pool, config: llmConfig });
-          if (!selection.ok) return null;
+          if (!selection.ok) {
+            emit(runId, {
+              type: "tool_call", runId, tool: "select_catalog_candidates", state: "error",
+              detail: selection.reason, resultIds: [], startedAt: selectionStartedAt, finishedAt: now(),
+            });
+            return null;
+          }
           modelNote = `大模型只在 ${Object.keys(selection.data.selectedIds).length} 个质量达标候选类别中提出选择，规格和兼容性仍由系统核验。`;
+          emit(runId, {
+            type: "tool_call", runId, tool: "select_catalog_candidates", state: "done",
+            detail: modelNote, resultIds: Object.values(selection.data.selectedIds),
+            startedAt: selectionStartedAt, finishedAt: now(),
+          });
           return {
             selectedIds: selection.data.selectedIds,
             rationaleByCategory: selection.data.rationaleByCategory,
@@ -228,8 +353,23 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
       : undefined,
     tryModelSwap: llmConfig
       ? async (swapInput) => {
+          const swapStartedAt = now();
           const proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig });
-          if (!proposal.ok) return null;
+          // data = null 是模型的诚实结论（池内没有更优候选），不是错误
+          if (!proposal.ok || !proposal.data) {
+            emit(runId, {
+              type: "tool_call", runId, tool: "propose_swap",
+              state: proposal.ok ? "done" : "error",
+              detail: proposal.ok ? "模型认为池内没有更优候选。" : proposal.reason,
+              resultIds: [], startedAt: swapStartedAt, finishedAt: now(),
+            });
+            return null;
+          }
+          emit(runId, {
+            type: "tool_call", runId, tool: "propose_swap", state: "done",
+            detail: `${proposal.data.category} → ${proposal.data.catalogId}：${proposal.data.reason}`,
+            resultIds: [proposal.data.catalogId], startedAt: swapStartedAt, finishedAt: now(),
+          });
           return proposal.data;
         }
       : undefined,
@@ -260,6 +400,8 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
           ? `以下类别没有通过质量门的目录候选：${outcome.missingCategories.join("、")}。方案不会用资料不足的型号凑数；可在目录中补充证据后重试。`
           : "方案存在无法回溯来源的主张，已被验证器阻止。请稍后重试或调整目标。";
     events.push(event(run.id, "question", "waiting", questionMessage));
+    emit(runId, { type: "question", runId, message: questionMessage });
+    emit(runId, { type: "run_completed", runId, status: outcome.status });
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
@@ -273,6 +415,8 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
   events.push(event(run.id, "completed", "completed", "方案已准备好，可以接受、调整或进入高级 DIY。"));
 
   saveDesignProposal(proposal);
+  emit(runId, { type: "proposal", runId, proposalId: proposal.id, version: proposal.version, title: proposal.title });
+  emit(runId, { type: "run_completed", runId, status: "ok" });
   run.proposalId = proposal.id;
   run.status = "completed";
   run.completedAt = now();
@@ -327,6 +471,12 @@ export function acceptDesignProposal(proposalId: string, allowConflicts = false)
   const run = findRunForRequest(request.id);
   if (run) {
     appendAgentEvent(event(run.id, "accepted", "completed", "你已接受这套方案，正式项目和自动检查结果已保存。"));
+    // 富事件流：接受是主链终点 answered（agent-ui P1）
+    const emitAccepted = createRigEmitter(request.id);
+    emitAccepted(run.id, {
+      type: "phase", runId: run.id, phase: "answered",
+      message: "你已接受这套方案，正式项目和自动检查结果已保存。",
+    });
   }
   return { buildId: checked.build.id, build: checked.build };
 }
@@ -342,20 +492,37 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   if (!request) throw new Error("DESIGN_REQUEST_NOT_FOUND");
   const latest = findLatestProposal(requestId);
   const { run, events } = createRun(requestId);
+  const runId = run.id;
+  const rigEmit = createRigEmitter(requestId);
+  const emitRig = (payload: RigEvent) => rigEmit(runId, payload);
+  const llmConfig = resolveLlmConfigFromEnv();
+  emitRig({ type: "user_message", runId, text: instruction });
+  emitRig({
+    type: "run_started", runId,
+    model: llmConfig?.model ?? "rule-engine",
+    promptVersion: CATALOG_SELECTION_PROMPT_VERSION,
+  });
 
   if (!latest) {
-    events.push(event(run.id, "question", "waiting", "还没有可调整的方案——先完成第一次生成再来调整。"));
+    const noProposalMessage = "还没有可调整的方案——先完成第一次生成再来调整。";
+    events.push(event(run.id, "question", "waiting", noProposalMessage));
+    emitRig({ type: "question", runId, message: noProposalMessage });
+    emitRig({ type: "run_completed", runId, status: "blocked" });
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
     return { request, proposal: null, run, changes: [], versions: [] };
   }
 
-  const llmConfig = resolveLlmConfigFromEnv();
   let updatedIntent: StructuredIntent | null = null;
   let note = "";
   let fallbackReason = "";
   if (llmConfig) {
+    const reviseStartedAt = now();
+    emitRig({
+      type: "tool_call", runId, tool: "revise_intent", state: "running",
+      detail: "大模型理解调整要求。", resultIds: [], startedAt: reviseStartedAt, finishedAt: null,
+    });
     const llmResult = await reviseIntentWithLlm({
       currentIntent: request.intent,
       instruction,
@@ -364,8 +531,16 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     if (llmResult.ok) {
       updatedIntent = llmResult.data;
       note = `大模型（${llmConfig.model}）已理解调整要求。`;
+      emitRig({
+        type: "tool_call", runId, tool: "revise_intent", state: "done",
+        detail: note, resultIds: [], startedAt: reviseStartedAt, finishedAt: now(),
+      });
     } else {
       fallbackReason = llmResult.reason;
+      emitRig({
+        type: "tool_call", runId, tool: "revise_intent", state: "error",
+        detail: `大模型不可用（${fallbackReason}）。`, resultIds: [], startedAt: reviseStartedAt, finishedAt: now(),
+      });
     }
   }
   if (!updatedIntent) {
@@ -382,15 +557,12 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     const capability = llmConfig
       ? `（大模型不可用：${fallbackReason}；本地规则只能处理预算和已有硬件类调整）`
       : "（未配置大模型，本地规则只能处理预算和已有硬件类调整）";
+    const misunderstoodMessage = `我没能理解这条调整："${instruction}"。${capability}你可以换个说法，或直接进入高级 DIY 修改。`;
     events.push(event(run.id, "understanding", "started", "正在理解你的调整要求。"));
-    events.push(
-      event(
-        run.id,
-        "question",
-        "waiting",
-        `我没能理解这条调整："${instruction}"。${capability}你可以换个说法，或直接进入高级 DIY 修改。`,
-      ),
-    );
+    events.push(event(run.id, "question", "waiting", misunderstoodMessage));
+    emitRig({ type: "phase", runId, phase: "understanding", message: "正在理解你的调整要求。" });
+    emitRig({ type: "question", runId, message: misunderstoodMessage });
+    emitRig({ type: "run_completed", runId, status: "needs_input" });
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
@@ -400,18 +572,33 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   events.push(event(run.id, "understanding", "started", "正在理解你的调整要求。"));
   events.push(event(run.id, "understanding", "completed", note));
   events.push(event(run.id, "retrieving", "started", "正在检索目录和已核验规格。"));
+  emitRig({ type: "phase", runId, phase: "understanding", message: note });
   const context = retrieveCandidateContext(updatedIntent);
   const version = nextProposalVersion(requestId);
   let preferredIds;
   let rationaleByCategory;
   if (llmConfig) {
+    const selectionStartedAt = now();
+    emitRig({
+      type: "tool_call", runId, tool: "select_catalog_candidates", state: "running",
+      detail: `大模型在质量达标候选中调整第 ${version} 版。`, resultIds: [], startedAt: selectionStartedAt, finishedAt: null,
+    });
     const selection = await selectCatalogCandidatesWithLlm({ intent: updatedIntent, candidates: context.pool, config: llmConfig });
     if (selection.ok) {
       preferredIds = selection.data.selectedIds;
       rationaleByCategory = selection.data.rationaleByCategory;
       events.push(event(run.id, "composing", "completed", `大模型只在质量达标候选中调整第 ${version} 版，系统会重新检查全部兼容关系。`));
+      emitRig({
+        type: "tool_call", runId, tool: "select_catalog_candidates", state: "done",
+        detail: `大模型只在质量达标候选中调整第 ${version} 版。`,
+        resultIds: Object.values(selection.data.selectedIds), startedAt: selectionStartedAt, finishedAt: now(),
+      });
     } else {
       events.push(event(run.id, "composing", "waiting", `大模型选件不可用（${selection.reason}），已回退到本地规则式候选。`));
+      emitRig({
+        type: "tool_call", runId, tool: "select_catalog_candidates", state: "error",
+        detail: `大模型选件不可用（${selection.reason}）。`, resultIds: [], startedAt: selectionStartedAt, finishedAt: now(),
+      });
     }
   }
   const proposal = composeOrAsk({
@@ -423,18 +610,24 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     rationaleByCategory,
     run,
     events,
+    emitRig: (payload) => emitRig(payload),
   });
   if (!proposal) {
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
-    // 修订后候选不足：保留原方案并如实告知（旧版本仍是有效的审阅对象）
+    // 修订后候选不足：保留原方案并如实告知（旧版本仍是有效的审阅对象）；
+    // run_completed 已由 composeOrAsk 按确切原因发出
     return { request, proposal: latest, run, changes: [], versions: findProposals(requestId) };
   }
-  events.push(event(run.id, "completed", "completed", `第 ${version} 版已就绪：可继续调整、接受，或进入高级 DIY。`));
+  const revisionReadyMessage = `第 ${version} 版已就绪：可继续调整、接受，或进入高级 DIY。`;
+  events.push(event(run.id, "completed", "completed", revisionReadyMessage));
+  emitRig({ type: "phase", runId, phase: "answered", message: revisionReadyMessage });
 
   saveDesignProposal(proposal);
   markProposalsReplaced(requestId, proposal.id);
+  emitRig({ type: "proposal", runId, proposalId: proposal.id, version: proposal.version, title: proposal.title });
+  emitRig({ type: "run_completed", runId, status: "ok" });
   run.proposalId = proposal.id;
   run.status = "completed";
   run.completedAt = now();

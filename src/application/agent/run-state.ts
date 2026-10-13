@@ -41,7 +41,11 @@ export class AgentRunState {
   private readonly events: AgentRuntimeEvent[] = [];
   private currentPhase: AgentPhase = "received";
 
-  constructor(private readonly attemptId: string | null = null) {
+  constructor(
+    private readonly attemptId: string | null = null,
+    /** 实时事件钩子（agent-ui P1）：每 append 一条就同步通知，供总线广播；不影响审计数组 */
+    private readonly onEvent?: (event: AgentRuntimeEvent) => void,
+  ) {
     this.append("received", "会话已接收。");
   }
 
@@ -86,6 +90,7 @@ export class AgentRunState {
       ...(input.errorCode ? { errorCode: input.errorCode } : {}),
     };
     this.events.push(event);
+    this.onEvent?.(event);
     return event;
   }
 }
