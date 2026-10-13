@@ -31,7 +31,7 @@ test("决策台导航：首页与方案页的 active 状态可辨识", async ({ 
   const nav = page.getByRole("navigation", { name: "主导航" });
   await expect(nav.getByRole("link", { name: "开始配置" })).toHaveAttribute("aria-current", "page");
 
-  // 经真实 API 建一个方案，进入 /design/[id] 后"我的方案"应处于 active
+  // 经真实 API 建一个方案，进入 /design/[id] 后"方案会话"应处于 active（P3：会话归属）
   const response = await page.request.post("/api/design", {
     data: { rawInput: "8 千预算，主要玩 2K 游戏，想要安静一点" },
   });
@@ -41,7 +41,7 @@ test("决策台导航：首页与方案页的 active 状态可辨识", async ({ 
 
   await page.goto(`/design/${designId}?view=workbench`);
   await page.waitForLoadState("domcontentloaded");
-  await expect(nav.getByRole("link", { name: "我的方案" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "方案会话" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "开始配置" })).not.toHaveAttribute("aria-current");
 });
 

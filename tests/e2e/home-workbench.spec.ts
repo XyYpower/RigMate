@@ -62,11 +62,11 @@ test("首页：八类空槽位、预算标尺空态与主按钮可达", async ({
   await submit.focus();
   await expect(submit).toBeFocused();
 
-  // 生成中：真实等待状态 + 槽位转为检索中，不显示伪造百分比
+  // 异步创建（P3）：提交立即跳会话页，生成过程在时间线上点亮到方案卡
   await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("8 千预算，主要玩 2K 游戏");
   await submit.click();
-  await expect(page.getByRole("status", { name: "方案生成中" })).toBeVisible();
-  await expect(page.locator(".assembly-slot").first()).toContainText("检索中");
+  await expect(page).toHaveURL(/\/design\/[0-9a-f-]+/);
+  await expect(page.locator(".session-proposal-card")).toBeVisible({ timeout: 30_000 });
 });
 
 test("首页：最近方案入口保留为次级入口", async ({ page }) => {

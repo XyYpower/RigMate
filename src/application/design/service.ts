@@ -221,7 +221,10 @@ function composeOrAsk(input: {
   return generated.proposal;
 }
 
-export async function createDesignRequest(input: unknown): Promise<DesignResult> {
+export async function createDesignRequest(
+  input: unknown,
+  options: { onStarted?: (requestId: string) => void } = {},
+): Promise<DesignResult> {
   const data = designRequestInputSchema.parse(input);
   const requestId = randomUUID();
   const timestamp = now();
@@ -240,8 +243,19 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     model: llmConfig?.model ?? "rule-engine",
     promptVersion: CATALOG_SELECTION_PROMPT_VERSION,
   });
-  let intent;
+  // 规则基线先落库（agent-ui P3）：LLM 理解期间请求行已存在，会话页与事件流可立即订阅
+  let intent = parseDesignIntent(data);
   let intentNote = "本地规则理解目标（未配置大模型）。";
+  const request: DesignRequest = {
+    id: requestId,
+    rawInput: data.rawInput,
+    intent,
+    status: intentNeedsInput(intent) ? "needs_input" as const : "generating" as const,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+  saveDesignRequest(request);
+  options.onStarted?.(requestId);
   if (llmConfig) {
     const intentStartedAt = now();
     emit(runId, {
@@ -260,30 +274,20 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
         type: "tool_call", runId, tool: "parse_intent", state: "done",
         detail: intentNote, resultIds: [], startedAt: intentStartedAt, finishedAt: now(),
       });
+      updateDesignRequestIntent(requestId, intent, intentNeedsInput(intent) ? "needs_input" : "generating");
     } else {
-      intent = parseDesignIntent(data);
       intentNote = `大模型不可用（${llmResult.reason}），已用本地规则理解目标。`;
       emit(runId, {
         type: "tool_call", runId, tool: "parse_intent", state: "error",
         detail: intentNote, resultIds: [], startedAt: intentStartedAt, finishedAt: now(),
       });
     }
-  } else {
-    intent = parseDesignIntent(data);
   }
-  const request: DesignRequest = {
-    id: requestId,
-    rawInput: data.rawInput,
-    intent,
-    status: intentNeedsInput(intent) ? "needs_input" as const : "generating" as const,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-  saveDesignRequest(request);
 
   events.push(event(run.id, "understanding", "started", "正在理解预算、用途和外观偏好。"));
   events.push(event(run.id, "understanding", "completed", intentNote));
   emit(runId, { type: "phase", runId, phase: "understanding", message: intentNote });
+  const finalRequest: DesignRequest = { ...request, intent, status: intentNeedsInput(intent) ? "needs_input" : "generating" };
   if (intentNeedsInput(intent)) {
     events.push(event(run.id, "question", "waiting", "还缺少预算或用途，补充一句目标后我才能开始搭配。"));
     emit(runId, { type: "question", runId, message: "还缺少预算或用途，补充一句目标后我才能开始搭配。" });
@@ -291,7 +295,7 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
     run.status = "completed";
     run.completedAt = now();
     saveAgentRun(run);
-    return { request, proposal: null, run, changes: [], versions: [] };
+    return { request: finalRequest, proposal: null, run, changes: [], versions: [] };
   }
   events.push(event(run.id, "retrieving", "started", "正在检索目录和已核验规格。"));
   // Phase 5：生成流程接入 Agent Runtime（可审计状态机 + 守卫回退 + Claim Ledger）；
@@ -424,7 +428,7 @@ export async function createDesignRequest(input: unknown): Promise<DesignResult>
   request.status = "ready_to_review";
   request.updatedAt = now();
   updateDesignRequestStatus(request.id, request.status);
-  return { request, proposal, run, changes: [], versions: [proposal] };
+  return { request: { ...request, intent, status: "ready_to_review" as const }, proposal, run, changes: [], versions: [proposal] };
 }
 
 export function getDesignResult(requestId: string): DesignResult | null {
@@ -490,7 +494,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   const { instruction } = designRevisionInputSchema.parse(instructionInput);
   const request = findDesignRequest(requestId);
   if (!request) throw new Error("DESIGN_REQUEST_NOT_FOUND");
-  const latest = findLatestProposal(requestId);
+  const latest = findLatestProposal(requestId) ?? null;
   const { run, events } = createRun(requestId);
   const runId = run.id;
   const rigEmit = createRigEmitter(requestId);
@@ -503,21 +507,41 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     promptVersion: CATALOG_SELECTION_PROMPT_VERSION,
   });
 
-  if (!latest) {
-    const noProposalMessage = "还没有可调整的方案——先完成第一次生成再来调整。";
-    events.push(event(run.id, "question", "waiting", noProposalMessage));
-    emitRig({ type: "question", runId, message: noProposalMessage });
-    emitRig({ type: "run_completed", runId, status: "blocked" });
-    run.status = "completed";
-    run.completedAt = now();
-    saveAgentRun(run);
-    return { request, proposal: null, run, changes: [], versions: [] };
-  }
-
   let updatedIntent: StructuredIntent | null = null;
   let note = "";
   let fallbackReason = "";
-  if (llmConfig) {
+  if (!latest) {
+    // needs_input 会话的补充目标（agent-ui P3）：不再挡回，走意图修订 + 重新生成；
+    // 规则修订理解不了时，把补充并入原始描述做一次完整规则理解兜底
+    const rules = reviseIntentWithRules(request.intent, instruction);
+    if (rules.ok) {
+      updatedIntent = rules.intent;
+      note = `已理解补充：${rules.changes.join("；")}。`;
+    } else {
+      const merged = parseDesignIntent({
+        rawInput: `${request.rawInput}；${instruction}`,
+        budgetCents: null,
+        region: request.intent.region,
+      });
+      if (!intentNeedsInput(merged)) {
+        updatedIntent = merged;
+        note = "已理解补充，预算与用途齐了，开始搭配。";
+      }
+    }
+    if (!updatedIntent) {
+      const stillMissing = "还缺预算或用途——补充一句具体目标（比如「2 万预算，主要玩游戏」）我才能开始搭配。";
+      events.push(event(run.id, "question", "waiting", stillMissing));
+      emitRig({ type: "question", runId, message: stillMissing });
+      emitRig({ type: "run_completed", runId, status: "needs_input" });
+      run.status = "completed";
+      run.completedAt = now();
+      saveAgentRun(run);
+      return { request, proposal: null, run, changes: [], versions: [] };
+    }
+    events.push(event(run.id, "understanding", "started", "正在理解你的补充。"));
+    events.push(event(run.id, "understanding", "completed", note));
+    emitRig({ type: "phase", runId, phase: "understanding", message: note });
+  } else if (llmConfig) {
     const reviseStartedAt = now();
     emitRig({
       type: "tool_call", runId, tool: "revise_intent", state: "running",

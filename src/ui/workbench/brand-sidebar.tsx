@@ -30,6 +30,12 @@ function NavIcon({ kind }: { kind: string }) {
           <path d="M5.5 6h5M5.5 8.5h5M5.5 11h3" />
         </svg>
       );
+    case "session":
+      return (
+        <svg {...common}>
+          <path d="M13.5 8a5.5 5.5 0 0 1-8.2 4.8L2.5 13.5l.8-2.7A5.5 5.5 0 1 1 13.5 8Z" />
+        </svg>
+      );
     case "hardware":
       return (
         <svg {...common}>
@@ -61,10 +67,11 @@ type NavEntry = {
   match: (path: string) => boolean;
 };
 
-/** 三个主入口（DESIGN.md §6 BrandSidebar）：方案页 /design/[id] 归属"我的方案" */
+/** 四个主入口（DESIGN.md §6 BrandSidebar）：/design 为会话列表，/design/[id] 归属"方案会话" */
 const NAV_ITEMS: NavEntry[] = [
   { href: "/", label: "开始配置", icon: "start", match: (p) => p === "/" },
-  { href: "/projects", label: "我的方案", icon: "plan", match: (p) => p === "/projects" || p.startsWith("/design/") },
+  { href: "/design", label: "方案会话", icon: "session", match: (p) => p === "/design" || p.startsWith("/design/") },
+  { href: "/projects", label: "我的方案", icon: "plan", match: (p) => p === "/projects" },
   { href: "/hardware", label: "硬件资料", icon: "hardware", match: (p) => p.startsWith("/hardware") },
 ];
 

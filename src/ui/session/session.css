@@ -172,3 +172,29 @@
 .session-composer input:focus { border-color: var(--wb-accent); outline: none; }
 .session-composer-submit { flex: none; }
 .session-composer-feedback { flex-basis: 100%; margin: 0; color: var(--wb-ink-muted); font-size: 12px; }
+
+/* ---------- 会话列表（P3 /design） ---------- */
+.session-list-page { width: min(760px, calc(100% - 40px)); }
+.session-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.session-list-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 13px 16px; text-decoration: none; color: inherit;
+  transition: border-color var(--wb-fast) ease;
+}
+.session-list-item:hover { border-color: var(--wb-accent); }
+.session-list-item-main { min-width: 0; }
+.session-list-goal {
+  margin: 0; font-weight: 600; font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.session-list-meta { margin: 3px 0 0; color: var(--wb-ink-muted); font-size: 11px; display: flex; gap: 10px; align-items: baseline; }
+.session-list-time { color: var(--wb-ink-faint); }
+.session-list-status {
+  flex: none; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: var(--wb-unknown-soft); color: var(--wb-ink-muted);
+}
+.session-list-status.status-needs_input { background: var(--wb-warn-soft); color: var(--wb-warn); }
+.session-list-status.status-generating { background: var(--wb-accent-soft); color: var(--wb-accent); }
+.session-list-status.status-accepted { background: var(--wb-pass-soft); color: var(--wb-pass); }
+.session-list-empty { text-align: center; padding: 34px 18px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.session-list-empty p { margin: 0; color: var(--wb-ink-muted); }

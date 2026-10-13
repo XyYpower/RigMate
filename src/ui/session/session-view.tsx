@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useDesignSession } from "./use-design-session";
 import { SessionTimeline } from "./session-timeline";
 
 /**
- * 会话视图（agent-ui-design §5.3，P2）：/design/[id] 的默认形态。
- * 消息时间线 + 方案卡 + 常驻修订输入框；完整核验留在 ?view=workbench。
+ * 会话视图（agent-ui-design §5.3，P2/P3）：/design/[id] 的默认形态。
+ * 消息时间线 + 方案卡 + 常驻输入框（有方案=修订、无方案=补充目标）；
+ * 完整核验留在 ?view=workbench。
  */
 export function DesignSessionView({ requestId }: { requestId: string }) {
   const router = useRouter();
@@ -16,6 +17,7 @@ export function DesignSessionView({ requestId }: { requestId: string }) {
   const [revision, setRevision] = useState("");
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
+  const composerInputRef = useRef<HTMLInputElement | null>(null);
 
   const latestProposal = state.proposals.length > 0 ? state.proposals[state.proposals.length - 1]! : null;
   const workbenchHref = `/design/${requestId}?view=workbench`;
@@ -97,7 +99,13 @@ export function DesignSessionView({ requestId }: { requestId: string }) {
       {needsInput && (
         <div className="session-needs-input wb-panel">
           <p>{state.question}</p>
-          <Link className="button primary" href="/">补充目标</Link>
+          <button
+            className="button primary"
+            type="button"
+            onClick={() => composerInputRef.current?.focus()}
+          >
+            补充目标
+          </button>
         </div>
       )}
 
@@ -107,6 +115,7 @@ export function DesignSessionView({ requestId }: { requestId: string }) {
         </label>
         <input
           id="session-revision-input"
+          ref={composerInputRef}
           name="instruction"
           value={revision}
           onChange={(event) => setRevision(event.target.value)}

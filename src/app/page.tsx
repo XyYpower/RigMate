@@ -66,14 +66,15 @@ export default function Home() {
     setBusy(true);
     setMessage("");
     try {
+      // 异步模式（agent-ui P3）：请求落库即返回 requestId，生成过程在会话页流式观看
       const response = await fetch("/api/design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawInput: goalValue, budgetCents: amount ? Math.round(amount * 100) : undefined }),
+        body: JSON.stringify({ rawInput: goalValue, budgetCents: amount ? Math.round(amount * 100) : undefined, async: true }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "暂时无法生成方案。");
-      router.push(`/design/${data.result.request.id}`);
+      router.push(`/design/${data.requestId}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "暂时无法生成方案，请重试。");
       setBusy(false);

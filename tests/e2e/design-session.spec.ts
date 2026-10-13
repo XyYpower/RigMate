@@ -44,6 +44,32 @@ test("会话时间线：信息不足时给出追问卡片与补充入口", async
   await expect(page.locator(".session-needs-input")).toBeVisible();
 });
 
+test("会话时间线：追问后在会话页补充目标即可开始生成（P3）", async ({ page }) => {
+  const designId = await createDesignViaApi(page, "帮我配一台电脑");
+  await page.goto(`/design/${designId}`);
+  await page.waitForLoadState("domcontentloaded");
+  await expect(page.locator(".session-question-text").first()).toBeVisible();
+
+  const composer = page.getByRole("textbox", { name: "补充你的装机目标" });
+  await composer.fill("预算 2 万，主要玩 3A 游戏和视频剪辑");
+  await page.getByRole("button", { name: "重新生成" }).click();
+
+  await expect(page.locator(".session-proposal-card").first()).toBeVisible({ timeout: 30_000 });
+  // 补充指令作为用户消息进入时间线
+  await expect(page.locator(".session-user-text").filter({ hasText: "预算 2 万" })).toBeVisible();
+});
+
+test("方案会话列表：列出最近会话并可进入（P3）", async ({ page }) => {
+  const designId = await createDesignViaApi(page, "8000 预算，玩游戏，机箱要小");
+  await page.goto("/design");
+  await page.waitForLoadState("domcontentloaded");
+
+  const item = page.locator(".session-list-item").filter({ hasText: "8000 预算" }).first();
+  await expect(item).toBeVisible();
+  await item.click();
+  await expect(page).toHaveURL(new RegExp(`/design/${designId}`));
+});
+
 test("会话时间线：修订输入提交后续流生成第 2 版方案卡", async ({ page }) => {
   const designId = await createDesignViaApi(page, "2 万预算，白色海景房，剪辑和游戏");
   await page.goto(`/design/${designId}`);

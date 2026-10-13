@@ -47,21 +47,34 @@ export function DesignWorkbenchView() {
   const [viewedVersion, setViewedVersion] = useState<number | null>(null);
 
   useEffect(() => {
+    // 404 重试（agent-ui P3）：异步创建后生成仍在进行（run 未落库），等它完成
     let cancelled = false;
-    void fetch(`/api/design/${id}`).then(async (response) => {
-      if (response.status === 404) throw new Error("not-found");
-      if (!response.ok) throw new Error("load-failed");
-      const data = await response.json();
-      if (!cancelled) {
-        setResult(data.result);
-        setViewedVersion(data.result.proposal?.version ?? null);
-      }
-    }).catch(() => {
-      if (!cancelled) setLoadError(true);
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+    const load = () => {
+      void fetch(`/api/design/${id}`).then(async (response) => {
+        if (response.status === 404 && attempts < 10) {
+          attempts += 1;
+          timer = setTimeout(load, 1500);
+          return;
+        }
+        if (!response.ok) throw new Error(response.status === 404 ? "not-found" : "load-failed");
+        const data = await response.json();
+        if (!cancelled) {
+          setResult(data.result);
+          setViewedVersion(data.result.proposal?.version ?? null);
+        }
+      }).catch(() => {
+        if (!cancelled) setLoadError(true);
+      }).finally(() => {
+        if (!cancelled && attempts === 0) setLoading(false);
+      });
+    };
+    load();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [id]);
 
   const proposal = result?.proposal ?? null;
