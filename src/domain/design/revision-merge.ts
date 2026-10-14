@@ -22,6 +22,16 @@ export const INTENT_FIELDS = [
 
 export type IntentField = (typeof INTENT_FIELDS)[number];
 
+/** 中文展示名（事件说明与用户提示用；字段名本身保持代码语义） */
+export const INTENT_FIELD_LABELS: Record<IntentField, string> = {
+  budgetCents: "预算",
+  useCases: "用途",
+  appearance: "外观",
+  existingParts: "已有硬件",
+  constraints: "约束",
+  region: "地区",
+};
+
 /** 指令触达识别：宁可略宽松（多接受一个用户真的提到的字段），不可漏掉关键词 */
 const TOUCH_PATTERNS: Array<[IntentField, RegExp]> = [
   ["budgetCents", /预算|压到|压在|控制在|改成|调整为|花到/],

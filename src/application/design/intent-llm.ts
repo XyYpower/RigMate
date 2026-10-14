@@ -3,6 +3,7 @@ import { structuredIntentSchema, type StructuredIntent } from "@/contracts/desig
 import { completeJson, type LlmConfig, type LlmJsonResult } from "@/infra/llm/client";
 import type { CandidateSummary } from "@/domain/catalog/ranking";
 import type { BuildItemCategory } from "@/domain/build/types";
+import type { ConversationContext } from "@/domain/design/conversation-context";
 import { getAgentPrompt } from "@/application/agent/prompts/registry";
 
 /**
@@ -100,6 +101,8 @@ export const REVISION_SYSTEM_PROMPT = `你是装机助手的方案调整器。�
 export async function reviseIntentWithLlm(input: {
   currentIntent: StructuredIntent;
   instruction: string;
+  /** M1 会话上下文：结构化摘要 + 最近两轮用户语境，帮模型理解指代与未说出口的约束 */
+  context?: ConversationContext;
   config: LlmConfig;
   fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
   /** 调用级思考策略（缺省随全局配置）；选件/换件的降级阶梯会显式关思考 */
@@ -107,6 +110,13 @@ export async function reviseIntentWithLlm(input: {
   /** 输出 token 硬顶（含思考）：按调用类型给足预算，封死滥用输出面 */
   maxTokens?: number;
 }): Promise<LlmJsonResult<StructuredIntent>> {
+  const contextNote = input.context
+    ? `\n最近用户消息：${JSON.stringify(input.context.recentUserMessages)}${
+        input.context.latestTradeoffs.length > 0
+          ? `\n当前方案取舍：${JSON.stringify(input.context.latestTradeoffs)}`
+          : ""
+      }`
+    : "";
   const result = await completeJson({
     config: input.config,
     system: REVISION_SYSTEM_PROMPT,
@@ -117,7 +127,7 @@ export async function reviseIntentWithLlm(input: {
       existingParts: input.currentIntent.existingParts,
       constraints: input.currentIntent.constraints,
       region: input.currentIntent.region,
-    })}\n调整要求：${input.instruction}`,
+    })}${contextNote}\n调整要求：${input.instruction}`,
     schema: llmIntentOutputSchema,
     ...(input.thinking ? { thinking: input.thinking } : {}),
     ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),

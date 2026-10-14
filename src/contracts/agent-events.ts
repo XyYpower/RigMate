@@ -32,6 +32,7 @@ export const rigEventTypeSchema = z.enum([
   "proposal",
   "user_message",
   "run_completed",
+  "revision_merged",
 ]);
 export type RigEventType = z.infer<typeof rigEventTypeSchema>;
 
@@ -86,6 +87,18 @@ export const rigPayloadSchema = z.discriminatedUnion("type", [
     type: z.literal("run_completed"),
     runId: z.string(),
     status: z.enum(["ok", "blocked", "insufficient", "empty_pool", "needs_input"]),
+  }),
+  z.object({
+    // 修订合并审计（M1）：每轮修订保存 before/instruction/model/merged + 字段清单，
+    // 用于定位"模型理解错在哪"；rejectedFields = 被来源优先级拦下的漂移字段
+    type: z.literal("revision_merged"),
+    runId: z.string(),
+    instruction: z.string(),
+    beforeIntent: z.record(z.string(), z.unknown()),
+    modelIntent: z.record(z.string(), z.unknown()),
+    mergedIntent: z.record(z.string(), z.unknown()),
+    changedFields: z.array(z.string()),
+    rejectedFields: z.array(z.string()),
   }),
 ]);
 export type RigEvent = z.infer<typeof rigPayloadSchema>;

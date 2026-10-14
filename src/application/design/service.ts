@@ -7,6 +7,8 @@ import { parseIntentWithLlm, proposeSwapWithLlm, reviseIntentWithLlm, selectCata
 import { loadPriceContext } from "./price-context";
 import { parseDesignIntent, intentNeedsInput, followupQuestionFor } from "@/domain/design/intent";
 import { reviseIntentWithRules } from "@/domain/design/revision";
+import { buildConversationContext } from "@/domain/design/conversation-context";
+import { INTENT_FIELD_LABELS, mergeRevisionIntent, type IntentField, type RevisionMergeResult } from "@/domain/design/revision-merge";
 import { diffProposals } from "@/domain/design/diff";
 import { generateDesignProposal, type CandidateQualityContext } from "@/domain/design/proposal";
 import { buildCandidatePool, type CandidateSummary } from "@/domain/catalog/ranking";
@@ -27,6 +29,7 @@ import {
   updateDesignRequestIntent,
   updateDesignRequestStatus,
   findPreviousProposal,
+  countAgentRuns,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
 import { decorateProposalItems } from "@/infra/catalog-import/display-names";
@@ -244,6 +247,31 @@ function composeOrAsk(input: {
  */
 function decorateProposal(proposal: DesignProposal): DesignProposal {
   return { ...proposal, items: decorateProposalItems(proposal.items) };
+}
+
+/** 修订轮审计（M1）：before/instruction/model/merged + 字段清单整体落 agent_event_log */
+function emitRevisionMerged(
+  emitRig: (payload: RigEvent) => void,
+  runId: string,
+  instruction: string,
+  before: StructuredIntent,
+  model: StructuredIntent,
+  merge: RevisionMergeResult,
+): void {
+  emitRig({
+    type: "revision_merged",
+    runId,
+    instruction,
+    beforeIntent: before,
+    modelIntent: model,
+    mergedIntent: merge.intent,
+    changedFields: [...merge.changedFields],
+    rejectedFields: [...merge.rejectedFields],
+  });
+}
+
+function fieldLabels(fields: IntentField[]): string {
+  return fields.map((field) => INTENT_FIELD_LABELS[field] ?? field).join("、");
 }
 
 /**
@@ -670,16 +698,29 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     const llmResult = await reviseIntentWithLlm({
       currentIntent: request.intent,
       instruction,
+      context: buildConversationContext({
+        requestId,
+        turn: countAgentRuns(requestId) + 1,
+        intent: request.intent,
+        latestProposal: latest,
+        userMessages: [instruction],
+      }),
       config: llmConfig,
       maxTokens: 1200,
     });
     if (llmResult.ok) {
-      updatedIntent = llmResult.data;
+      // M1 合并守卫：模型只被允许改动用户明确触及的字段，漂移字段还原 before 值
+      const merge = mergeRevisionIntent({ before: request.intent, instruction, modelIntent: llmResult.data });
+      updatedIntent = merge.intent;
       note = `大模型（${llmConfig.model}）已理解调整要求。`;
+      if (merge.rejectedFields.length > 0) {
+        note += `已忽略对未提及字段（${fieldLabels(merge.rejectedFields)}）的改动。`;
+      }
       emitRig({
         type: "tool_call", runId, tool: "revise_intent", state: "done",
         detail: note, resultIds: [], startedAt: reviseStartedAt, finishedAt: now(),
       });
+      emitRevisionMerged(emitRig, runId, instruction, request.intent, llmResult.data, merge);
     } else {
       fallbackReason = llmResult.reason;
       emitRig({
@@ -691,10 +732,13 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   if (!updatedIntent) {
     const rules = reviseIntentWithRules(request.intent, instruction);
     if (rules.ok) {
-      updatedIntent = rules.intent;
+      // 规则路径同样过合并守卫：审计口径统一（规则只改触达字段，通常无 rejected）
+      const merge = mergeRevisionIntent({ before: request.intent, instruction, modelIntent: rules.intent });
+      updatedIntent = merge.intent;
       note = note
         ? `大模型不可用（${fallbackReason}），本地规则已理解调整：${rules.changes.join("；")}。`
         : `已理解调整：${rules.changes.join("；")}。`;
+      emitRevisionMerged(emitRig, runId, instruction, request.intent, rules.intent, merge);
     }
   }
 

@@ -240,6 +240,16 @@ export function findRunForRequest(requestId: string): AgentRun | undefined {
   };
 }
 
+/** 会话轮次计数（M1）：每次用户动作产生一个 run；创建=1，修订依次递增 */
+export function countAgentRuns(requestId: string): number {
+  const row = ensureDatabase()
+    .select({ count: sql<number>`count(*)` })
+    .from(agentRuns)
+    .where(eq(agentRuns.requestId, requestId))
+    .get();
+  return row?.count ?? 0;
+}
+
 export function appendAgentEvent(event: AgentEvent): void {
   ensureDatabase().insert(agentEvents).values({
     id: event.id,
