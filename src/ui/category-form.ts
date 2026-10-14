@@ -11,7 +11,7 @@ export type FieldDef =
       options: { value: string; label: string }[];
     };
 
-export type ItemSpec = Record<string, string | number | string[] | undefined>;
+export type ItemSpec = Record<string, string | number | boolean | string[] | undefined>;
 
 type CategoryMeta = {
   label: string;

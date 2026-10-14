@@ -14,27 +14,34 @@ export function checkPsuCapacity(items: BuildItem[]): Finding | null {
 
   const missingFields: string[] = [];
   if (!cpu) missingFields.push("CPU（未添加条目，无法估算功耗）");
-  else if (cpu.spec.tdpWatts === undefined) missingFields.push("CPU TDP 功耗");
+  else if (cpu.spec.ptpMaxWatts === undefined && cpu.spec.tdpWatts === undefined) missingFields.push("CPU 功耗（PTP/TDP）");
   if (!gpu) missingFields.push("显卡（未添加条目，无法估算功耗）");
   else if (gpu.spec.tdpWatts === undefined) missingFields.push("显卡 TDP 功耗");
   if (psu.spec.ratedWatts === undefined) missingFields.push("电源额定功率");
   if (missingFields.length > 0) {
     return unknownFinding("R-PSU-001", itemIds, missingFields);
   }
+  const cpuWatts = cpu?.spec.ptpMaxWatts ?? cpu?.spec.tdpWatts ?? 0;
   const qualityGate = gateFieldQuality("R-PSU-001", itemIds, [
     { item: psu, field: "ratedWatts", label: "电源额定功率" },
-    ...(cpu ? [{ item: cpu, field: "tdpWatts", label: "CPU TDP 功耗" as const }] : []),
+    ...(cpu
+      ? [
+          cpu.spec.ptpMaxWatts !== undefined
+            ? { item: cpu, field: "ptpMaxWatts", label: "CPU 峰值功耗" as const }
+            : { item: cpu, field: "tdpWatts", label: "CPU TDP 功耗" as const },
+        ]
+      : []),
     ...(gpu ? [{ item: gpu, field: "tdpWatts", label: "显卡 TDP 功耗" as const }] : []),
   ]);
   if (qualityGate) return qualityGate;
 
-  const requiredWatts =
-    (cpu?.spec.tdpWatts ?? 0) + (gpu?.spec.tdpWatts ?? 0) + OTHER_COMPONENTS_BASELINE_WATTS;
+  // hw-agent 数据集公式：峰值 = CPU PTP + GPU TGP + 主板/内存/存储/散热基线
+  const requiredWatts = cpuWatts + (gpu?.spec.tdpWatts ?? 0) + OTHER_COMPONENTS_BASELINE_WATTS;
   const ratedWatts = psu.spec.ratedWatts ?? 0;
 
   const assumptions = [
-    `按 CPU TDP + 显卡 TDP + ${OTHER_COMPONENTS_BASELINE_WATTS}W（主板/内存/存储/风扇估算基线）计算。`,
-    "未计算瞬时功耗峰值，仅作粗粒度参考。",
+    `按 CPU 峰值（PTP）${cpuWatts}W + 显卡 TGP + ${OTHER_COMPONENTS_BASELINE_WATTS}W（主板/内存/存储/风扇估算基线）计算。`,
+    "已含 CPU 瞬时峰值口径；多设备同时满载的长尾场景仍建议留额外余量。",
   ];
 
   if (requiredWatts >= ratedWatts) {

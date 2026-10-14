@@ -29,8 +29,9 @@
 !/data/evals/
 /data/evals/*
 !/data/evals/design-selection-cases.json
-# 精选硬件规格库（hw-agent 产物，723 型号人工校验，agent 主参考目录）
+# 精选硬件规格库（hw-agent 产物，723 型号人工校验，agent 主参考目录）；catalog 其余仍本地
 !/data/catalog/
+/data/catalog/*
 !/data/catalog/hwagent/
 
 # misc
@@ -57,3 +58,6 @@ next-env.d.ts
 # AI 工具运行时状态
 .superpowers/
 .worktrees/
+
+# ZCode 会话本地状态
+.zcode/

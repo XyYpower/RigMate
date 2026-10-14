@@ -47,7 +47,7 @@ const CASE_RAW = {
 };
 
 describe("hwagent 目录映射", () => {
-  it("CPU：name_cn 作展示名，英文型号进别名，tdpWatts 取 ptp_max", () => {
+  it("CPU：name_cn 作展示名，英文型号进别名，tdp/ptp 分离 + m2Lanes 映射", () => {
     const mapped = mapHwagentRecord(CPU_RAW, "amd-9800x3d", "cpu");
     expect(mapped.id).toBe("hw-amd-9800x3d");
     expect(mapped.category).toBe("cpu");
@@ -55,7 +55,7 @@ describe("hwagent 目录映射", () => {
     expect(mapped.nameZh).toBe("锐龙7 9800X3D");
     expect(mapped.aliases).toContain("Ryzen 7 9800X3D");
     expect(mapped.aliases).toContain("R7 9800X3D");
-    expect(mapped.spec).toEqual({ socket: "AM5", tdpWatts: 120 });
+    expect(mapped.spec).toEqual({ socket: "AM5", tdpWatts: 120, ptpMaxWatts: 120, m2Lanes: 4 });
   });
 
   it("GPU：英文名不写 name_zh（走 localization 厂商前缀回退），供电接口计数", () => {

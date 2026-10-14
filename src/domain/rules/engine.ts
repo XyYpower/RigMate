@@ -10,6 +10,9 @@ import {
 import { checkCoolerCaseHeight, checkGpuCaseLength, checkMotherboardCase } from "./case";
 import { checkPsuCapacity, checkPsuConnectors } from "./power";
 import { checkCoolerSocket } from "./cooler";
+import { checkCpuM2Lanes } from "./cpu-storage";
+import { checkCoolerRamClearance } from "./cooler-ram";
+import { checkMotherboardCpuPower } from "./motherboard-cpu";
 
 type Rule = {
   id: string;
@@ -29,6 +32,9 @@ const RULES: Rule[] = [
   { id: "R-COOLER-CASE-001", run: checkCoolerCaseHeight },
   { id: "R-STORAGE-001", run: checkStorageInterface },
   { id: "R-STORAGE-002", run: checkStoragePortCount },
+  { id: "R-CPU-MB-002", run: checkCpuM2Lanes },
+  { id: "R-MB-CPU-002", run: checkMotherboardCpuPower },
+  { id: "R-COOLER-RAM-001", run: checkCoolerRamClearance },
 ];
 
 const STATUS_RANK: Record<FindingStatus, number> = {

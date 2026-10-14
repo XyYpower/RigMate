@@ -161,12 +161,17 @@ function baseEntry(raw: Raw, sourceId: string): { id: string; name: string; alia
 // ---- 各类目 spec 映射 ----
 
 function mapCpu(raw: Raw): SpecRecord {
-  // 功耗纪律：数据集明示散热/整机功耗按 ptp_max 而非 tdp
-  const watts = notNull(int(raw, "ptp_max")) ?? notNull(int(raw, "tdp"));
+  // 功耗双字段：tdpWatts=TDP 规格，ptpMaxWatts=PTP 瞬时最大（数据集明示散热/整机功耗按 PTP）
+  const tdp = notNull(int(raw, "tdp"));
+  const ptpMax = notNull(int(raw, "ptp_max"));
+  const hasIgpu = raw.has_igpu;
   return {
     ...perfFields(raw),
     ...(str(raw, "socket") ? { socket: str(raw, "socket")! } : {}),
-    ...(watts !== undefined && watts > 0 ? { tdpWatts: watts } : {}),
+    ...(tdp !== undefined && tdp > 0 ? { tdpWatts: tdp } : {}),
+    ...(ptpMax !== undefined && ptpMax > 0 ? { ptpMaxWatts: ptpMax } : {}),
+    ...(notNull(int(raw, "m2_lanes")) !== undefined ? { m2Lanes: int(raw, "m2_lanes") } : {}),
+    ...(typeof hasIgpu === "boolean" ? { hasIgpu } : {}),
   };
 }
 
@@ -185,6 +190,8 @@ function mapMotherboard(raw: Raw): SpecRecord {
     ...(countPcieX16Slots(str(raw, "pcie_slots")) !== undefined
       ? { pcieX16Slots: countPcieX16Slots(str(raw, "pcie_slots")) }
       : {}),
+    ...(notNull(int(raw, "vrm_score")) !== undefined ? { vrmScore: int(raw, "vrm_score") } : {}),
+    ...(notNull(int(raw, "target_cpu_tdp")) !== undefined ? { targetCpuTdpWatts: int(raw, "target_cpu_tdp") } : {}),
   };
 }
 
@@ -194,15 +201,18 @@ function mapGpu(raw: Raw): SpecRecord {
     ...(notNull(int(raw, "length_mm")) !== undefined ? { lengthMm: int(raw, "length_mm") } : {}),
     ...(notNull(int(raw, "tgp_w")) !== undefined && int(raw, "tgp_w")! > 0 ? { tdpWatts: int(raw, "tgp_w") } : {}),
     ...parsePowerConnectors(raw),
+    ...(notNull(int(raw, "vram_gb")) !== undefined ? { vramGb: int(raw, "vram_gb") } : {}),
   };
 }
 
 function mapRam(raw: Raw): SpecRecord {
   const ddr = parseDdr(str(raw, "ddr"));
+  const ramHeight = notNull(int(raw, "height_mm"));
   return {
     ...perfFields(raw),
     ...(ddr ? { ddrType: ddr } : {}),
     ...(notNull(int(raw, "sticks")) !== undefined ? { sticks: int(raw, "sticks") } : {}),
+    ...(ramHeight !== undefined && ramHeight > 0 ? { heightMm: ramHeight } : {}),
   };
 }
 
@@ -232,6 +242,9 @@ function mapCooler(raw: Raw): SpecRecord {
     ...(sockets.length > 0 ? { supportedSockets: sockets } : {}),
     // AIO 水冷 height_mm=0（无塔高概念）：0 与"未知"在这里同义，省略而不是写非法值
     ...(heightMm !== undefined && heightMm > 0 ? { heightMm } : {}),
+    ...(notNull(int(raw, "memory_clearance_mm")) !== undefined && int(raw, "memory_clearance_mm")! > 0
+      ? { memoryClearanceMm: int(raw, "memory_clearance_mm") }
+      : {}),
   };
 }
 
