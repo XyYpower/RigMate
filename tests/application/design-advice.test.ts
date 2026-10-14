@@ -11,6 +11,7 @@ process.env.RIGMATE_DB_PATH = join(tempDir, "advice.db");
 
 const contracts = await import("@/contracts/design");
 const repo = await import("@/infra/db/repositories/design-repository");
+const advice = await import("@/application/design/advice-llm");
 const { closeDatabase } = await import("@/infra/db/client");
 
 afterAll(() => {
@@ -185,5 +186,141 @@ describe("experienceAdvice 持久化", () => {
     const legacy = contracts.designProposalSchema.parse(baseProposal());
     expect(legacy.experienceAdvice).toEqual([]);
   });
+});
 
+describe("advice LLM 调用与守卫（hybrid-llm-advice 计划 Task 2）", () => {
+  const config = {
+    baseUrl: "https://gw.example.com/v1",
+    apiKey: "sk-test",
+    model: "test-model",
+    timeoutMs: 1000,
+  };
+
+  function llmFetchWith(content: string) {
+    return async () =>
+      new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200 });
+  }
+
+  type AdviceInput = Parameters<typeof advice.generateExperienceAdvice>[0];
+
+  function adviceInput(overrides: Partial<AdviceInput> = {}): AdviceInput {
+    return {
+      intent: {
+        budgetCents: 2_000_000,
+        useCases: ["剪辑"],
+        appearance: ["白色"],
+        existingParts: [],
+        constraints: [],
+        region: "中国大陆",
+      },
+      proposal: {
+        title: "2 万白色剪辑机",
+        budgetCents: 2_000_000,
+        items: [{ category: "gpu" as const, label: "RTX 4070 SUPER" }],
+        compatibility: {
+          status: "ok" as const,
+          message: "全部通过",
+          blockCount: 0,
+          warnCount: 0,
+          unknownCount: 0,
+          passCount: 8,
+        },
+      },
+      candidates: [],
+      config,
+      ...overrides,
+    };
+  }
+
+  it("合法经验建议：通过守卫返回建议数组", async () => {
+    const result = await advice.generateExperienceAdvice(
+      adviceInput({
+        fetchImpl: llmFetchWith(
+          '{"suggestions":[{"kind":"experience_advice","category":"gpu","title":"显存取舍","detail":"剪辑用途通常更看重显存余量","requiresVerification":false}]}',
+        ),
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]?.kind).toBe("experience_advice");
+    }
+  });
+
+  it("合法数据库外产品提示：必须带产品名与待验证标记", async () => {
+    const result = await advice.generateExperienceAdvice(
+      adviceInput({
+        fetchImpl: llmFetchWith(
+          '{"suggestions":[{"kind":"external_product_hint","category":"case","title":"待验证产品","detail":"海景房机箱还有一款值得核验","productName":"某品牌海景房机箱","requiresVerification":true}]}',
+        ),
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data[0]?.kind).toBe("external_product_hint");
+      expect(result.data[0]?.requiresVerification).toBe(true);
+    }
+  });
+
+  it("输出价格等未验证事实字段 → strict schema 拒绝（ok=false）", async () => {
+    const result = await advice.generateExperienceAdvice(
+      adviceInput({
+        fetchImpl: llmFetchWith(
+          '{"suggestions":[{"kind":"external_product_hint","category":"gpu","title":"建议型号","detail":"约 ¥19999","productName":"RTX 5090","requiresVerification":true,"priceCents":1999900}]}',
+        ),
+      }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("输出不存在的类别 → 拒绝（ok=false）", async () => {
+    const result = await advice.generateExperienceAdvice(
+      adviceInput({
+        fetchImpl: llmFetchWith(
+          '{"suggestions":[{"kind":"experience_advice","category":"soundcard","title":"声卡建议","detail":"可以考虑加一块声卡","requiresVerification":false}]}',
+        ),
+      }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("调用失败（网络错误）→ ok=false，调用方降级且不影响正式方案", async () => {
+    const result = await advice.generateExperienceAdvice(
+      adviceInput({
+        fetchImpl: async () => {
+          throw new Error("network down");
+        },
+      }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("传给模型的候选每类最多 4 条：第 5 条候选名不出现在提示词里", async () => {
+    let captured = "";
+    const gpuCandidate = (index: number) => ({
+      canonicalId: `gpu-${index}`,
+      category: "gpu" as const,
+      name: `显卡候选${index}号`,
+      spec: {},
+      qualityStatus: "supported" as const,
+      sourceIds: [],
+      missingFields: [],
+      priceCents: null,
+      retrievalReasons: [],
+    });
+    const result = await advice.generateExperienceAdvice(
+      adviceInput({
+        candidates: [1, 2, 3, 4, 5].map(gpuCandidate),
+        fetchImpl: async (input: string, init: RequestInit) => {
+          captured = String(init.body);
+          return new Response(JSON.stringify({ choices: [{ message: { content: '{"suggestions":[]}' } }] }), {
+            status: 200,
+          });
+        },
+      }),
+    );
+    expect(result.ok).toBe(true);
+    expect(captured).toContain("显卡候选4号");
+    expect(captured).not.toContain("显卡候选5号");
+  });
 });

@@ -1,3 +1,4 @@
+import { ADVICE_PROMPT_VERSION, ADVICE_SYSTEM_PROMPT } from "./advice-v1";
 import { SELECTION_PROMPT_VERSION, SELECTION_SYSTEM_PROMPT } from "./selection-v1";
 import { SWAP_PROMPT_VERSION, SWAP_SYSTEM_PROMPT } from "./swap-v1";
 
@@ -6,7 +7,7 @@ import { SWAP_PROMPT_VERSION, SWAP_SYSTEM_PROMPT } from "./swap-v1";
  * AgentEvent.promptVersion 取自这里，保证"事件里的版本号 ↔ 提示词原文"可对应。
  */
 
-export type AgentPromptKind = "catalog-selection" | "swap";
+export type AgentPromptKind = "catalog-selection" | "swap" | "advice";
 
 export type AgentPromptRegistration = {
   version: string;
@@ -21,6 +22,10 @@ export const AGENT_PROMPTS: Record<AgentPromptKind, AgentPromptRegistration> = {
   swap: {
     version: SWAP_PROMPT_VERSION,
     system: SWAP_SYSTEM_PROMPT,
+  },
+  advice: {
+    version: ADVICE_PROMPT_VERSION,
+    system: ADVICE_SYSTEM_PROMPT,
   },
 };
 
