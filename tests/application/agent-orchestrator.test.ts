@@ -79,6 +79,19 @@ describe("Agent 编排器（Phase 5）", () => {
     expect(JSON.stringify(result)).not.toContain("internal database detail");
   });
 
+  it("编排结果暴露质量门候选池（混合建议层的输入，不影响正式路径）", async () => {
+    const context = fixtureRetrieve();
+    const result = await orchestrateDesignGeneration({
+      requestId: "00000000-0000-4000-8000-00000000a009", intent: INTENT,
+      attempt: attempt(), categories: CATEGORIES, retrieve: () => context,
+    });
+    expect(result.status).toBe("ok");
+    expect(result.pool.length).toBeGreaterThan(0);
+    for (const candidate of result.pool) {
+      expect(["verified", "supported"]).toContain(candidate.qualityStatus);
+    }
+  });
+
   it("正常路径：相位按主链推进，事件携带审计字段，主张全部入账", async () => {
     const outcome = await orchestrateDesignGeneration({
       requestId: "00000000-0000-4000-8000-00000000a001",

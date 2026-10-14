@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { designRequestInputSchema, designRevisionInputSchema, type AgentEvent, type AgentRun, type DesignProposal, type DesignRequest, type DesignResult, type StructuredIntent } from "@/contracts/design";
+import { designRequestInputSchema, designRevisionInputSchema, type AgentEvent, type AgentRun, type DesignProposal, type DesignRequest, type DesignResult, type ExperienceAdviceItem, type StructuredIntent } from "@/contracts/design";
 import { loadSourcedCatalog } from "@/infra/catalog-import/load";
-import { resolveLlmConfigFromEnv } from "@/infra/llm/client";
+import { resolveLlmConfigFromEnv, type LlmConfig } from "@/infra/llm/client";
+import { generateExperienceAdvice } from "./advice-llm";
 import { parseIntentWithLlm, proposeSwapWithLlm, reviseIntentWithLlm, selectCatalogCandidatesWithLlm } from "./intent-llm";
 import { loadPriceContext } from "./price-context";
 import { parseDesignIntent, intentNeedsInput, followupQuestionFor } from "@/domain/design/intent";
@@ -245,6 +246,53 @@ function decorateProposal(proposal: DesignProposal): DesignProposal {
   return { ...proposal, items: decorateProposalItems(proposal.items) };
 }
 
+/**
+ * 混合建议层（hybrid-llm-advice 计划 Task 3）：正式方案生成并完成兼容检查后调用。
+ * 建议失败只留 error 事件并返回空数组，绝不阻断、不修改正式方案——
+ * 返回值只允许整体附加到 proposal.experienceAdvice，禁止映射成 proposal.items。
+ */
+async function requestExperienceAdvice(input: {
+  runId: string;
+  intent: StructuredIntent;
+  proposal: DesignProposal;
+  candidates: readonly CandidateSummary[];
+  config: LlmConfig;
+  emit: (payload: RigEvent) => void;
+}): Promise<ExperienceAdviceItem[]> {
+  const startedAt = now();
+  input.emit({
+    type: "tool_call", runId: input.runId, tool: "generate_advice", state: "running",
+    detail: "大模型整理经验建议与库外线索（不参与正式方案）。", resultIds: [], startedAt, finishedAt: null,
+  });
+  const result = await generateExperienceAdvice({
+    intent: input.intent,
+    proposal: {
+      title: input.proposal.title,
+      budgetCents: input.proposal.budgetCents,
+      items: input.proposal.items.map((item) => ({ category: item.category, label: item.label })),
+      compatibility: input.proposal.compatibility,
+    },
+    candidates: input.candidates,
+    config: input.config,
+    maxTokens: 1000,
+  });
+  if (!result.ok) {
+    input.emit({
+      type: "tool_call", runId: input.runId, tool: "generate_advice", state: "error",
+      detail: `经验建议不可用（${result.reason}），正式方案不受影响。`, resultIds: [], startedAt, finishedAt: now(),
+    });
+    return [];
+  }
+  input.emit({
+    type: "tool_call", runId: input.runId, tool: "generate_advice", state: "done",
+    detail: result.data.length > 0
+      ? `已整理 ${result.data.length} 条建议；待验证产品不进入正式方案。`
+      : "模型认为当前没有值得补充的建议。",
+    resultIds: [], startedAt, finishedAt: now(),
+  });
+  return result.data;
+}
+
 export async function createDesignRequest(
   input: unknown,
   options: { onStarted?: (requestId: string) => void } = {},
@@ -476,19 +524,31 @@ export async function createDesignRequest(
   events.push(event(run.id, "validating", "started", "正在自动检查主要硬件之间的兼容关系。"));
   events.push(event(run.id, "validating", "completed", proposal.compatibility.message));
   events.push(event(run.id, "validating", "completed", "候选、价格与兼容事实由本地目录、价格证据和规则引擎核验，模型不参与事实判断。"));
+  // 混合建议层：正式方案已就绪，advice 只增补、失败即空（不改变上方任何事实事件）
+  const experienceAdvice = llmConfig
+    ? await requestExperienceAdvice({
+        runId,
+        intent,
+        proposal,
+        candidates: outcome.pool,
+        config: llmConfig,
+        emit: (payload) => emit(runId, payload),
+      })
+    : [];
+  const finalProposal: DesignProposal = { ...proposal, experienceAdvice };
   events.push(event(run.id, "completed", "completed", "方案已准备好，可以接受、调整或进入高级 DIY。"));
 
-  saveDesignProposal(proposal);
-  emit(runId, { type: "proposal", runId, proposalId: proposal.id, version: proposal.version, title: proposal.title });
+  saveDesignProposal(finalProposal);
+  emit(runId, { type: "proposal", runId, proposalId: finalProposal.id, version: finalProposal.version, title: finalProposal.title });
   emit(runId, { type: "run_completed", runId, status: "ok" });
-  run.proposalId = proposal.id;
+  run.proposalId = finalProposal.id;
   run.status = "completed";
   run.completedAt = now();
   saveAgentRun(run);
   request.status = "ready_to_review";
   request.updatedAt = now();
   updateDesignRequestStatus(request.id, request.status);
-  return { request: { ...request, intent, status: "ready_to_review" as const }, proposal, run, changes: [], versions: [proposal] };
+  return { request: { ...request, intent, status: "ready_to_review" as const }, proposal: finalProposal, run, changes: [], versions: [finalProposal] };
 }
 
 export function getDesignResult(requestId: string): DesignResult | null {
@@ -706,23 +766,35 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     return { request, proposal: latest, run, changes: [], versions: findProposals(requestId) };
   }
   const revisionReadyMessage = `第 ${version} 版已就绪：可继续调整、接受，或进入高级 DIY。`;
+  // 混合建议层：新版本生成后同样增补 advice，失败即空（不改变版本与差异语义）
+  const experienceAdvice = llmConfig
+    ? await requestExperienceAdvice({
+        runId,
+        intent: updatedIntent,
+        proposal,
+        candidates: context.pool,
+        config: llmConfig,
+        emit: emitRig,
+      })
+    : [];
+  const finalProposal: DesignProposal = { ...proposal, experienceAdvice };
   events.push(event(run.id, "completed", "completed", revisionReadyMessage));
   emitRig({ type: "phase", runId, phase: "answered", message: revisionReadyMessage });
 
-  saveDesignProposal(proposal);
-  markProposalsReplaced(requestId, proposal.id);
-  emitRig({ type: "proposal", runId, proposalId: proposal.id, version: proposal.version, title: proposal.title });
+  saveDesignProposal(finalProposal);
+  markProposalsReplaced(requestId, finalProposal.id);
+  emitRig({ type: "proposal", runId, proposalId: finalProposal.id, version: finalProposal.version, title: finalProposal.title });
   emitRig({ type: "run_completed", runId, status: "ok" });
-  run.proposalId = proposal.id;
+  run.proposalId = finalProposal.id;
   run.status = "completed";
   run.completedAt = now();
   saveAgentRun(run);
   updateDesignRequestIntent(request.id, updatedIntent, "ready_to_review");
   return {
     request: { ...request, intent: updatedIntent, status: "ready_to_review" as const },
-    proposal,
+    proposal: finalProposal,
     run,
-    changes: diffProposals(latest, proposal),
+    changes: diffProposals(latest, finalProposal),
     versions: findProposals(requestId),
   };
 }

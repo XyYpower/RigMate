@@ -54,6 +54,8 @@ export type DesignGenerationOrchestration = {
   grounding: GroundingReport | null;
   catalogSize: number;
   poolSize: number;
+  /** 质量门候选池（混合建议层的输入）：advice 调用按每类限量取用，正式路径不消费 */
+  pool: CandidateSummary[];
 };
 
 export async function orchestrateDesignGeneration(input: {
@@ -160,6 +162,7 @@ export async function orchestrateDesignGeneration(input: {
     grounding: null,
     catalogSize: retrieved.catalogSize,
     poolSize: pool.length,
+    pool,
   };
 
   if (pool.length === 0) {
@@ -405,6 +408,7 @@ export async function orchestrateDesignGeneration(input: {
       grounding: null,
       catalogSize: 0,
       poolSize: 0,
+      pool: [],
     };
   }
 }
