@@ -94,6 +94,41 @@ export const compatibilitySummarySchema = z.object({
   passCount: z.number().int().nonnegative(),
 });
 
+export const experienceAdviceKindSchema = z.enum(["experience_advice", "external_product_hint"]);
+
+/**
+ * 模型建议项（混合建议层）：经验取舍或数据库外产品线索。
+ * 红线：不携带价格、规格、接口、功耗、兼容结论——strict schema 下的未知字段一律拒绝；
+ * external_product_hint 必须带产品名且 requiresVerification=true，只能进待验证队列，绝不映射为正式配置。
+ */
+export const experienceAdviceItemSchema = z
+  .object({
+    kind: experienceAdviceKindSchema,
+    category: buildItemCategorySchema,
+    title: z.string().trim().min(1).max(120),
+    detail: z.string().trim().min(1).max(500),
+    productName: z.string().trim().min(1).max(160).optional(),
+    requiresVerification: z.boolean(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.kind === "external_product_hint") {
+      if (!value.productName) {
+        ctx.addIssue({ code: "custom", path: ["productName"], message: "数据库外产品提示必须有产品名" });
+      }
+      if (!value.requiresVerification) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["requiresVerification"],
+          message: "数据库外产品提示必须标记 requiresVerification=true",
+        });
+      }
+    }
+    if (value.kind === "experience_advice" && value.productName) {
+      ctx.addIssue({ code: "custom", path: ["productName"], message: "经验建议不能携带未验证产品名" });
+    }
+  });
+
 export const designProposalSchema = z.object({
   id: z.string().uuid(),
   requestId: z.string().uuid(),
@@ -109,6 +144,8 @@ export const designProposalSchema = z.object({
   fitNotes: z.array(z.string().trim().min(1).max(300)).max(12),
   tradeoffs: z.array(z.string().trim().min(1).max(300)).max(12),
   unknowns: z.array(z.string().trim().min(1).max(300)).max(12),
+  /** 模型建议（独立通道）：不参与价格合计、兼容检查与接受写路径 */
+  experienceAdvice: z.array(experienceAdviceItemSchema).max(8).default([]),
   compatibility: compatibilitySummarySchema,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -141,6 +178,8 @@ export type AgentEventType = z.infer<typeof agentEventTypeSchema>;
 export type SourceLevel = z.infer<typeof sourceLevelSchema>;
 export type ProposalChange = z.infer<typeof proposalChangeSchema>;
 export type CompatibilitySummary = z.infer<typeof compatibilitySummarySchema>;
+export type ExperienceAdviceKind = z.infer<typeof experienceAdviceKindSchema>;
+export type ExperienceAdviceItem = z.infer<typeof experienceAdviceItemSchema>;
 
 export type DesignRequest = {
   id: string;

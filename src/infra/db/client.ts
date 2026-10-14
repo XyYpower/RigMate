@@ -105,6 +105,8 @@ export const designProposals = sqliteTable("design_proposals", {
   fitNotes: text("fit_notes").notNull().default("[]"),
   tradeoffs: text("tradeoffs").notNull().default("[]"),
   unknowns: text("unknowns").notNull().default("[]"),
+  /** 模型建议 JSON（v14，混合建议层）：独立于 proposal_items，绝不参与价格合计与兼容检查 */
+  experienceAdvice: text("experience_advice").notNull().default("[]"),
   compatibility: text("compatibility").notNull(),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),

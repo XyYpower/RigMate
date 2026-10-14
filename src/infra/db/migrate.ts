@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 13;
+export const LATEST_SCHEMA_VERSION = 14;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -403,6 +403,17 @@ export const MIGRATIONS: Migration[] = [
       // 刻意不给 DEFAULT ''——空串与"未登记"必须可区分，否则会掩盖缺失。
       if (!columns.map((column) => column.name).includes("name_zh")) {
         db.run(sql`ALTER TABLE canonical_products ADD COLUMN name_zh text`);
+      }
+    },
+  },
+  {
+    version: 14,
+    name: "design_proposals 模型建议列 experience_advice（混合建议层：独立持久化，绝不进 proposal_items）",
+    up: (db) => {
+      const columns = db.all<{ name: string }>(sql`PRAGMA table_info(design_proposals)`);
+      // 模型建议整体 JSON 数组；DEFAULT '[]' 让存量行升格后即为"无建议"，不冒充模型输出过建议
+      if (!columns.map((column) => column.name).includes("experience_advice")) {
+        db.run(sql`ALTER TABLE design_proposals ADD COLUMN experience_advice text NOT NULL DEFAULT '[]'`);
       }
     },
   },

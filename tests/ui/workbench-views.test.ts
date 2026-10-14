@@ -44,6 +44,7 @@ function makeProposal(overrides: Partial<DesignProposal> = {}): DesignProposal {
     fitNotes: [],
     tradeoffs: [],
     unknowns: [],
+    experienceAdvice: [],
     compatibility: {
       status: "ok",
       message: "兼容性检查全部通过",

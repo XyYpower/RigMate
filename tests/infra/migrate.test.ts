@@ -183,3 +183,39 @@ describe("数据库迁移版本检测（M18）", () => {
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("高于代码支持"));
   });
 });
+
+describe("v14：design_proposals.experience_advice 列（混合建议层）", () => {
+  it("v13 库升级后旧方案行获得空数组缺省，幂等重跑无新步骤", () => {
+    const db = openFreshDb();
+    // 先把库推到 v13（v14 之前的全部迁移）
+    for (const migration of MIGRATIONS) {
+      if (migration.version <= 13) migration.up(db);
+    }
+    forceSchemaVersion(db, 13);
+    // 按旧列集合插一条方案行（此时还没有 experience_advice 列）
+    db.run(sql`INSERT INTO design_proposals (
+      id, request_id, version, status, title, summary,
+      budget_cents, estimated_low_cents, estimated_high_cents,
+      fit_notes, tradeoffs, unknowns, compatibility, created_at, updated_at
+    ) VALUES (
+      'p-legacy', 'r-legacy', 1, 'ready', '旧方案', '旧摘要',
+      2000000, 1500000, 1900000,
+      '[]', '[]', '[]',
+      '{"status":"ok","message":"通过","blockCount":0,"warnCount":0,"unknownCount":0,"passCount":0}',
+      '2026-10-14T00:00:00.000Z', '2026-10-14T00:00:00.000Z'
+    )`);
+
+    const result = migrateSchema(db);
+
+    expect(result.to).toBe(LATEST_SCHEMA_VERSION);
+    expect(result.applied.map((m) => m.version)).toEqual([14]);
+    expect(columnNames(db, "design_proposals")).toContain("experience_advice");
+    const legacy = db.all<{ experience_advice: string }>(
+      sql`SELECT experience_advice FROM design_proposals WHERE id = 'p-legacy'`,
+    );
+    expect(JSON.parse(legacy[0]!.experience_advice)).toEqual([]);
+
+    const second = migrateSchema(db);
+    expect(second.applied).toEqual([]);
+  });
+});

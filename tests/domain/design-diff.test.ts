@@ -31,6 +31,7 @@ function proposalOf(items: Array<[BuildItemCategory, string]>): DesignProposal {
     fitNotes: [],
     tradeoffs: [],
     unknowns: [],
+    experienceAdvice: [],
     compatibility: { status: "ok", message: "ok", blockCount: 0, warnCount: 0, unknownCount: 0, passCount: 0 },
     createdAt: "2026-09-23T00:00:00.000Z",
     updatedAt: "2026-09-23T00:00:00.000Z",
