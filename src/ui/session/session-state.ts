@@ -141,21 +141,24 @@ export function applyEnvelope(state: SessionState, envelope: RigEnvelope): Sessi
 }
 
 export type SessionSnapshot = {
-  /** GET /api/design/[id] 的 result（wire 契约：request / proposal / run / changes / versions） */
-  result: DesignResult;
+  /** GET /api/design/[id] 的 result（生成进行中为 null：run 尚未落库） */
+  result: DesignResult | null;
+  /** 部分快照时单独携带的 request（result 为 null 时也保证时间线可引导） */
+  request: DesignRequest | null;
   events: RigEnvelope[];
 };
 
 /** 快照引导：重放事件流 + 挂快照实体；重放后补投本地已有而快照未含的实时事件（竞态安全） */
 export function hydrateSnapshot(previous: SessionState, snapshot: SessionSnapshot): SessionState {
   let state = initialSessionState();
+  // result 为 null = 生成进行中：挂 request，方案实体等 proposal 事件触发的补拉
   // DesignResult.versions 是该请求全部版本方案（proposal 事件只带 id/version/title，卡片按 id 查这里）
   state = {
     ...state,
     status: "ready",
-    request: snapshot.result.request,
-    proposals: snapshot.result.versions,
-    changes: snapshot.result.changes,
+    request: snapshot.result?.request ?? snapshot.request ?? null,
+    proposals: snapshot.result?.versions ?? [],
+    changes: snapshot.result?.changes ?? [],
   };
   const snapshotMaxSeq = snapshot.events.at(-1)?.seq ?? 0;
   for (const envelope of snapshot.events) {

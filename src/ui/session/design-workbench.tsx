@@ -53,19 +53,21 @@ export function DesignWorkbenchView() {
     let attempts = 0;
     const load = () => {
       void fetch(`/api/design/${id}`).then(async (response) => {
-        if (response.status === 404 && attempts < 10) {
+        // 生成进行中：404（run 未落库）或部分快照（result 为 null）都等一轮再取
+        if ((response.status === 404 || (response.ok && !(await response.clone().json().then((d) => d.result).catch(() => null)))) && attempts < 40) {
           attempts += 1;
           timer = setTimeout(load, 1500);
           return;
         }
         if (!response.ok) throw new Error(response.status === 404 ? "not-found" : "load-failed");
         const data = await response.json();
+        if (!data.result) throw new Error("not-found");
         if (!cancelled) {
           setResult(data.result);
           setViewedVersion(data.result.proposal?.version ?? null);
         }
       }).catch(() => {
-        if (!cancelled) setLoadError(true);
+        if (!cancelled && attempts >= 40) setLoadError(true);
       }).finally(() => {
         if (!cancelled && attempts === 0) setLoading(false);
       });

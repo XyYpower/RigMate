@@ -98,6 +98,7 @@ describe("会话状态投影（session-state）", () => {
         changes: [],
         versions: [],
       },
+      request: null,
       events: [envelope(1, { type: "user_message", runId: RUN_ID, text: "两万预算" })],
     };
     const hydrated = hydrateSnapshot(before, snapshot);
@@ -105,6 +106,30 @@ describe("会话状态投影（session-state）", () => {
     expect(hydrated.request?.id).toBe(REQUEST_ID);
     expect(hydrated.lastSeq).toBe(2);
     expect(hydrated.log.map((entry) => entry.seq)).toEqual([1, 2]);
+  });
+
+  it("部分快照（生成进行中 result=null）：挂 request，时间线仍从事件引导", () => {
+    const snapshot: SessionSnapshot = {
+      result: null,
+      request: {
+        id: REQUEST_ID,
+        rawInput: "主要玩游戏",
+        intent: { budgetCents: null, useCases: ["游戏"], appearance: [], existingParts: [], constraints: [], region: "中国大陆" },
+        status: "generating",
+        createdAt: "2026-10-13T08:00:00.000Z",
+        updatedAt: "2026-10-13T08:00:00.000Z",
+      },
+      events: [
+        envelope(1, { type: "user_message", runId: RUN_ID, text: "主要玩游戏" }),
+        envelope(2, { type: "run_started", runId: RUN_ID, model: "glm-5.3-flash", promptVersion: "selection-v1" }),
+      ],
+    };
+    const hydrated = hydrateSnapshot(initialSessionState(), snapshot);
+    expect(hydrated.status).toBe("ready");
+    expect(hydrated.request?.id).toBe(REQUEST_ID);
+    expect(hydrated.timeline.map((item) => item.kind)).toEqual(["user", "run_started"]);
+    expect(hydrated.proposals).toEqual([]);
+    expect(hydrated.runStatus).toBe("running");
   });
 
   it("anomaly 事件保留 errorCode 与 fallback", () => {
