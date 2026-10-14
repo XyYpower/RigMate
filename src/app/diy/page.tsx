@@ -23,6 +23,9 @@ type Item = {
   id: string;
   category: Category;
   label: string;
+  /** 中文展示名（服务端按 source 里的目录 id 解析后附加）；缺失时回退 label */
+  displayName?: string;
+  displayNameOriginal?: string;
   spec: ItemSpec;
   priceCents?: number;
   source?: string;
@@ -45,6 +48,9 @@ type CatalogEntry = {
   id: string;
   category: string;
   name: string;
+  /** 中文展示名（服务端按目录解析后附加）；缺失时回退 name */
+  displayName?: string;
+  displayNameOriginal?: string;
   aliases: string[];
   spec: ItemSpec;
 };
@@ -702,7 +708,9 @@ export default function Home() {
                   <div className={`item-row ${editingItemId === item.id ? "editing" : ""}`} key={item.id}>
                     <span className="cat-label">{CATEGORY_META[item.category].badge}</span>
                     <div className="item-main">
-                      <strong>{item.label}</strong>
+                      <strong title={item.displayNameOriginal ?? item.label}>
+                        {item.displayName ?? item.label}
+                      </strong>
                       <span>
                         {CATEGORY_META[item.category].label} · {CATEGORY_META[item.category].summary(item.spec ?? {})}
                         {item.source?.startsWith("catalog:") ? " · 目录型号" : ""}
@@ -779,8 +787,8 @@ export default function Home() {
                   >
                     <option value="">手动填写（不使用目录）</option>
                     {catalogOptions.map((entry) => (
-                      <option key={entry.id} value={entry.id}>
-                        {entry.name}
+                      <option key={entry.id} value={entry.id} title={entry.displayNameOriginal ?? entry.name}>
+                        {entry.displayName ?? entry.name}
                       </option>
                     ))}
                   </select>

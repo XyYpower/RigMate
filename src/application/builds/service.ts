@@ -10,6 +10,7 @@ import {
 } from "@/domain/build/types";
 import { itemsFingerprint } from "@/domain/build/fingerprint";
 import { computeBudgetSummary } from "@/domain/build/budget";
+import { decorateBuildItems } from "@/infra/catalog-import/display-names";
 import { runBuildChecks, sortFindings } from "@/domain/rules/engine";
 import {
   deleteBuildItemRow,
@@ -30,8 +31,18 @@ function now(): string {
   return new Date().toISOString();
 }
 
+/**
+ * Build 响应的唯一出口：预算汇总 + 中文展示名（展示层，label 不改）。
+ *
+ * 配件的中文名按 source 里的目录 id 反查目录解析——不在库里持久化，
+ * 目录改名/补中文名后历史项目自动跟着更新，不必回填数据。
+ */
 function withBudgetSummary(build: Build): Build {
-  return { ...build, budgetSummary: computeBudgetSummary(build.budgetCents, build.items) };
+  return {
+    ...build,
+    items: decorateBuildItems(build.items),
+    budgetSummary: computeBudgetSummary(build.budgetCents, build.items),
+  };
 }
 
 export function createBuild(input: CreateBuildInput): Build {

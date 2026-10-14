@@ -38,6 +38,44 @@
 - **本轮用户确认的方向**：首批服务新手；Agent 调大模型协助生成配置，但候选、规格、价格和兼容结论必须有系统数据与规则支撑；可整体重构前端，要求简洁、清楚、舒服；参考开源 Agent 工作台的信息层级与任务状态，不整体移植代码或通用聊天壳。首轮交付可运行前端原型，桌面优先、手机适配。
 - **前端所有权**：归 AI 窗口（全栈）。
 
+## 0.5 并行工作线登记（多 AI 协作时必读）
+
+> 本节用于**多个 AI 同时开发时互相定位**，避免改到对方的文件。
+> 每条工作线有独立文档，可以独立更新，互不覆盖。
+
+| 工作线 | 独立文档 | 主要改动路径 | 状态（2026-10-13） |
+|---|---|---|---|
+| **A：Agent UI / LLM 运行时** | 见 §0 交接快照 | `src/application/agent/`、`src/app/api/design/`、`src/ui/session/`、`src/app/globals.css`、`src/app/page.tsx` | 在制品 |
+| **B：中文展示层 + 大陆目录采集** | [CN_CATALOG_AND_LOCALIZATION.md](./CN_CATALOG_AND_LOCALIZATION.md) | `src/domain/catalog/localization.ts`、`src/infra/catalog-import/cn/**`、`src/infra/catalog-import/display-names.ts`、`scripts/collect-cn-catalog.mts`、`scripts/repair-cn-names.ts`、`scripts/localization-report.ts`、`scripts/catalog-duplicate-report.ts`、`tests/catalog/**` | 已完成管道，见 B 文档 §4 结论 |
+
+**分工边界（避免冲突）**
+
+- A 线**不要改**：`src/domain/catalog/localization.ts`、`src/infra/catalog-import/cn/**`、
+  `scripts/collect-cn-catalog.mts`、`scripts/repair-cn-names.ts`、`tests/catalog/**`
+- B 线**已避开**：`src/app/globals.css`、`src/app/page.tsx`、`src/ui/session/**`、
+  `src/application/agent/**`（B 线只在 `src/ui/session/proposal-card.tsx` 与
+  `src/ui/workbench/build-parts-table.tsx` 改了**取名渲染**，不碰会话与 Agent 逻辑）
+- 双方都会碰到的共享契约（改动前先各自确认）：
+  `src/contracts/design.ts`、`src/domain/build/types.ts`、`src/domain/catalog/search.ts`、
+  `src/infra/db/migrate.ts`、`package.json`
+
+**B 线对全局的三处变更（需要 A 线知悉）**
+
+1. **`canonical_products` 新增 `name_zh` 列（schema v13）**：只读展示层字段，
+   不参与规格质量判定；`LATEST_SCHEMA_VERSION` 已 12 → 13
+2. **`proposalItemSchema` 新增 `displayName` / `displayNameOriginal`**：由
+   `design-repository.mapProposal` 在读出时附加，**不落库**；旧数据自动获得中文名
+3. **`Build` 响应的 `items` 附带展示字段**：`withBudgetSummary`（builds/service.ts 的唯一出口）
+   统一附加，同样不落库
+
+**B 线留下的已知缺口（别重复踩）**
+
+- `price_evidence` 仅 6 行、**verified 0 行** → 预算排序无法激活，这是产品"看起来没效果"的根因
+- 大陆厂商官网**不公开售价**，官网采集解决不了价格缺口
+- msi.cn **AM5 新型号（X870E/B850/Z890）是 404**，不存在可逆向的接口
+
+---
+
 ## 1. 一分钟了解项目
 
 - **产品定位**：面向 PC 装机与升级决策的 Agent 工作台——用户说目标（如"2 万预算白色海景房剪辑+游戏"），系统生成可编辑方案并自动校验；经验用户走 `/diy` 逐项精调。
@@ -53,7 +91,8 @@
 | 1 | `docs/PC_DIY_装机助手_业务逻辑规格_v1.md` | 业务单一事实来源：范围、规则定义、数据模型、验收标准。**需求变更先改这里再改代码** |
 | 2 | `docs/PC_DIY_装机助手_技术架构决策_v1.md` | 技术选型 ADR：为什么是 Next.js/SQLite/自研规则引擎，为什么不用那些 |
 | 3 | `docs/PC_DIY_装机助手_前端UI设计_v1.md` | 前端 UI 设计参考（用户添加） |
-| 4 | 本文档 | 当前进度、已知问题、协同约定 |
+| 4 | [CN_CATALOG_AND_LOCALIZATION.md](./CN_CATALOG_AND_LOCALIZATION.md) | **中文展示层 + 大陆目录采集**工作线（并行开发登记见 §0.5）。改目录、规格字段、产品名显示前必读 |
+| 5 | 本文档 | 当前进度、已知问题、协同约定 |
 
 ## 3. 进度快照（V1-A 清单）
 

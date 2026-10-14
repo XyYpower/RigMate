@@ -43,6 +43,9 @@ type CatalogHit = {
   id: string;
   category: string;
   name: string;
+  /** 中文展示名（服务端按目录解析后附加）；缺失时回退 name */
+  displayName?: string;
+  displayNameOriginal?: string;
   spec: ItemSpec;
   source: string;
   refUrl?: string;
@@ -212,12 +215,14 @@ export default function HardwarePage() {
                   <td>
                     <a
                       className="pj-open"
-                      href={productPageUrl(hit.name, hit.refUrl)}
+                      href={productPageUrl(hit.displayName ?? hit.name, hit.refUrl)}
                       target="_blank"
                       rel="noreferrer"
-                      title="查看商品页（京东搜索）"
+                      title={hit.displayNameOriginal && hit.displayNameOriginal !== hit.displayName
+                        ? `商品页搜索：${hit.displayName}（英文原名 ${hit.displayNameOriginal}）`
+                        : "查看商品页（京东搜索）"}
                     >
-                      {hit.name}
+                      {hit.displayName ?? hit.name}
                     </a>
                   </td>
                   <td>{SOURCE_SHORT[hit.source] ?? hit.source}</td>

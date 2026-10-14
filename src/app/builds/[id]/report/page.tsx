@@ -213,7 +213,9 @@ export default function ReportPage() {
                 <tr key={item.id}>
                   <td>{TYPE_LABELS[item.category] ?? item.category}</td>
                   <td>
-                    {item.label}
+                    <span title={item.displayNameOriginal ?? item.label}>
+                      {item.displayName ?? item.label}
+                    </span>
                     {summary ? (
                       <span className="report-item-spec"> · {summary}</span>
                     ) : (

@@ -3,7 +3,7 @@ import { buildItemCategorySchema } from "../build/types";
 
 /**
  * 价格证据（规格 §8.2）：追加式快照，不覆盖、不修改。
- * V1 只启用手动来源（manual_entry）；每条必须能回答"什么时间、在哪、多少钱、什么口径"。
+ * 来源可以是人工录入、平台开放 API 或厂商公开页面；每条必须能回答"什么时间、在哪、多少钱、什么口径"。
  * 价格与规格严格隔离（实施计划 Task 8）：canonicalId 只做关联，
  * 价格的审核状态独立于规格质量状态，价格永远不会写入/提升 spec 的 verified。
  */
@@ -13,6 +13,8 @@ export const priceEvidenceSourceSchema = z.enum([
   "user_submission",
   /** 平台开放 API 采集（如京东联盟 goods.query）：机器采集未经人工，入账即 unreviewed */
   "platform_api",
+  /** 厂商公开产品页标价：机器采集未经人工，入账即 unreviewed */
+  "manufacturer_page",
 ]);
 export type PriceEvidenceSource = z.infer<typeof priceEvidenceSourceSchema>;
 

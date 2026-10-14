@@ -38,7 +38,9 @@ export function ProposalCard({
         {proposal.items.map((item) => (
           <li key={item.category}>
             <span className="session-part-category">{ASSEMBLY_CATEGORY_LABELS[item.category]}</span>
-            <span className="session-part-label">{item.label}</span>
+            <span className="session-part-label" title={item.displayNameOriginal ?? item.label}>
+              {item.displayName ?? item.label}
+            </span>
             <span className="session-part-price mono">{formatYuanRange(item.priceEstimateLowCents, item.priceEstimateHighCents)}</span>
           </li>
         ))}

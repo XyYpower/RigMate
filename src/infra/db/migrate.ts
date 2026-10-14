@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 12;
+export const LATEST_SCHEMA_VERSION = 13;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -391,6 +391,19 @@ export const MIGRATIONS: Migration[] = [
       )`);
       db.run(sql`CREATE INDEX IF NOT EXISTS idx_agent_event_log_request_seq
         ON agent_event_log(request_id, seq)`);
+    },
+  },
+  {
+    version: 13,
+    name: "canonical_products 中文展示名 name_zh（产品名本地化：只读展示层，不参与规格质量判定）",
+    up: (db) => {
+      const columns = db.all<{ name: string }>(sql`PRAGMA table_info(canonical_products)`);
+      // name_zh 是展示层字段：厂商中国官网原文自带的中文名（或人工按大陆习惯登记的中文名）。
+      // null = 未登记，读取时按 domain/catalog/localization.ts 推导厂商前缀，推导不出显示英文原名。
+      // 刻意不给 DEFAULT ''——空串与"未登记"必须可区分，否则会掩盖缺失。
+      if (!columns.map((column) => column.name).includes("name_zh")) {
+        db.run(sql`ALTER TABLE canonical_products ADD COLUMN name_zh text`);
+      }
     },
   },
 ];

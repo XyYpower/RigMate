@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { buildItemCategorySchema } from "@/domain/build/types";
+import { containsChinese } from "@/domain/catalog/localization";
 import {
   evidenceStatusSchema,
   identityMatchSchema,
@@ -137,6 +138,18 @@ export const canonicalProductRecordSchema = productIdentitySchema.extend({
   aliases: z.array(z.string().trim().min(1).max(180)).max(20),
   spec: z.record(z.string(), z.unknown()),
   refUrl: z.string().trim().url().max(500).nullable(),
+  /**
+   * 中文展示名（展示层，localization.ts 的数据源）：只接受含中文的字符串，
+   * 否则视同未登记——防止把英文原名复制进 name_zh 后谎称"已本地化"。
+   */
+  nameZh: z
+    .string()
+    .trim()
+    .min(1)
+    .max(180)
+    .refine(containsChinese, { message: "nameZh 必须包含中文" })
+    .nullable()
+    .optional(),
   /** 产品级发布状态（由必填字段状态聚合，见 domain/catalog/quality.ts） */
   qualityStatus: publishStatusSchema,
   /** 当前生效的来源版本（upstream commit 等） */

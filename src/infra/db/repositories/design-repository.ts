@@ -18,6 +18,7 @@ import {
   type DesignRequest,
   type StructuredIntent,
 } from "@/contracts/design";
+import { decorateProposalItems } from "@/infra/catalog-import/display-names";
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -53,7 +54,8 @@ function mapProposal(row: typeof designProposals.$inferSelect, rows: (typeof pro
     estimatedLowCents: row.estimatedLowCents,
     estimatedHighCents: row.estimatedHighCents,
     acceptedBuildId: row.acceptedBuildId,
-    items: rows.map((item) => {
+    items: decorateProposalItems(
+      rows.map((item) => {
       const quality = item.qualityJson
         ? (JSON.parse(item.qualityJson) as ItemQualityContext)
         : undefined;
@@ -71,7 +73,8 @@ function mapProposal(row: typeof designProposals.$inferSelect, rows: (typeof pro
         confirmationRequired: item.confirmationRequired,
         confirmationReason: item.confirmationReason ?? undefined,
       };
-    }),
+      }),
+    ),
     fitNotes: parseJson<string[]>(row.fitNotes),
     tradeoffs: parseJson<string[]>(row.tradeoffs),
     unknowns: parseJson<string[]>(row.unknowns),

@@ -68,3 +68,18 @@ export const specSchemaByCategory = {
   cooler: coolerSpecSchema,
   case: caseSpecSchema,
 } as const;
+
+/**
+ * 八类配件决策字段的并集（适配器层按类别产出，最终仍由 specSchemaByCategory 校验）。
+ * 采集适配器先产出宽类型，交给 schema 兜底——与"加载即校验，坏数据不上线"同一条纪律。
+ */
+export type SpecRecord = Partial<
+  z.infer<typeof cpuSpecSchema> &
+    z.infer<typeof motherboardSpecSchema> &
+    z.infer<typeof gpuSpecSchema> &
+    z.infer<typeof ramSpecSchema> &
+    z.infer<typeof storageSpecSchema> &
+    z.infer<typeof psuSpecSchema> &
+    z.infer<typeof coolerSpecSchema> &
+    z.infer<typeof caseSpecSchema>
+>;

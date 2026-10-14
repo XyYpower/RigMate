@@ -133,7 +133,7 @@ export function mergedCatalogEntries(seed: CatalogEntry[]): CatalogEntry[] {
  * 因此在 JSON 回退下天然收缩候选空间，直到入库/审核流程补齐证据。
  */
 export function loadSourcedCatalog(): {
-  entries: (CatalogEntry & { source: "seed" | "manual" | "buildcores" | "zol"; qualityStatus: PublishStatus })[];
+  entries: (CatalogEntry & { source: "seed" | "manual" | "manufacturer_cn" | "buildcores" | "zol"; qualityStatus: PublishStatus })[];
   dbBacked: boolean;
 } {
   const dbEntries = loadCatalogEntries();

@@ -19,6 +19,9 @@ type Build = {
 type CatalogHit = {
   id: string;
   name: string;
+  /** 中文展示名（服务端按目录解析后附加）；缺失时回退 name */
+  displayName?: string;
+  displayNameOriginal?: string;
   spec: Record<string, unknown>;
 };
 
@@ -307,8 +310,12 @@ export default function ProjectsPage() {
                       >
                         <option value="">不带目录规格</option>
                         {row.candidates.map((candidate) => (
-                          <option key={candidate.id} value={candidate.id}>
-                            {candidate.name}
+                          <option
+                            key={candidate.id}
+                            value={candidate.id}
+                            title={candidate.displayNameOriginal ?? candidate.name}
+                          >
+                            {candidate.displayName ?? candidate.name}
                           </option>
                         ))}
                       </select>

@@ -17,6 +17,8 @@
     "import-manual": "tsx scripts/import-manual.ts",
     "catalog:db": "tsx scripts/import-catalog-to-db.ts",
     "catalog:quality": "tsx scripts/catalog-quality-report.ts",
+    "catalog:i18n": "tsx scripts/localization-report.ts",
+    "catalog:duplicates": "tsx scripts/catalog-duplicate-report.ts",
     "gate:data": "npm run typecheck && npm run lint && npm test && tsx scripts/data-release-gate.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate-db.ts",
@@ -25,6 +27,8 @@
     "evals:design": "tsx scripts/run-design-evals.ts",
     "evals:live": "tsx scripts/run-live-selection-eval.ts",
     "prices:fetch-jd": "tsx scripts/fetch-jd-prices.ts"
+    ,"catalog:sync-cn": "tsx scripts/sync-cn-catalog.ts",
+    "catalog:collect-cn": "tsx scripts/collect-cn-catalog.mts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

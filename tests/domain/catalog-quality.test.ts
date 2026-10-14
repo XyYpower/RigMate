@@ -249,6 +249,53 @@ describe("catalog quality contracts", () => {
     expect(parsed.qualityStatus).toBe("supported");
   });
 
+  it("nameZh 缺省等价于未登记，缺省解析不报错", () => {
+    const base = {
+      id: "gpu-msi-4070s-ventus",
+      category: "gpu",
+      name: "MSI RTX 4070 SUPER 12G VENTUS 3X",
+      aliases: [],
+      spec: {},
+      refUrl: null,
+      manufacturer: "MSI",
+      series: "GeForce RTX 4070 SUPER",
+      model: "GeForce RTX 4070 SUPER 12G VENTUS 3X",
+      variant: "Ventus 3X",
+      mpn: null,
+      qualityStatus: "supported",
+      sourceVersion: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
+    expect(canonicalProductRecordSchema.parse(base).nameZh).toBeUndefined();
+    expect(canonicalProductRecordSchema.parse({ ...base, nameZh: null }).nameZh).toBeNull();
+  });
+
+  it("nameZh 必须是中文，拒绝把英文原名登记成中文名", () => {
+    const base = {
+      id: "gpu-msi-4070s-ventus",
+      category: "gpu",
+      name: "MSI RTX 4070 SUPER 12G VENTUS 3X",
+      aliases: [],
+      spec: {},
+      refUrl: null,
+      manufacturer: "MSI",
+      series: "GeForce RTX 4070 SUPER",
+      model: "GeForce RTX 4070 SUPER 12G VENTUS 3X",
+      variant: "Ventus 3X",
+      mpn: null,
+      qualityStatus: "supported",
+      sourceVersion: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
+    expect(
+      canonicalProductRecordSchema.parse({ ...base, nameZh: "微星 RTX 4070 SUPER 12G VENTUS 3X 精选版" })
+        .nameZh,
+    ).toBe("微星 RTX 4070 SUPER 12G VENTUS 3X 精选版");
+    expect(canonicalProductRecordSchema.safeParse({ ...base, nameZh: "MSI RTX 4070S" }).success).toBe(false);
+  });
+
   it("enforces the spec.<field> evidence path format", () => {
     const base = {
       id: "0b8f9d86-0b5e-4f6a-9a55-2f1b3c9d7e01",

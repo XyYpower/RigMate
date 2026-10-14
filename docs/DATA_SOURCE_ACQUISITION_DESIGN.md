@@ -53,7 +53,7 @@ BuildCores OpenDB 用于发现型号、别名和基础规格。它有 ODC-By 许
 
 SourceAdapter 必须提供 sourceKey、sourceTier、allowedDomains、license、fetch、parse 和 identity 方法，并具备超时、限速、最大响应大小、内容类型检查、失败原因、内容哈希和版本信息。
 
-第一批适配器：buildcores-git、manufacturer-manual、manufacturer-page、user-evidence。不要一开始为每个品牌写独立爬虫，先验证 20–30 个型号的字段提取流程，再决定哪些品牌值得自动化。
+第一批适配器：buildcores-git、manufacturer-manual、manufacturer-page、manufacturer-cn-asus-rog、user-evidence。中国大陆来源先从华硕中国/ROG 公开产品索引和详情页开始：产品身份必须有 JSON-LD 的 SKU/MPN，规格从页面 SSR 文本提取，缺失字段保持 unknown。REA 只用于一次性观察公开页面结构和 JSON 请求，生产同步使用固定适配器。
 
 ## 5. 原始快照层
 
@@ -86,11 +86,15 @@ discovered → snapshot_saved → extracted → identity_matched → evidence_re
 
 只访问公开页面和允许使用的接口；不绕过登录、验证码、付费墙、反爬或访问控制；不抓取京东、淘宝等平台的登录态和未授权价格数据；遵守 robots、服务条款、许可证和署名要求；不把大规模原始网页提交到 Git；页面结构变化时失败并报警，不静默写入错误字段。
 
-## 10. 第一条数据垂直切片
+## 10. 中国大陆自动同步首条切片
+
+运行 `npm run catalog:sync-cn -- --live --limit 20` 做只读同步预览；加 `--write` 才写入 `canonical_products`、`product_sources`、`product_field_evidence` 和可选的 `price_evidence`。同步结果按 MPN 生成稳定 `cn-asus-*` ID，必填决策字段齐全的自动来源标记 `supported`，缺字段的产品标记 `partial`，没有 SKU/MPN 或详情页失败的产品进入 rejected 列表。相同内容哈希不会重复写入；页面变化会追加来源快照并将旧快照置为 `stale`。大陆页面价格以 `manufacturer_page` 来源类型按中国大陆/未审核快照保存，与规格质量隔离。当前适配器只覆盖主板，其他七类沿用相同边界扩展。
+
+## 10.1 原产品场景垂直切片
 
 先做一条“白色 2 万预算、剪辑 + 3A 游戏”数据链，选择 20–30 个具体产品变体：CPU 3 个、主板 4 个、GPU 6 个具体品牌型号、电源 3 个、机箱 4 个、散热器 3 个、内存和固态各 3 个。
 
-每条记录至少补齐影响兼容的字段、官方来源 URL、字段摘录、核验日期、中文别名和质量状态。价格先不接自动来源。
+每条记录至少补齐影响兼容的字段、官方来源 URL、字段摘录、核验日期、中文别名和质量状态。自动价格只作为未审核快照进入价格证据表，只有后续审核通过才参与方案预算。
 
 ## 11. 验收标准
 

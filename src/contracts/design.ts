@@ -65,6 +65,10 @@ export const proposalItemSchema = z.object({
   category: buildItemCategorySchema,
   label: z.string().trim().min(1).max(180),
   catalogId: z.string().trim().min(1).optional(),
+  /** 中文展示名（展示层，响应时由目录解析后附加）；label 本身不被改写 */
+  displayName: z.string().trim().min(1).max(200).optional(),
+  /** 英文原名，供界面 title 悬停与溯源 */
+  displayNameOriginal: z.string().trim().min(1).max(200).optional(),
   spec: z.record(z.string(), z.unknown()),
   sourceLevel: sourceLevelSchema,
   /** 证据链上的产品级质量状态（仅 verified/supported 可进入方案；旧引擎历史行缺省 unknown） */

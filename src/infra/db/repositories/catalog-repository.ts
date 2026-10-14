@@ -17,7 +17,7 @@ import { canonicalProducts, ensureDatabase } from "../client";
  * - 身份五元组与质量状态（v8）：没有证据链的新条目一律 quality_status = "partial"。
  */
 
-export type CatalogSourceTag = "seed" | "manual" | "buildcores" | "zol";
+export type CatalogSourceTag = "seed" | "manual" | "buildcores" | "zol" | "manufacturer_cn";
 
 export type SourcedCatalogEntry = CatalogEntry & {
   source: CatalogSourceTag;
@@ -29,7 +29,6 @@ export type SourcedCatalogEntry = CatalogEntry & {
   qualityStatus: PublishStatus;
   sourceVersion: string | null;
 };
-
 export type CatalogUpdateInput = {
   id: string;
   specPatch: Record<string, unknown>;
@@ -46,6 +45,7 @@ export type CatalogUpdateReport = {
 const SOURCE_PRIORITY: Record<CatalogSourceTag, number> = {
   seed: 0,
   manual: 1,
+  manufacturer_cn: 1,
   buildcores: 2,
   zol: 3,
 };
@@ -66,6 +66,8 @@ function parseEntry(row: typeof canonicalProducts.$inferSelect): SourcedCatalogE
     model: row.model ?? null,
     variant: row.variant ?? null,
     mpn: row.mpn ?? null,
+    // nameZh 缺失时给 null 而不是空串：两者在 localizer 里的语义不同
+    nameZh: row.nameZh ?? null,
     qualityStatus: row.qualityStatus as PublishStatus,
     sourceVersion: row.sourceVersion ?? null,
   };
@@ -108,7 +110,7 @@ function validateEntryInput(entry: CatalogEntry): void {
 
 export type CatalogEntryUpsertInput = CatalogEntry & {
   source: CatalogSourceTag;
-} & Partial<Pick<SourcedCatalogEntry, "manufacturer" | "series" | "model" | "variant" | "mpn" | "qualityStatus" | "sourceVersion">>;
+} & Partial<Pick<SourcedCatalogEntry, "manufacturer" | "series" | "model" | "variant" | "mpn" | "nameZh" | "qualityStatus" | "sourceVersion">>;
 
 /**
  * 批量入库（初始化迁移用）。同 id 已存在则跳过（first-wins），
@@ -140,6 +142,7 @@ export function upsertCatalogEntries(entries: CatalogEntryUpsertInput[]): {
         model: entry.model ?? null,
         variant: entry.variant ?? null,
         mpn: entry.mpn ?? null,
+        nameZh: entry.nameZh ?? null,
         qualityStatus: entry.qualityStatus ?? "partial",
         sourceVersion: entry.sourceVersion ?? null,
         createdAt: timestamp,
@@ -185,6 +188,7 @@ export function listCatalogRecords(
       model: entry.model,
       variant: entry.variant,
       mpn: entry.mpn,
+      nameZh: entry.nameZh,
       qualityStatus: entry.qualityStatus,
       sourceVersion: entry.sourceVersion,
       createdAt: row.createdAt,
@@ -261,6 +265,37 @@ export function mergeCatalogUpdates(updates: CatalogUpdateInput[]): CatalogUpdat
 }
 
 export function resetCatalogDbCacheForTests(): void {
+  cache = undefined;
+}
+
+/**
+ * 登记 / 撤销中文展示名（domain/catalog/localization.ts 的 nameZh 数据源）。
+ *
+ * 展示层写入，不触碰 spec / qualityStatus / 证据链——中文名写错不会让一条数据
+ * 变得"更可信"，也不该影响它是否进候选。
+ */
+export function setCatalogNameZh(id: string, nameZh: string | null): void {
+  const trimmed = nameZh?.trim() ?? "";
+  const result = ensureDatabase()
+    .update(canonicalProducts)
+    .set({
+      nameZh: trimmed === "" ? null : trimmed,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(canonicalProducts.id, id))
+    .run();
+  if (result.changes === 0) throw new Error(`中文名登记目标不存在：${id}`);
+  cache = undefined;
+}
+
+/** 自动来源重同步时修正产品级质量状态；不改规格值或来源证据。 */
+export function setCatalogQualityStatus(id: string, qualityStatus: PublishStatus): void {
+  const result = ensureDatabase()
+    .update(canonicalProducts)
+    .set({ qualityStatus, updatedAt: new Date().toISOString() })
+    .where(eq(canonicalProducts.id, id))
+    .run();
+  if (result.changes === 0) throw new Error(`质量状态写回目标不存在：${id}`);
   cache = undefined;
 }
 

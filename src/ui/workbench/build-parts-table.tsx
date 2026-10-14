@@ -89,7 +89,9 @@ export function BuildPartsTable({ items }: { items: ProposalItem[] }) {
               <span className="build-parts-cat">{CATEGORY_LABELS[item.category] ?? item.category}</span>
               <span className="build-parts-model">
                 <span className="build-parts-model-line">
-                  <span className="build-parts-model-name">{item.label}</span>
+                  <span className="build-parts-model-name" title={item.displayNameOriginal ?? item.label}>
+                    {item.displayName ?? item.label}
+                  </span>
                   {item.confirmationRequired && <em className="build-parts-confirm">待确认</em>}
                 </span>
                 <span className="build-parts-model-meta">
@@ -118,7 +120,15 @@ export function BuildPartsTable({ items }: { items: ProposalItem[] }) {
                 <p className="build-parts-confirm-reason">需要确认：{item.confirmationReason}</p>
               )}
               <p>
-                <a href={productPageUrl(item.label)} target="_blank" rel="noreferrer">
+                {/* 商品页检索用中文名：京东上用户就是按官方中文名搜的 */}
+                <a
+                  href={productPageUrl(item.displayName ?? item.label)}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={item.displayNameOriginal && item.displayNameOriginal !== item.displayName
+                    ? `商品页搜索：${item.displayName}（英文原名 ${item.displayNameOriginal}）`
+                    : "查看商品页"}
+                >
                   查看商品页 ↗
                 </a>
               </p>

@@ -119,6 +119,13 @@ export type BuildItem = BuildItemInput & {
   fieldQuality?: Record<string, FieldQualityStatus>;
   /** 支撑规格的证据来源引用（v11 起持久化，product_sources.id） */
   evidenceSourceIds?: string[];
+  /**
+   * 中文展示名（展示层，服务层按 source 里的目录 id 解析后附加）；label 本身不被改写。
+   * 用户手填的配件没有目录 id，此时 displayName 等于 label。
+   */
+  displayName?: string;
+  /** 英文原名，供界面 title 悬停与溯源 */
+  displayNameOriginal?: string;
 };
 
 export type Build = {

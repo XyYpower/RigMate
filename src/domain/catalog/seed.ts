@@ -19,6 +19,12 @@ export type CatalogEntry = {
   spec: Record<string, unknown>;
   /** 商品页链接（可选）；缺失时前端按型号拼京东搜索链接兜底 */
   refUrl?: string;
+  /**
+   * 中文展示名（可选）：厂商中国官网原文自带的中文名，或人工按大陆习惯登记的中文名。
+   * 只用于界面展示，name 仍是身份与证据链的锚；缺失时按 localization.ts 推导厂商前缀，
+   * 推导不出来就显示英文原名。
+   */
+  nameZh?: string | null;
 };
 
 type RawEntry = Omit<CatalogEntry, "spec"> & { spec: Record<string, unknown> };

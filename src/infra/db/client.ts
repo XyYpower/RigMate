@@ -174,6 +174,8 @@ export const canonicalProducts = sqliteTable("canonical_products", {
   model: text("model"),
   variant: text("variant"),
   mpn: text("mpn"),
+  /** 中文展示名（v13）：厂商中国官网原文自带的中文名。null = 未登记，按 localization.ts 推导 */
+  nameZh: text("name_zh"),
   qualityStatus: text("quality_status").notNull().default("partial"),
   sourceVersion: text("source_version"),
   /** 合并去重（v9）：本条已并入的目标产品 id；非空 = 不再作为候选出现在任何读取路径 */
