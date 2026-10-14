@@ -23,20 +23,14 @@ const GOAL_SUGGESTIONS = [
   { tag: "代码虚拟机 · 1.5 万", full: "1 万 5 预算，写代码加虚拟机多开，不要灯效" },
 ];
 
-const BUDGET_PRESETS = [8000, 12000, 16000, 20000];
-
-/** 三项真实能力：不承诺做不到的事（agent 会话式入口的 quiet 徽标行） */
-const HOME_CAPABILITIES = ["资料核验", "兼容检查", "可编辑方案"];
-
 /**
- * 首页 = 会话起点（agent-ui 重设计，对齐 ZCode 空会话页模式）：
- * 居中一列——品牌一句 + 输入框主角 + 示例词条 + quiet 能力行；
- * 提交即进会话页看 agent 生成全程（异步），装饰性面板全部移除。
+ * 首页 = 会话起点（agent-ui，对齐 ZCode 空会话页模式）：
+ * 一个输入框，一句话进来；缺什么 agent 在会话里追问（用途 → 外观 → 预算），
+ * 不用表单把用户拦在门外。提交即进会话页看生成全程（异步）。
  */
 export default function Home() {
   const router = useRouter();
   const [goal, setGoal] = useState("");
-  const [budget, setBudget] = useState("");
   const [builds, setBuilds] = useState<BuildSummary[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,21 +49,16 @@ export default function Home() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const goalValue = String(formData.get("goal") ?? "").trim();
-    const budgetValue = String(formData.get("budget") ?? "").trim();
     if (!goalValue) return;
-    const amount = budgetValue ? Number(budgetValue.replace(/[¥,]/g, "")) : undefined;
-    if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) {
-      setMessage("预算请输入大于 0 的金额，或留空让助手从描述中识别。");
-      return;
-    }
     setBusy(true);
     setMessage("");
     try {
-      // 异步模式：请求落库即跳会话页，agent 生成全程在时间线上点亮
+      // 异步模式：请求落库即跳会话页，agent 生成全程在时间线上点亮；
+      // 预算/外观缺什么由 agent 在会话里追问，不在表单里拦人
       const response = await fetch("/api/design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawInput: goalValue, budgetCents: amount ? Math.round(amount * 100) : undefined, async: true }),
+        body: JSON.stringify({ rawInput: goalValue, async: true }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "暂时无法生成方案。");
@@ -86,10 +75,10 @@ export default function Home() {
         <span className="home-brandmark" aria-hidden>R</span>
         <h1>你想配一台什么样的电脑？</h1>
         <p className="home-tagline">
-          说清预算和用途，agent 从已核目录里检索候选、跑兼容规则，产出可核验的装机方案。
+          一句话说说用途和偏好就行，缺什么我会问你——然后从已核目录里检索候选、跑兼容规则，给出可核验的方案。
         </p>
 
-        <form className="home-composer wb-panel" onSubmit={(event) => void startDesign(event)}>
+        <form className="home-composer" onSubmit={(event) => void startDesign(event)}>
           <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
           <textarea
             id="design-goal"
@@ -99,39 +88,14 @@ export default function Home() {
             onInput={(event) => setGoal(event.currentTarget.value)}
             rows={3}
             maxLength={4000}
-            placeholder="说说预算、用途、外观偏好，一句话就够……"
+            placeholder="比如：主要玩 3A 游戏，偶尔剪视频，想要白色的……"
             disabled={busy}
             autoFocus
           />
           <div className="home-composer-toolbar">
-            <div className="home-budget-group">
-              <input
-                name="budget"
-                className="home-budget-input mono"
-                aria-label="预算（元，可选）"
-                inputMode="numeric"
-                value={budget}
-                onChange={(event) => setBudget(event.target.value)}
-                onInput={(event) => setBudget(event.currentTarget.value)}
-                placeholder="预算"
-                disabled={busy}
-              />
-              <div className="home-budget-seg" role="group" aria-label="预算快捷档">
-                {BUDGET_PRESETS.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    className={`home-budget-seg-btn${budget === String(preset) ? " active" : ""}`}
-                    onClick={() => setBudget(String(preset))}
-                    disabled={busy}
-                  >
-                    {preset >= 10000 && preset % 10000 === 0 ? `${preset / 10000} 万` : `${preset}`}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button className="button primary home-submit" type="submit" disabled={busy}>
-              {busy ? "正在搭配…" : "开始搭配"}<span aria-hidden>→</span>
+            <span className="home-composer-hint">回车或点击开始，缺的信息我会追问</span>
+            <button className="button primary home-submit" type="submit" disabled={busy || goal.trim().length < 3}>
+              {busy ? "正在开始…" : "开始搭配"}<span aria-hidden>→</span>
             </button>
           </div>
           {message && <p className="form-feedback" role="status">{message}</p>}
@@ -153,15 +117,6 @@ export default function Home() {
             ))}
           </div>
         )}
-
-        <ul className="home-assurances" aria-label="能力说明">
-          {HOME_CAPABILITIES.map((capability) => (
-            <li key={capability}>
-              <span className="home-assurance-dot" aria-hidden />
-              {capability}
-            </li>
-          ))}
-        </ul>
 
         <p className="home-footer-links">
           已有配置单？<Link href="/projects?mode=review">粘贴整单逐行查坑</Link>

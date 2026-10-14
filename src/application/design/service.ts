@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { designRequestInputSchema, designRevisionInputSchema, type AgentEvent, type AgentRun, type DesignRequest, type DesignResult, type StructuredIntent } from "@/contracts/design";
+import { designRequestInputSchema, designRevisionInputSchema, type AgentEvent, type AgentRun, type DesignProposal, type DesignRequest, type DesignResult, type StructuredIntent } from "@/contracts/design";
 import { loadSourcedCatalog } from "@/infra/catalog-import/load";
 import { resolveLlmConfigFromEnv } from "@/infra/llm/client";
 import { parseIntentWithLlm, proposeSwapWithLlm, reviseIntentWithLlm, selectCatalogCandidatesWithLlm } from "./intent-llm";
 import { loadPriceContext } from "./price-context";
-import { parseDesignIntent, intentNeedsInput } from "@/domain/design/intent";
+import { parseDesignIntent, intentNeedsInput, followupQuestionFor } from "@/domain/design/intent";
 import { reviseIntentWithRules } from "@/domain/design/revision";
 import { diffProposals } from "@/domain/design/diff";
 import { generateDesignProposal, type CandidateQualityContext } from "@/domain/design/proposal";
@@ -28,6 +28,7 @@ import {
   findPreviousProposal,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
+import { decorateProposalItems } from "@/infra/catalog-import/display-names";
 import { createAgentAttempt, orchestrateDesignGeneration, type ModelSelection } from "@/application/agent/orchestrator";
 import { CATALOG_SELECTION_PROMPT_VERSION } from "./intent-llm";
 import type { AgentPhase, AgentRuntimeEvent } from "@/application/agent/runtime-types";
@@ -232,7 +233,16 @@ function composeOrAsk(input: {
   input.events.push(event(input.run.id, "validating", "completed", "候选、价格与兼容事实由本地目录、价格证据和规则引擎核验，模型不参与事实判断。"));
   input.events.push(event(input.run.id, "completed", "completed", "方案已准备好，可以接受、调整或进入高级 DIY。"));
   emitRig?.({ type: "phase", runId: input.run.id, phase: "validated", message: generated.proposal.compatibility.message });
-  return generated.proposal;
+  return decorateProposal(generated.proposal);
+}
+
+/**
+ * 给方案挂中文展示名（展示层，label 不改）。
+ * 读库路径由 design-repository 的 mapProposal 挂过一次，这里覆盖"生成后直接返回"的内存路径；
+ * 重复挂载幂等——decorateProposalItems 只认 catalogId，不看已有展示字段。
+ */
+function decorateProposal(proposal: DesignProposal): DesignProposal {
+  return { ...proposal, items: decorateProposalItems(proposal.items) };
 }
 
 export async function createDesignRequest(
@@ -260,6 +270,7 @@ export async function createDesignRequest(
   // 规则基线先落库（agent-ui P3）：LLM 理解期间请求行已存在，会话页与事件流可立即订阅
   let intent = parseDesignIntent(data);
   let intentNote = "本地规则理解目标（未配置大模型）。";
+  let llmFollowup: string | undefined;
   const request: DesignRequest = {
     id: requestId,
     rawInput: data.rawInput,
@@ -282,6 +293,7 @@ export async function createDesignRequest(
       config: llmConfig,
       maxTokens: 1500,
     });
+    if (llmResult.ok) llmFollowup = llmResult.followupQuestion;
     if (llmResult.ok) {
       intent = llmResult.data;
       intentNote = `大模型（${llmConfig.model}）已解析预算、用途与偏好。`;
@@ -304,8 +316,9 @@ export async function createDesignRequest(
   emit(runId, { type: "phase", runId, phase: "understanding", message: intentNote });
   const finalRequest: DesignRequest = { ...request, intent, status: intentNeedsInput(intent) ? "needs_input" : "generating" };
   if (intentNeedsInput(intent)) {
-    events.push(event(run.id, "question", "waiting", "还缺少预算或用途，补充一句目标后我才能开始搭配。"));
-    emit(runId, { type: "question", runId, message: "还缺少预算或用途，补充一句目标后我才能开始搭配。" });
+    const followup = llmFollowup ?? followupQuestionFor(intent);
+    events.push(event(run.id, "question", "waiting", followup));
+    emit(runId, { type: "question", runId, message: followup });
     emit(runId, { type: "run_completed", runId, status: "needs_input" });
     run.status = "completed";
     run.completedAt = now();
@@ -576,7 +589,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
       }
     }
     if (!updatedIntent) {
-      const stillMissing = "还缺预算或用途——补充一句具体目标（比如「2 万预算，主要玩游戏」）我才能开始搭配。";
+      const stillMissing = followupQuestionFor(request.intent);
       events.push(event(run.id, "question", "waiting", stillMissing));
       emitRig({ type: "question", runId, message: stillMissing });
       emitRig({ type: "run_completed", runId, status: "needs_input" });

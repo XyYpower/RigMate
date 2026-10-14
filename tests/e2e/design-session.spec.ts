@@ -17,13 +17,16 @@ test("会话时间线：生成事件折叠成流，方案卡可接受进入 DIY"
   await page.goto(`/design/${designId}`);
   await page.waitForLoadState("domcontentloaded");
 
-  // 用户消息在最前；时间线有工具块（逐类目检索目录 ≥8 + 主链汇总一条）
+  // 用户消息在最前；逐类目检索折叠成一行分组摘要（8 类），兼容检查独立成块
   await expect(page.locator(".session-user-text").first()).toContainText("2 万预算");
   const card = page.locator(".session-proposal-card");
   await expect(card).toBeVisible();
-  const catalogBlocks = await page.locator(".session-tool-label").filter({ hasText: "检索目录" }).count();
-  expect(catalogBlocks).toBeGreaterThanOrEqual(8);
-  await expect(page.locator(".session-tool-label").filter({ hasText: "兼容性检查" })).toBeVisible();
+  const catalogGroup = page.locator(".session-tool").filter({ hasText: "检索目录" }).first();
+  await expect(catalogGroup.locator(".session-tool-summary")).toContainText("8 类");
+  await expect(catalogGroup.locator(".session-tool-summary")).toContainText(/命中 \d+ 个候选/);
+  // 兼容结论保留在核验清单相位行（工具块与相位同文案时去重）；机械相位不进用户时间线
+  await expect(page.locator(".session-timeline")).toContainText("核验清单");
+  await expect(page.locator(".session-timeline")).not.toContainText("安全筛查");
 
   // 方案卡：标题 / 版本 / 预算标尺 / 配件行 / 动作
   await expect(card.locator(".session-proposal-version")).toContainText("方案 v1");
@@ -40,7 +43,7 @@ test("会话时间线：信息不足时给出追问卡片与补充入口", async
   await page.goto(`/design/${designId}`);
   await page.waitForLoadState("domcontentloaded");
 
-  await expect(page.locator(".session-question-text").first()).toContainText(/缺少预算或用途/);
+  await expect(page.locator(".session-question-text").first()).toContainText(/用途/);
   await expect(page.locator(".session-needs-input")).toBeVisible();
 });
 

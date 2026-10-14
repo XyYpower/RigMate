@@ -16,6 +16,8 @@ import { getAgentPrompt } from "@/application/agent/prompts/registry";
 
 const llmIntentOutputSchema = z.object({
   budgetYuan: z.number().positive().nullable(),
+  /** 信息不足时给用户的一句针对性追问（一次只问一个缺口）；信息齐全则省略 */
+  followupQuestion: z.string().trim().min(1).max(200).optional(),
   useCases: z.array(z.string().trim().min(1).max(40)).max(8).default([]),
   appearance: z.array(z.string().trim().min(1).max(40)).max(8).default([]),
   existingParts: z.array(z.string().trim().min(1).max(160)).max(20).default([]),
@@ -30,7 +32,8 @@ export const INTENT_SYSTEM_PROMPT = `你是装机助手的目标解析器。只�
 - existingParts：用户已有或要求保留的硬件数组，最多 20 个，没有则 []。
 - constraints：其他约束或取舍数组（如 不要水冷、优先显存、控制噪音），最多 20 个，没有则 []。
 - region：地区字符串，默认 "中国大陆"。
-用户没有提到的信息一律用 null 或 []，绝不编造。`;
+用户没有提到的信息一律用 null 或 []，绝不编造。
+追问策略：出方案前必须知道用途和预算。若 useCases 为空或 budgetYuan 为 null，在 followupQuestion 里写给用户的一句追问——按缺口精准问、一次只问一件事，先问用途（顺带外观偏好），用途有了再问预算；语气自然，像懂硬件的朋友，两句话以内。信息齐全时不输出 followupQuestion。只谈装机，任何与配电脑无关的请求都返回空字段加一句"这里只聊装机，说说你的预算和用途吧"。`;
 
 export function renderIntentUserPrompt(input: {
   rawInput: string;
@@ -53,7 +56,7 @@ export async function parseIntentWithLlm(input: {
   thinking?: "enabled" | "disabled";
   /** 输出 token 硬顶（含思考）：按调用类型给足预算，封死滥用输出面 */
   maxTokens?: number;
-}): Promise<LlmJsonResult<StructuredIntent>> {
+}): Promise<LlmJsonResult<StructuredIntent> & { followupQuestion?: string }> {
   const result = await completeJson({
     config: input.config,
     system: INTENT_SYSTEM_PROMPT,
@@ -64,7 +67,11 @@ export async function parseIntentWithLlm(input: {
     fetchImpl: input.fetchImpl,
   });
   if (!result.ok) return result;
-  return { ok: true, data: mapLlmIntent(result.data, input.explicitBudgetYuan) };
+  return {
+    ok: true,
+    data: mapLlmIntent(result.data, input.explicitBudgetYuan),
+    followupQuestion: result.data.followupQuestion,
+  };
 }
 
 function mapLlmIntent(data: z.infer<typeof llmIntentOutputSchema>, explicitBudgetYuan: number | null): StructuredIntent {

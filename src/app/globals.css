@@ -755,13 +755,17 @@ select {
    首页 = 会话起点（agent-ui 重设计，对齐 ZCode 空会话页：居中一列，输入框主角）
    ========================================================================== */
 .home-page {
-  min-height: calc(100vh - 120px);
+  flex: 1;
+  min-height: calc(100vh - 32px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 0 64px;
+  padding: 20px 0 56px;
+  background: transparent;
 }
-.home-entry { width: min(680px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; }
+/* v2 旧首页装饰（顶部横线 + 大留白）与新会话起点冲突，关闭 */
+.home-page::before { display: none; }
+.home-entry { width: min(720px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; }
 .home-brandmark {
   display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 12px;
   background: var(--wb-accent); color: #fff; font-size: 18px; font-weight: 800;
@@ -811,3 +815,7 @@ select {
 .home-recent li a:hover { color: var(--wb-ink); }
 .home-recent-meta { color: var(--wb-ink-faint); font-size: 11px; }
 .home-recent-more a { color: var(--wb-accent); font-weight: 700; }
+
+.home-composer-hint { color: var(--wb-ink-faint); font-size: 11px; }
+.session-tool-lines { list-style: none; margin: 5px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.session-tool-lines li { font-size: 11px; color: var(--wb-ink-muted); }

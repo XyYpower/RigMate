@@ -37,6 +37,69 @@ function formatTime(at: string): string {
   return new Date(at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
 }
 
+/**
+ * 时间线降噪（agent-ui 反馈：不向用户展示"agent 已帮你怎么样"的过程噪音）：
+ * - 隐藏机械相位（接收目标/安全筛查）；
+ * - 同名工具的 running→终态合并为终态一块；
+ * - 与相邻相位同文案的汇总块不重复出现；
+ * - 连续的逐类目 searchCatalog 合并为一行检索摘要（可展开看每类命中）。
+ * 折叠只发生在展示层，事件流（reducer）保持完整可审计。
+ */
+type DisplayItem =
+  | { kind: "item"; item: TimelineItem }
+  | { kind: "search-group"; seq: number; at: string; categories: number; hits: number; details: string[] };
+
+function toDisplayItems(items: TimelineItem[]): DisplayItem[] {
+  const out: DisplayItem[] = [];
+  let lastPhaseMessage: string | null = null;
+  const lastToolDetail = (): string | null => {
+    const last = out.at(-1);
+    if (!last) return null;
+    if (last.kind === "item" && last.item.kind === "tool") return last.item.detail;
+    if (last.kind === "search-group") return last.details.at(-1) ?? null;
+    return null;
+  };
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index]!;
+    if (item.kind === "phase" && (item.phase === "received" || item.phase === "screened")) continue;
+    if (item.kind === "tool") {
+      // 与最近相位同文案的汇总块不重复展示（同一次 mapper 输出里 phase 和 tool 相邻或隔一个同名块）
+      if (lastPhaseMessage !== null && lastPhaseMessage === item.detail) continue;
+      const previous = items[index - 1];
+      if (previous && previous.kind === "phase" && previous.message === item.detail) continue;
+      const last = out.at(-1);
+      if (last && last.kind === "item" && last.item.kind === "tool" && last.item.tool === item.tool && item.state !== "running") {
+        out[out.length - 1] = { kind: "item", item };
+        continue;
+      }
+    }
+    if (item.kind === "phase") {
+      const previousDetail = lastToolDetail();
+      if (previousDetail !== null && previousDetail === item.message) continue;
+      lastPhaseMessage = item.message;
+    }
+    if (item.kind === "tool" && item.tool === "searchCatalog" && item.state !== "error") {
+      const details: string[] = [];
+      let hits = 0;
+      let cursor = index;
+      while (cursor < items.length) {
+        const entry = items[cursor]!;
+        if (entry.kind !== "tool" || entry.tool !== "searchCatalog" || entry.state === "error") break;
+        if (entry.state === "done") {
+          hits += entry.resultIds.length;
+          details.push(entry.detail);
+        }
+        cursor += 1;
+      }
+      out.push({ kind: "search-group", seq: item.seq, at: item.at, categories: details.length, hits, details });
+      index = cursor - 1;
+      continue;
+    }
+    out.push({ kind: "item", item });
+  }
+  return out;
+}
+
 export function SessionTimeline({
   items,
   proposals,
@@ -56,15 +119,23 @@ export function SessionTimeline({
   onAccept: (proposal: DesignProposal) => void;
   workbenchHref: string;
 }) {
+  const displayItems = toDisplayItems(items);
   return (
     <ol className="session-timeline" aria-label="方案会话时间线">
-      {items.map((item, index) => {
-        const previous = index > 0 ? items[index - 1] : null;
+      {displayItems.map((entry, index) => {
+        const item = entry.kind === "item" ? entry.item : null;
+        const previous = index > 0 ? displayItems[index - 1] : null;
+        const previousItem = previous?.kind === "item" ? previous.item : null;
+        const key = entry.kind === "search-group" ? `search-group-${entry.seq}` : `${item!.kind}-${item!.seq}`;
         return (
-          <li className={`session-item session-item-${item.kind}`} key={`${item.kind}-${item.seq}`}>
-            <time className="session-item-time mono" aria-hidden>{formatTime(item.at)}</time>
+          <li className={`session-item session-item-${item?.kind ?? "search-group"}`} key={key}>
+            <time className="session-item-time mono" aria-hidden>{formatTime(item?.at ?? (entry.kind === "search-group" ? entry.at : ""))}</time>
             <span className="session-item-mark" aria-hidden />
-            <div className="session-item-body">{renderItem(item, previous, { proposals, changes, latestProposalId, accepting, onAccept, workbenchHref })}</div>
+            <div className="session-item-body">
+              {entry.kind === "search-group"
+                ? renderSearchGroup(entry)
+                : renderItem(item!, previousItem, { proposals, changes, latestProposalId, accepting, onAccept, workbenchHref })}
+            </div>
           </li>
         );
       })}
@@ -76,6 +147,26 @@ export function SessionTimeline({
         </li>
       )}
     </ol>
+  );
+}
+
+function renderSearchGroup(group: Extract<DisplayItem, { kind: "search-group" }>) {
+  return (
+    <details className="session-tool state-done">
+      <summary>
+        <span className="session-tool-state" aria-hidden />
+        <span className="session-tool-label">检索目录</span>
+        <span className="session-tool-summary">{group.categories} 类 · 命中 {group.hits} 个候选</span>
+      </summary>
+      <div className="session-tool-detail">
+        <span className="session-tool-detail-label">逐类命中</span>
+        <ul className="session-tool-lines">
+          {group.details.map((detail) => (
+            <li key={detail}>{detail}</li>
+          ))}
+        </ul>
+      </div>
+    </details>
   );
 }
 

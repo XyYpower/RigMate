@@ -44,7 +44,7 @@ test("M27 目标信息不足：不硬凑方案而是提出最小追问", async (
   // P2 默认视图为会话时间线；工作台断言切到 ?view=workbench
   await page.goto(page.url() + "?view=workbench");
   await expect(page.getByRole("heading", { name: "还差一点信息" })).toBeVisible();
-  await expect(page.getByText(/缺少预算或用途/)).toBeVisible();
+  await expect(page.getByText(/用途吧|主要拿来干什么/)).toBeVisible();
 });
 
 test("M31 自然语言修订：顶栏输入，预算跨档位生成第 2 版并显示差异", async ({ page }) => {

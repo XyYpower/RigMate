@@ -54,14 +54,16 @@ for (const viewport of BENCH_VIEWPORTS) {
 
     // agent-ui 重设计：首页 = 居中会话起点（composer 主角 + 能力行 + 示例词条）
     await expect(page.getByRole("textbox", { name: "描述你的装机目标" })).toBeVisible();
-    await expect(page.getByRole("list", { name: "能力说明" })).toBeVisible();
     await expect(page.getByLabel("示例目标").getByRole("button")).toHaveCount(3);
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(scrollWidth).toBeLessThanOrEqual(viewport.width + 1);
 
+    // 提交按钮输入后可用（<3 字禁用），填入后可聚焦可提交
     const submit = page.getByRole("button", { name: /开始搭配/ });
-    await expect(submit).toBeVisible();
+    await expect(submit).toBeDisabled();
+    await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("主要玩 2K 游戏");
+    await expect(submit).toBeEnabled();
     await submit.focus();
     await expect(submit).toBeFocused();
   });
@@ -183,14 +185,11 @@ test("决策台品牌一致：/projects 与报告页的导航、标题、状态�
   await expect(createButton).toBeFocused();
 });
 
-test("键盘：目标输入 → 预算 → 主按钮一路 Tab 可达", async ({ page }) => {
+test("键盘：目标输入 → 主按钮一路 Tab 可达", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("textbox", { name: "描述你的装机目标" }).fill("主要玩 2K 游戏");
   await page.getByRole("textbox", { name: "描述你的装机目标" }).focus();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("textbox", { name: "预算（元，可选）" })).toBeFocused();
-
-  // 预算快捷档 4 个 + 主按钮：连续 Tab 后主按钮应获得焦点
-  for (let i = 0; i < 6; i += 1) {
+  for (let i = 0; i < 4; i += 1) {
     await page.keyboard.press("Tab");
     if (await page.getByRole("button", { name: /开始搭配/ }).evaluate((el) => el === document.activeElement)) {
       break;
@@ -221,7 +220,6 @@ test("reduced-motion：动画关闭时首页与方案页内容直接可读", asy
   await page.goto("/");
   // agent-ui 重设计：首页 = 会话起点，composer 与能力行静态可读
   await expect(page.getByRole("textbox", { name: "描述你的装机目标" })).toBeVisible();
-  await expect(page.getByRole("list", { name: "能力说明" })).toContainText("资料核验");
 
   const designId = await createDesignViaApi(page);
   await page.goto(`/design/${designId}?view=workbench`);

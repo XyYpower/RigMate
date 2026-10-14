@@ -4,6 +4,8 @@ import { designRequestInputSchema, structuredIntentSchema, type StructuredIntent
 const budgetPatterns = [
   /(?:预算|预算是|预算约|预算为)\s*(?:人民币|¥|￥)?\s*([\d.]+)\s*(万|w|千|元)?/i,
   /([\d.]+)\s*(万|w|千|元)\s*(?:预算)?/i,
+  // 数字在前："8000 预算"、"8000元预算"
+  /(?:人民币|¥|￥)?\s*([\d.]+)\s*(万|w|千|元)?\s*预算/i,
 ];
 
 function parseBudgetCents(input: string): number | null {
@@ -59,8 +61,26 @@ export function designTitle(intent: StructuredIntent): string {
   return [appearance, useCase].filter(Boolean).join(" · ") || "自定义装机方案";
 }
 
+/**
+ * 渐进式意图澄清（agent 对话策略）：出方案前必须知道用途和预算；
+ * 外观是加分项，缺了不阻塞。追问按缺口精准问、一次只问一件事。
+ */
 export function intentNeedsInput(intent: StructuredIntent): boolean {
-  return intent.budgetCents === null && intent.useCases.length === 0;
+  return intent.useCases.length === 0 || intent.budgetCents === null;
+}
+
+/** 按缺口生成一句针对性的追问（用途 → 预算 → 外观，一次只推进一个缺口） */
+export function followupQuestionFor(intent: StructuredIntent): string {
+  if (intent.useCases.length === 0) {
+    return "先聊聊用途吧——这台机器主要拿来干什么？比如 3A 游戏、视频剪辑、写代码；外观有偏好也可以一起说（白色、海景房、安静都行）。";
+  }
+  if (intent.budgetCents === null) {
+    return `用途记下了（${intent.useCases.join("、")}）。预算大概什么范围？说个整数就行，比如「预算 8 千」「2 万以内」。`;
+  }
+  if (intent.appearance.length === 0) {
+    return `预算 ${Math.round(intent.budgetCents / 100)} 元配${intent.useCases.join("、")}没问题。外观有偏好吗？比如白色、海景房、安静——没有就直接开始搭配。`;
+  }
+  return "目标清楚了，开始检索目录。";
 }
 
 export const designIntentSchema = z.object({
