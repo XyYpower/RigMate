@@ -153,6 +153,26 @@
 }
 .session-workbench-link:hover { color: var(--wb-accent-hover); }
 
+/* ---------- 模型建议分区（混合建议层）：与正式配置视觉隔离，虚线边框 + 独立标签 ---------- */
+.experience-advice {
+  border: 1px dashed var(--wb-hairline);
+  padding: 12px 14px;
+}
+.experience-advice h2 { margin: 0 0 4px; font-size: 13px; }
+.experience-advice-note { margin: 0 0 8px; color: var(--wb-ink-faint); font-size: 11px; }
+.experience-advice-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.experience-advice-list li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px;
+  font-size: 12px; color: var(--wb-ink-muted);
+}
+.experience-advice-list strong { font-weight: 600; color: var(--wb-ink); }
+.experience-advice-tag {
+  flex: none; font-size: 11px; font-weight: 700;
+  color: var(--wb-ink-muted); border: 1px solid var(--wb-hairline);
+  padding: 0 6px; border-radius: 2px;
+}
+.experience-advice-tag.external { color: var(--wb-accent); border-color: var(--wb-accent); }
+
 /* ---------- 追问态 / 输入框 ---------- */
 .session-needs-input {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;

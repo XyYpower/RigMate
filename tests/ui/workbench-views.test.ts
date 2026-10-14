@@ -10,6 +10,10 @@ import {
   verificationItemsFrom,
 } from "@/ui/workbench/verification-desk";
 import type { AgentEvent, DesignProposal, ProposalItem } from "@/contracts/design";
+import {
+  EXPERIENCE_ADVICE_LABELS,
+  experienceAdviceViewFrom,
+} from "@/ui/session/experience-advice";
 
 function makeItem(overrides: Partial<ProposalItem> = {}): ProposalItem {
   return {
@@ -223,5 +227,24 @@ describe("四阶段轨道映射", () => {
     expect(steps.find((step) => step.id === "retrieving")!.state).toBe("done");
     expect(steps.find((step) => step.id === "composing")!.state).toBe("active");
     expect(steps.find((step) => step.id === "validating")!.state).toBe("waiting");
+  });
+});
+
+describe("模型建议分区（hybrid-llm-advice Task 4）", () => {
+  it("经验建议与待验证产品分别归组，库外产品名只出现在待验证组", () => {
+    const view = experienceAdviceViewFrom({
+      experienceAdvice: [
+        { kind: "experience_advice", category: "gpu", title: "显存取舍", detail: "剪辑优先更大显存", requiresVerification: false },
+        { kind: "external_product_hint", category: "case", title: "待验证产品", detail: "值得核验后收录", productName: "某品牌海景房机箱", requiresVerification: true },
+      ],
+    });
+    expect(view.experience).toEqual([{ heading: "显卡 · 显存取舍", detail: "剪辑优先更大显存" }]);
+    expect(view.external).toEqual([{ heading: "机箱 · 某品牌海景房机箱", detail: "值得核验后收录" }]);
+    expect(JSON.stringify(view.experience)).not.toContain("某品牌海景房机箱");
+  });
+
+  it("分区标签固定为「经验建议」与「待验证产品」", () => {
+    expect(EXPERIENCE_ADVICE_LABELS.experience).toBe("经验建议");
+    expect(EXPERIENCE_ADVICE_LABELS.external).toBe("待验证产品");
   });
 });

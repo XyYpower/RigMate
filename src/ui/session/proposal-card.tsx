@@ -5,6 +5,7 @@ import type { DesignProposal } from "@/contracts/design";
 import { BudgetRuler, budgetRulerFrom } from "@/ui/workbench/budget-ruler";
 import { formatYuanRange } from "@/ui/workbench/format";
 import { ASSEMBLY_CATEGORY_LABELS } from "@/ui/workbench/assembly-rail";
+import { ExperienceAdviceSection } from "@/ui/session/experience-advice";
 
 /**
  * 时间线内的方案卡（agent-ui-design §5.3，P2）：紧凑版配置摘要 + 动作。
@@ -50,6 +51,7 @@ export function ProposalCard({
         <em className="block">{compatibility.blockCount} 阻断</em>
         <span className="session-proposal-compat-message">{compatibility.message}</span>
       </p>
+      <ExperienceAdviceSection advice={proposal.experienceAdvice} />
       <footer className="session-proposal-actions">
         {isLatest ? (
           <>

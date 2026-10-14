@@ -21,6 +21,7 @@ import {
 import type { DesignResult } from "@/contracts/design";
 import { workspaceStatusOf } from "@/ui/workbench/types";
 import { diffProposals } from "@/domain/design/diff";
+import { ExperienceAdviceSection } from "@/ui/session/experience-advice";
 
 const CATEGORY_LABELS: Record<string, string> = {
   cpu: "处理器",
@@ -330,6 +331,8 @@ export function DesignWorkbenchView() {
               )}
             </details>
           </section>
+
+          <ExperienceAdviceSection advice={viewedProposal.experienceAdvice} />
 
           <div className="proposal-actions">
             {!isHistoryView && (
