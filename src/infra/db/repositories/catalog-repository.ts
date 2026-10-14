@@ -17,7 +17,7 @@ import { canonicalProducts, ensureDatabase } from "../client";
  * - 身份五元组与质量状态（v8）：没有证据链的新条目一律 quality_status = "partial"。
  */
 
-export type CatalogSourceTag = "seed" | "manual" | "buildcores" | "zol" | "manufacturer_cn";
+export type CatalogSourceTag = "seed" | "manual" | "hwagent" | "buildcores" | "zol" | "manufacturer_cn";
 
 export type SourcedCatalogEntry = CatalogEntry & {
   source: CatalogSourceTag;
@@ -44,10 +44,11 @@ export type CatalogUpdateReport = {
 
 const SOURCE_PRIORITY: Record<CatalogSourceTag, number> = {
   seed: 0,
-  manual: 1,
-  manufacturer_cn: 1,
-  buildcores: 2,
-  zol: 3,
+  hwagent: 1,
+  manual: 2,
+  manufacturer_cn: 2,
+  buildcores: 3,
+  zol: 4,
 };
 
 function parseEntry(row: typeof canonicalProducts.$inferSelect): SourcedCatalogEntry {

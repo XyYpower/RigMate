@@ -13,6 +13,8 @@ const socketSchema = z.string().trim().min(1).max(40);
 export const cpuSpecSchema = z.object({
   socket: socketSchema.optional(),
   tdpWatts: positiveIntSchema.optional(),
+  perfScore: countSchema.optional(),
+  tier: countSchema.optional(),
 });
 
 export const motherboardSpecSchema = z.object({
@@ -23,6 +25,8 @@ export const motherboardSpecSchema = z.object({
   m2Slots: countSchema.optional(),
   sataPorts: countSchema.optional(),
   pcieX16Slots: countSchema.optional(),
+  perfScore: countSchema.optional(),
+  tier: countSchema.optional(),
 });
 
 export const gpuSpecSchema = z.object({
@@ -30,32 +34,44 @@ export const gpuSpecSchema = z.object({
   tdpWatts: positiveIntSchema.optional(),
   pcie8pin: countSchema.optional(),
   twelveVhpwr: countSchema.optional(),
+  perfScore: countSchema.optional(),
+  tier: countSchema.optional(),
 });
 
 export const ramSpecSchema = z.object({
   ddrType: ramTypeSchema.optional(),
   sticks: positiveIntSchema.optional(),
+  perfScore: countSchema.optional(),
+  tier: countSchema.optional(),
 });
 
 export const storageSpecSchema = z.object({
   interface: storageInterfaceSchema.optional(),
+  perfScore: countSchema.optional(),
+  tier: countSchema.optional(),
 });
 
 export const psuSpecSchema = z.object({
   ratedWatts: positiveIntSchema.optional(),
   pcie8pin: countSchema.optional(),
   twelveVhpwr: countSchema.optional(),
+  perfScore: countSchema.optional(),
+  tier: countSchema.optional(),
 });
 
 export const coolerSpecSchema = z.object({
   supportedSockets: z.array(socketSchema).min(1).optional(),
   heightMm: positiveIntSchema.optional(),
+  perfScore: countSchema.optional(),
+  tier: countSchema.optional(),
 });
 
 export const caseSpecSchema = z.object({
   supportedFormFactors: z.array(formFactorSchema).min(1).optional(),
   maxGpuLengthMm: positiveIntSchema.optional(),
   maxCoolerHeightMm: positiveIntSchema.optional(),
+  perfScore: countSchema.optional(),
+  tier: countSchema.optional(),
 });
 
 export const specSchemaByCategory = {

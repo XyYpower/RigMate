@@ -73,6 +73,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /**
  * 单类别候选排序。得分为显式加总的线性分（便于测试与解释）：
  *   完整度（0–40）+ 预算（超支 −30 / 预算内 +20）+ 外观（10）+ 约束（5）+ 价格新鲜度（5）
+ *   + 性能分归一化（0–10，来自数据集 perf_score 定序权威）
  * 同分时预算内价格更高者靠前（同等条件下选更高档），价格缺失者排在其后。
  * 排序只决定顺序；能不能进方案仍由质量门与上层选择逻辑决定。
  */
@@ -84,6 +85,19 @@ export function rankCandidates(
 ): CandidateSummary[] {
   const appearanceTerms = intent.appearance.map((term) => term.trim().toLowerCase()).filter(Boolean);
   const constraintTerms = intent.constraints.map((term) => term.trim().toLowerCase()).filter(Boolean);
+  // perf_score 归一化基准：类目内最大值（数据集口径：定序用，非跑分原值）
+  const maxPerf = Math.max(
+    0,
+    ...candidates.map((candidate) => {
+      const value = candidate.spec["perfScore"];
+      return typeof value === "number" && Number.isFinite(value) ? value : 0;
+    }),
+  );
+  const perfBonusOf = (candidate: RankedCandidate): number => {
+    const value = candidate.spec["perfScore"];
+    if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || maxPerf === 0) return 0;
+    return Math.round((value / maxPerf) * 10);
+  };
 
   return candidates
     .map((candidate) => {
@@ -131,6 +145,13 @@ export function rankCandidates(
       if (constraintHit) {
         score += 5;
         reasons.push(`命中约束：${constraintHit}`);
+      }
+
+      const perfBonus = perfBonusOf(candidate);
+      if (perfBonus > 0) {
+        score += perfBonus;
+        const tier = candidate.spec["tier"];
+        reasons.push(`性能分 ${candidate.spec["perfScore"]}${typeof tier === "number" ? ` · 档位 ${tier}/10` : ""}（相对定序）`);
       }
 
       return {

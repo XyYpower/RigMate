@@ -1,6 +1,6 @@
 import type { BuildItemCategory } from "@/domain/build/types";
 
-export type CatalogAuditSource = "seed" | "manual" | "buildcores" | "zol" | "manufacturer_cn";
+export type CatalogAuditSource = "seed" | "manual" | "hwagent" | "buildcores" | "zol" | "manufacturer_cn";
 export type AuditableCatalogEntry = { id: string; category: BuildItemCategory; name: string; aliases: string[]; spec: Record<string, unknown>; source: CatalogAuditSource };
 
 export const REQUIRED_FIELDS_BY_CATEGORY: Record<BuildItemCategory, string[]> = {
@@ -32,7 +32,7 @@ export function normalizeCatalogName(value: string): string {
 
 export function auditCatalog(entries: AuditableCatalogEntry[]): CatalogAuditReport {
   const categories = Object.keys(REQUIRED_FIELDS_BY_CATEGORY) as BuildItemCategory[];
-  const sources: CatalogAuditSource[] = ["seed", "manual", "manufacturer_cn", "buildcores", "zol"];
+  const sources: CatalogAuditSource[] = ["seed", "manual", "hwagent", "manufacturer_cn", "buildcores", "zol"];
   const byCategory = Object.fromEntries(categories.map((category) => [category, createCategoryAudit()])) as Record<BuildItemCategory, CategoryAudit>;
   const bySource = Object.fromEntries(sources.map((source) => [source, createSourceAudit()])) as Record<CatalogAuditSource, SourceAudit>;
   const names = new Map<string, { category: BuildItemCategory; ids: string[] }>();

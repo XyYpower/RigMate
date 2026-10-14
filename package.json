@@ -27,7 +27,9 @@
     "evals:design": "tsx scripts/run-design-evals.ts",
     "evals:live": "tsx scripts/run-live-selection-eval.ts",
     "prices:fetch-jd": "tsx scripts/fetch-jd-prices.ts"
-    ,"catalog:sync-cn": "tsx scripts/sync-cn-catalog.ts",
+    ,"catalog:sync-cn": "tsx scripts/sync-cn-catalog.ts"
+    ,"catalog:import-hw": "tsx scripts/import-hwagent.ts"
+    ,"catalog:archive-legacy": "tsx scripts/archive-legacy-catalog.ts",
     "catalog:collect-cn": "tsx scripts/collect-cn-catalog.mts"
   },
   "dependencies": {

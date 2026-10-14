@@ -29,6 +29,9 @@
 !/data/evals/
 /data/evals/*
 !/data/evals/design-selection-cases.json
+# 精选硬件规格库（hw-agent 产物，723 型号人工校验，agent 主参考目录）
+!/data/catalog/
+!/data/catalog/hwagent/
 
 # misc
 .DS_Store
