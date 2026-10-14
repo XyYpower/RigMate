@@ -295,6 +295,22 @@ describe("advice LLM 调用与守卫（hybrid-llm-advice 计划 Task 2）", () =
     expect(result.ok).toBe(false);
   });
 
+  it("advice 调用固定关闭思考（非阻塞通道，思考模型不烧输出预算）", async () => {
+    let captured = "";
+    const result = await advice.generateExperienceAdvice(
+      adviceInput({
+        fetchImpl: async (input: string, init: RequestInit) => {
+          captured = String(init.body);
+          return new Response(JSON.stringify({ choices: [{ message: { content: '{"suggestions":[]}' } }] }), {
+            status: 200,
+          });
+        },
+      }),
+    );
+    expect(result.ok).toBe(true);
+    expect(captured).toContain('"thinking":{"type":"disabled"}');
+  });
+
   it("传给模型的候选每类最多 4 条：第 5 条候选名不出现在提示词里", async () => {
     let captured = "";
     const gpuCandidate = (index: number) => ({

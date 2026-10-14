@@ -74,7 +74,7 @@ export async function generateExperienceAdvice(input: {
   candidates: readonly CandidateSummary[];
   config: LlmConfig;
   fetchImpl?: (input: string, init: RequestInit) => Promise<Response>;
-  /** 建议是非阻塞经验输出，始终不启用思考（快、省，且失败即放弃） */
+  /** 建议是非阻塞经验输出：思考模型的输出预算不能被思考耗尽，缺省强制关闭 */
   thinking?: "enabled" | "disabled";
   maxTokens?: number;
 }): Promise<LlmJsonResult<ExperienceAdviceItem[]>> {
@@ -87,7 +87,7 @@ export async function generateExperienceAdvice(input: {
       candidates: input.candidates,
     }),
     schema: llmAdviceOutputSchema,
-    ...(input.thinking ? { thinking: input.thinking } : {}),
+    thinking: input.thinking ?? "disabled",
     ...(input.maxTokens !== undefined ? { maxTokens: input.maxTokens } : {}),
     fetchImpl: input.fetchImpl,
   });
