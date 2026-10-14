@@ -11,6 +11,7 @@ import { checkCoolerCaseHeight, checkGpuCaseLength, checkMotherboardCase } from 
 import { checkPsuCapacity, checkPsuConnectors } from "./power";
 import { checkCoolerSocket } from "./cooler";
 import { checkCpuM2Lanes } from "./cpu-storage";
+import { checkCpuIgpuGpu } from "./cpu-gpu";
 import { checkCoolerRamClearance } from "./cooler-ram";
 import { checkMotherboardCpuPower } from "./motherboard-cpu";
 
@@ -20,6 +21,7 @@ type Rule = {
 };
 
 const RULES: Rule[] = [
+  { id: "R-CPU-GPU-001", run: checkCpuIgpuGpu },
   { id: "R-CPU-MB-001", run: checkCpuMotherboardSocket },
   { id: "R-MB-GPU-001", run: checkMotherboardGpuSlot },
   { id: "R-MB-RAM-001", run: checkMotherboardRamType },

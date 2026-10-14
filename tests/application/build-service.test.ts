@@ -58,7 +58,7 @@ describe("装机项目服务（SQLite 持久化）", () => {
     service.addBuildItem(build.id, {
       category: "cpu",
       label: "测试 CPU",
-      spec: { socket: "AM5" },
+      spec: { socket: "AM5", hasIgpu: true },
     });
     service.addBuildItem(build.id, {
       category: "motherboard",
@@ -66,8 +66,9 @@ describe("装机项目服务（SQLite 持久化）", () => {
       spec: { socket: "AM5" },
     });
     const { findings } = service.checkBuild(build.id);
-    expect(findings).toHaveLength(1);
-    expect(findings[0]?.status).toBe("pass");
+    // R-CPU-MB-001 插槽匹配 + R-CPU-GPU-001 核显/独显（hwagent 数据集新规则）
+    expect(findings).toHaveLength(2);
+    expect(findings.every((finding) => finding.status === "pass")).toBe(true);
     expect(service.getBuild(build.id)?.status).toBe("reviewed");
   });
 
@@ -98,7 +99,7 @@ describe("装机项目服务（SQLite 持久化）", () => {
 
   it("加载最近一次检查：清单未变化时不标记过期", () => {
     const build = service.createBuild({ name: "结果恢复主机" });
-    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5" } });
+    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5", hasIgpu: true } });
     service.addBuildItem(build.id, {
       category: "motherboard",
       label: "MB",
@@ -109,13 +110,13 @@ describe("装机项目服务（SQLite 持久化）", () => {
     const latest = service.getLatestCheck(build.id);
     expect(latest).not.toBeNull();
     expect(latest?.stale).toBe(false);
-    expect(latest?.findings).toHaveLength(1);
-    expect(latest?.findings[0]?.status).toBe("pass");
+    expect(latest?.findings).toHaveLength(2);
+    expect(latest?.findings.every((finding) => finding.status === "pass")).toBe(true);
   });
 
   it("检查后新增配件会标记旧结果过期", () => {
     const build = service.createBuild({ name: "过期主机" });
-    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5" } });
+    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5", hasIgpu: true } });
     service.checkBuild(build.id);
     service.addBuildItem(build.id, { category: "ram", label: "内存", spec: { ddrType: "DDR5" } });
 
@@ -125,7 +126,7 @@ describe("装机项目服务（SQLite 持久化）", () => {
 
   it("删除项目会连同配件和检查记录一起删除", () => {
     const build = service.createBuild({ name: "待删除主机" });
-    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5" } });
+    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5", hasIgpu: true } });
     service.checkBuild(build.id);
 
     service.deleteBuild(build.id);
@@ -168,7 +169,7 @@ describe("装机项目服务（SQLite 持久化）", () => {
 
   it("修改配件后旧检查结果标记过期", () => {
     const build = service.createBuild({ name: "编辑主机" });
-    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5" } });
+    service.addBuildItem(build.id, { category: "cpu", label: "CPU", spec: { socket: "AM5", hasIgpu: true } });
     const withMb = service.addBuildItem(build.id, {
       category: "motherboard",
       label: "MB",

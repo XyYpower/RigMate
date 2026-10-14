@@ -244,7 +244,7 @@ describe("R-COOLER-001 散热器插槽", () => {
 
   it("插槽受支持时通过", () => {
     const finding = runBuildChecks([
-      makeItem({ category: "cpu", spec: { socket: "AM5" } }),
+      makeItem({ category: "cpu", spec: { socket: "AM5", hasIgpu: true } }),
       makeItem({ category: "cooler", spec: { supportedSockets: ["AM5", "AM4"] } }),
     ])[0];
     expect(finding?.status).toBe("pass");

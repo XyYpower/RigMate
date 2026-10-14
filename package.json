@@ -29,7 +29,8 @@
     "prices:fetch-jd": "tsx scripts/fetch-jd-prices.ts"
     ,"catalog:sync-cn": "tsx scripts/sync-cn-catalog.ts"
     ,"catalog:import-hw": "tsx scripts/import-hwagent.ts"
-    ,"catalog:archive-legacy": "tsx scripts/archive-legacy-catalog.ts",
+    ,"catalog:archive-legacy": "tsx scripts/archive-legacy-catalog.ts"
+    ,"catalog:coverage": "tsx scripts/catalog-coverage-report.ts",
     "catalog:collect-cn": "tsx scripts/collect-cn-catalog.mts"
   },
   "dependencies": {

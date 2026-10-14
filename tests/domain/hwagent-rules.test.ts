@@ -150,3 +150,41 @@ describe("R-PSU-001 PTP 公式升级", () => {
     expect(finding?.conclusion).toContain("290W");
   });
 });
+
+describe("R-CPU-GPU-001 无核显 CPU 必须配独显", () => {
+  const base = { socket: "AM5", tdpWatts: 65 };
+
+  it("无核显 CPU 且未配独显 → block", () => {
+    const finding = find(
+      runBuildChecks([makeItem({ category: "cpu", label: "锐龙5 7500F", spec: { ...base, hasIgpu: false } })]),
+      "R-CPU-GPU-001",
+    );
+    expect(finding?.status).toBe("block");
+    expect(finding?.conclusion).toContain("无法点亮");
+  });
+
+  it("配了独显则不适用；带核显通过", () => {
+    const withGpu = find(
+      runBuildChecks([
+        makeItem({ category: "cpu", spec: { ...base, hasIgpu: false } }),
+        makeItem({ category: "gpu", spec: { tdpWatts: 220 } }),
+      ]),
+      "R-CPU-GPU-001",
+    );
+    expect(withGpu).toBeUndefined();
+
+    const igpu = find(
+      runBuildChecks([makeItem({ category: "cpu", spec: { ...base, hasIgpu: true } })]),
+      "R-CPU-GPU-001",
+    );
+    expect(igpu?.status).toBe("pass");
+  });
+
+  it("hasIgpu 缺失 → unknown（不猜）", () => {
+    const finding = find(
+      runBuildChecks([makeItem({ category: "cpu", spec: base })]),
+      "R-CPU-GPU-001",
+    );
+    expect(finding?.status).toBe("unknown");
+  });
+});

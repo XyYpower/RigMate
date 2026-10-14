@@ -130,9 +130,12 @@ test("刷新后恢复检查结果，配件变化后提示过期，可删除项�
 
   await page.getByRole("button", { name: "重新检查" }).click();
   await expect(page.getByText("通过 1", { exact: true })).toBeVisible();
+  // R-CPU-GPU-001：DIY 手填 CPU 无核显数据 → unknown（不猜），通过项随之折叠
+  await expect(page.getByText("待补充 1", { exact: true })).toBeVisible();
 
   await page.reload();
   await waitUntilLoaded(page);
+  await page.locator("details.findings-passed summary").click();
   await expect(page.getByText("CPU 与主板都使用 AM5 插槽，基础插槽匹配。")).toBeVisible();
   await expect(page.getByText(/结果时间：/)).toBeVisible();
   await expect(page.getByText(/清单在这次检查之后发生过变化/)).toHaveCount(0);
