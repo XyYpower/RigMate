@@ -2,7 +2,7 @@ import type { StructuredIntent } from "@/contracts/design";
 import type { BuildItemCategory } from "@/domain/build/types";
 import { requiredFieldsOf } from "./quality";
 import type { PublishStatus } from "./quality";
-import { modelPhrases, normalizeModelText } from "./normalize";
+import { aliasMatchBlockedByVariantTail, modelPhrases, normalizeModelText } from "./normalize";
 import { decisionSpecsOf } from "./decision-specs";
 
 /**
@@ -267,10 +267,13 @@ export function buildCategoryCandidates(input: {
         namedIds.add(candidate.id);
         continue;
       }
-      // alias：别名/中文名包含于查询（"换成 4070S""就想用七彩虹巡洋舰"）
+      // alias：别名/中文名包含于查询（"换成 4070S""就想用七彩虹巡洋舰"）；
+      // 命中点尾部是变体 token（5090 Ti≠5090）时拒绝——M3 型号变体消歧
+      const containsAlias = (alias: string, text: string): boolean =>
+        text.includes(alias) && !aliasMatchBlockedByVariantTail(alias, text);
       const aliasHit =
         aliasNorms.some(
-          (alias) => phraseNorms.some((phrase) => phrase.includes(alias)) || queryNorms.some((query) => query.includes(alias)),
+          (alias) => phraseNorms.some((phrase) => containsAlias(alias, phrase)) || queryNorms.some((query) => containsAlias(alias, query)),
         ) ||
         (nameZhNorm.length >= 2 && queryNorms.some((query) => query.includes(nameZhNorm)));
       if (aliasHit) {

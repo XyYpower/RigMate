@@ -54,3 +54,29 @@ export function modelPhrases(text: string): string[] {
     ),
   ];
 }
+
+/**
+ * 型号变体词表（M3）：alias 命中点之后紧跟这些 token = 用户点名的是**另一个变体**
+ * （"5090 Ti"≠"5090"、"4070 SUPER"≠"4070"）。规格后缀（32G）与错字尾部不在词表，
+ * 不影响正常命中——这是词表法与"一刀切尾部守卫"的差异所在。
+ */
+export const MODEL_VARIANT_TOKENS: ReadonlySet<string> = new Set([
+  "ti",
+  "super",
+  "xt",
+  "xtx",
+  "ks",
+  "kf",
+  "pro",
+  "max",
+  "ultra",
+]);
+
+/** alias 包含命中后，检查命中点尾部的首个字母 token 是否为变体词（是 = 拒绝该命中） */
+export function aliasMatchBlockedByVariantTail(aliasNorm: string, phraseNorm: string): boolean {
+  const index = phraseNorm.indexOf(aliasNorm);
+  if (index < 0) return false;
+  const tail = phraseNorm.slice(index + aliasNorm.length);
+  const nextWord = tail.match(/^[a-z]+/);
+  return nextWord !== null && MODEL_VARIANT_TOKENS.has(nextWord[0]);
+}

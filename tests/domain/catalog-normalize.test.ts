@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { modelPhrases, modelTokens, normalizeModelText } from "@/domain/catalog/normalize";
+import { aliasMatchBlockedByVariantTail, modelPhrases, modelTokens, normalizeModelText } from "@/domain/catalog/normalize";
 
 // M2 Task 1：型号文本规范化（launch-readiness §6.1 召回顺序第一步）。
 // 目标：同一型号在不同写法下规范化结果一致——大小写、全角、空格/连字符、括号注记。
@@ -46,5 +46,23 @@ describe("modelTokens / modelPhrases", () => {
     // 纯数字或纯字母段不是型号短语
     expect(modelPhrases("预算压到 1.2 万")).toEqual([]);
     expect(modelPhrases("cpu 就用 intel 的")).toEqual([]);
+  });
+});
+
+
+describe("aliasMatchBlockedByVariantTail（型号变体消歧，M3）", () => {
+  it("命中点尾部是变体 token → 拒绝（5090 Ti ≠ 5090）", () => {
+    expect(aliasMatchBlockedByVariantTail("5090", "rtx5090ti")).toBe(true);
+    expect(aliasMatchBlockedByVariantTail("4070", "rtx4070super")).toBe(true);
+    expect(aliasMatchBlockedByVariantTail("7900", "7900xtx")).toBe(true);
+  });
+
+  it("错字与规格后缀不受影响", () => {
+    // 错字尾部不在词表：保留命中（typo 评测用例依赖）
+    expect(aliasMatchBlockedByVariantTail("4070s", "4070suer")).toBe(false);
+    // 数字开头的规格尾巴（32g）不是变体 token
+    expect(aliasMatchBlockedByVariantTail("光威龙武6000", "光威龙武600032g")).toBe(false);
+    // 命中到串尾：无尾部
+    expect(aliasMatchBlockedByVariantTail("5090", "rtx5090")).toBe(false);
   });
 });
