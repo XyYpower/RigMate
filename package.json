@@ -21,6 +21,8 @@
     "catalog:duplicates": "tsx scripts/catalog-duplicate-report.ts",
     "gate:data": "npm run typecheck && npm run lint && npm test && tsx scripts/data-release-gate.ts",
     "db:generate": "drizzle-kit generate",
+    "db:backup": "tsx scripts/backup-db.ts",
+    "db:restore-verify": "tsx scripts/restore-verify.ts",
     "db:migrate": "tsx scripts/migrate-db.ts",
     "gate:data:fixture": "tsx scripts/fixture-gate.ts",
     "db:fixture": "tsx scripts/seed-catalog-fixture.ts",
