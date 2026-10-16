@@ -378,6 +378,8 @@ export async function createDesignRequest(
       rawInput: data.rawInput,
       explicitBudgetYuan: data.budgetCents !== null && data.budgetCents !== undefined ? data.budgetCents / 100 : null,
       config: llmConfig,
+      // M5 评测结论（data/evals/intent-report.json）：关思考质量持平（预算 96.7%=96.7%、F1 97.1 vs 95.4）、延迟降 3 倍（1.9s vs 5.7s）——意图通道不值得思考
+      thinking: "disabled",
       maxTokens: 1500,
     });
     if (llmResult.ok) llmFollowup = llmResult.followupQuestion;
