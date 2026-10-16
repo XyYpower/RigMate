@@ -48,10 +48,10 @@ try {
 
   let pass = true;
   if (restoredVersion !== LATEST_SCHEMA_VERSION) {
-    console.error(`✗ schema 版本不一致：备份 v${restoredVersion}，代码 v${LATEST_SCHEMA_VERSION}`);
+    console.error(`✗ schema 版本不一致：备份 v${restoredVersion}，代码 v${LATEST_SCHEMA_VERSION}（当前库 v${currentVersion}）`);
     pass = false;
   } else {
-    console.log(`✓ schema 版本 v${restoredVersion}`);
+    console.log(`✓ schema 版本 v${restoredVersion}（当前库 v${currentVersion}）`);
   }
   for (const table of KEY_TABLES) {
     if (restoredCounts[table] !== currentCounts[table]) {

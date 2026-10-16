@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { parseDesignIntent, intentNeedsInput, followupQuestionFor } from "../src/domain/design/intent";
+import { parseDesignIntent, intentNeedsInput } from "../src/domain/design/intent";
 import { parseIntentWithLlm } from "../src/application/design/intent-llm";
 import { resolveLlmConfigFromEnv } from "../src/infra/llm/client";
 
