@@ -59,13 +59,19 @@ function untouchedEqual(before: StructuredIntent, after: StructuredIntent, untou
   return untouched.every((field) => JSON.stringify(before[field]) === JSON.stringify(after[field]));
 }
 
-const reports: CaseReport[] = [];
-for (const testCase of cases) {
-  const startedAt = Date.now();
-  const result = await reviseIntentWithLlm({
-    currentIntent: testCase.beforeIntent,
-    instruction: testCase.instruction,
-    config,
+async function main(): Promise<void> {
+  const config = resolveLlmConfigFromEnv();
+  if (!config) {
+    console.error("--live 需要 RIGMATE_LLM_API_KEY。");
+    process.exit(1);
+  }
+  const reports: CaseReport[] = [];
+  for (const testCase of cases) {
+    const startedAt = Date.now();
+    const result = await reviseIntentWithLlm({
+      currentIntent: testCase.beforeIntent,
+      instruction: testCase.instruction,
+      config,
     maxTokens: 1200,
   });
   const latencyMs = Date.now() - startedAt;
@@ -148,3 +154,6 @@ writeFileSync(
   `${JSON.stringify({ generatedAt: new Date().toISOString(), cases: cases.length, reports, summary: { driftRate: totalUntouched > 0 ? driftedCount / totalUntouched : 0, retained: okReports.length > 0 ? retainedCount / okReports.length : null, touchedOk: okReports.length > 0 ? touchedOkCount / okReports.length : null } }, null, 2)}\n`,
 );
 console.log(`\n报告已写入 ${reportPath}`);
+}
+
+main();
