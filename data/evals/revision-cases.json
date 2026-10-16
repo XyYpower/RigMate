@@ -1,0 +1,65 @@
+{
+  "$comment": "修订字段保持评测（M5，blueprint §9.2 修订字段保持率）。beforeIntent 为合并守卫前的当前意图；expectTouched/expectTouchedAny 为期望被修改的字段（预算/已有件由快速路由走规则路径，本轮样本聚焦 LLM 路径的组合与隐含诉求）。指标：模型原始漂移率（守卫前模型动了多少未触达字段）、字段保持率（守卫后未触达字段与 before 全等，应恒为 1）、触达正确率（期望字段出现在 changedFields）。",
+  "cases": [
+    {
+      "id": "llm-combo-budget-white",
+      "beforeIntent": { "budgetCents": 2000000, "useCases": ["游戏", "视频剪辑"], "appearance": ["静音"], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "预算 1.5 万，显卡要白色的",
+      "expectTouched": ["budgetCents", "appearance"]
+    },
+    {
+      "id": "llm-appearance-white-case",
+      "beforeIntent": { "budgetCents": 1200000, "useCases": ["游戏"], "appearance": [], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "机箱和风扇要白色的",
+      "expectTouched": ["appearance"]
+    },
+    {
+      "id": "llm-usecase-stream",
+      "beforeIntent": { "budgetCents": 1500000, "useCases": ["游戏"], "appearance": [], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "主要用途改成直播",
+      "expectTouched": ["useCases"]
+    },
+    {
+      "id": "llm-remove-white",
+      "beforeIntent": { "budgetCents": 1800000, "useCases": ["视频剪辑"], "appearance": ["白色", "海景房"], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "不要白色了，海景房可以留",
+      "expectTouched": ["appearance"]
+    },
+    {
+      "id": "llm-quiet-constraint",
+      "beforeIntent": { "budgetCents": 1500000, "useCases": ["游戏"], "appearance": [], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "整套再安静一点，其他不变",
+      "expectTouchedAny": ["constraints", "appearance"]
+    },
+    {
+      "id": "llm-existing-gpu",
+      "beforeIntent": { "budgetCents": 1000000, "useCases": ["游戏"], "appearance": [], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "显卡我买好了，不用配",
+      "expectTouched": ["existingParts"]
+    },
+    {
+      "id": "llm-irrelevant-monitor",
+      "beforeIntent": { "budgetCents": 1500000, "useCases": ["游戏"], "appearance": ["白色"], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "顺便推荐一款 27 寸显示器",
+      "expectTouched": []
+    },
+    {
+      "id": "llm-region-keep",
+      "beforeIntent": { "budgetCents": 900000, "useCases": ["办公"], "appearance": [], "existingParts": [], "constraints": ["不需要灯效"], "region": "中国大陆" },
+      "instruction": "机箱要小巧一点的",
+      "expectTouchedAny": ["constraints", "appearance"]
+    },
+    {
+      "id": "llm-vague-better",
+      "beforeIntent": { "budgetCents": 2000000, "useCases": ["游戏"], "appearance": [], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "再好一点点",
+      "expectTouchedAny": ["budgetCents", "constraints"]
+    },
+    {
+      "id": "llm-budget-plus-quiet",
+      "beforeIntent": { "budgetCents": 1300000, "useCases": ["游戏"], "appearance": [], "existingParts": [], "constraints": [], "region": "中国大陆" },
+      "instruction": "预算上到 1 万 6，要更安静的散热",
+      "expectTouched": ["budgetCents"]
+    }
+  ]
+}
