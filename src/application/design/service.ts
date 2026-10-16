@@ -34,7 +34,7 @@ import {
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
 import { decorateProposalItems } from "@/infra/catalog-import/display-names";
 import { createAgentAttempt, orchestrateDesignGeneration, type ModelSelection } from "@/application/agent/orchestrator";
-import { CATALOG_SELECTION_PROMPT_VERSION } from "./intent-llm";
+import { CATALOG_SELECTION_PROMPT_VERSION, REVISION_PROMPT_VERSION } from "./intent-llm";
 import type { AgentPhase, AgentRuntimeEvent } from "@/application/agent/runtime-types";
 import { publishRigEvent } from "@/infra/events/design-event-bus";
 import { appendAgentEventLogEntry, nextAgentEventSeq } from "@/infra/db/repositories/agent-event-log-repository";
@@ -663,7 +663,8 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   emitRig({
     type: "run_started", runId,
     model: llmConfig?.model ?? "rule-engine",
-    promptVersion: CATALOG_SELECTION_PROMPT_VERSION,
+    // 修订运行的主调用是意图改写：promptVersion 标 revision（M3 registry 完整化）
+    promptVersion: REVISION_PROMPT_VERSION,
   });
 
   let updatedIntent: StructuredIntent | null = null;
