@@ -507,12 +507,10 @@ export async function createDesignRequest(
     tryModelSwap: llmConfig
       ? async (swapInput) => {
           const swapStartedAt = now();
-          // 换件是小型决策：先按全局思考策略跑；出错（超时/瞬态）关思考再试一次——
-          // 两次都失败或模型诚实认为无更优（ok+null）→ 该类别保留原件，规则安全网不受影响
-          let proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig, maxTokens: 1200 });
-          if (!proposal.ok) {
-            proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig, thinking: "disabled", maxTokens: 1200 });
-          }
+          // 换件是小型决策：M6 A/B 评测（evals:swap）——思考开 96s 超时失败、关思考 4.2s
+          // 给出正确提案（冲突 1→0 消除），全阶关思考；失败或模型诚实认为无更优（ok+null）
+          // → 该类别保留原件，规则安全网不受影响
+          const proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig, thinking: "disabled", maxTokens: 1200 });
           // data = null 是模型的诚实结论（池内没有更优候选），不是错误
           if (!proposal.ok || !proposal.data) {
             emit(runId, {

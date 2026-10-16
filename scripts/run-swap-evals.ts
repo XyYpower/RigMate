@@ -50,8 +50,13 @@ if (generated.status !== "ok") {
 }
 
 // 把电源强制换成无 16pin 的鑫铜 650W，制造供电接口 finding
+const sx650 = pool.find((candidate) => candidate.canonicalId === "psu-sx-650");
+if (!sx650) {
+  console.error("fixture 池中没有 psu-sx-650");
+  process.exit(1);
+}
 const items = generated.proposal.items.map((item) =>
-  item.category === "psu" ? { ...item, catalogId: "psu-sx-650", label: "振华 鑫铜 650W（80+ 铜牌）" } : item,
+  item.category === "psu" ? { ...item, catalogId: "psu-sx-650", label: "振华 鑫铜 650W（80+ 铜牌）", spec: sx650.spec } : item,
 );
 const tools = createAgentTools({
   entries: (fixtureCatalogEntries() as unknown as RankedCandidate[]),
