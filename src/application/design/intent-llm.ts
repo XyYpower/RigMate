@@ -133,11 +133,13 @@ export async function reviseIntentWithLlm(input: {
 const llmSelectionOutputSchema = z.object({
   selections: z
     .array(
-      z.object({
-        category: z.string().trim().min(1).max(40),
-        catalogId: z.string().trim().min(1).max(120),
-        reason: z.string().trim().min(1).max(300),
-      }),
+      z
+        .object({
+          category: z.string().trim().min(1).max(40),
+          catalogId: z.string().trim().min(1).max(120),
+          reason: z.string().trim().min(1).max(300),
+        })
+        .strict(),
     )
     .max(8)
     .default([]),
@@ -259,11 +261,13 @@ const llmSwapOutputSchema = z
   .object({
     selections: z
       .array(
-        z.object({
-          category: z.string().trim().min(1).max(40),
-          catalogId: z.string().trim().min(1).max(120),
-          reason: z.string().trim().min(1).max(300),
-        }),
+        z
+          .object({
+            category: z.string().trim().min(1).max(40),
+            catalogId: z.string().trim().min(1).max(120),
+            reason: z.string().trim().min(1).max(300),
+          })
+          .strict(),
       )
       .max(1)
       .default([]),
