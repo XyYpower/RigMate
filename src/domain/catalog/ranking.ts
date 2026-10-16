@@ -2,9 +2,10 @@ import type { StructuredIntent } from "@/contracts/design";
 import type { BuildItemCategory } from "@/domain/build/types";
 import { requiredFieldsOf } from "./quality";
 import type { PublishStatus } from "./quality";
+import { modelPhrases, normalizeModelText } from "./normalize";
 
 /**
- * 目录候选检索与排序（内核恢复计划 Task B）。
+ * 目录候选检索与排序（内核恢复计划 Task B；M2 分桶召回）。
  *
  * 原则：
  * - 质量门是硬过滤：只有 verified / supported 产品能成为候选，partial/conflicting/stale/rejected/merged 一律排除；
@@ -21,6 +22,8 @@ export type RankedCandidate = {
   aliases: string[];
   spec: Record<string, unknown>;
   qualityStatus: PublishStatus;
+  /** 中文展示名（可选，展示层数据；只参与召回匹配，不参与规格） */
+  nameZh?: string | null;
 };
 
 /** 已审核价格事实（Task C：只有 review_status=verified 的价格进入排序与方案） */
@@ -43,6 +46,8 @@ export type CandidateSummary = {
   missingFields: string[];
   priceCents: number | null;
   retrievalReasons: string[];
+  /** M2 分桶标注：exact/alias = 用户点名型号；ranked = 规则排序入选；diversity = 档位补召回 */
+  bucket?: CandidateBucket;
 };
 
 /** 候选摘要可携带的来源等级：sourceIds 由应用层按证据链回填，领域层保持纯函数 */
@@ -183,6 +188,130 @@ export function rankCandidates(
 /** 每类别保留的候选数（模型动态组合的工作集；规则式只消费第一名）。
  *  提升到 12：候选池扩容后给模型更大的组合空间，96 条摘要约 8-10k tokens 可控。 */
 export const CANDIDATES_PER_CATEGORY = 12;
+
+// ---- M2 分桶召回（launch-readiness §6 / blueprint §6.1 §6.3）----
+
+export type CandidateBucket = "exact" | "alias" | "ranked" | "diversity";
+
+export type CategoryRecallStats = {
+  category: BuildItemCategory;
+  /** 质量门内条目数（含因超长名称被排除的） */
+  considered: number;
+  /** 最终进入候选池的数量 */
+  pooled: number;
+  /** 因质量门外（partial 等）被拒的数量 */
+  rejectedByQuality: number;
+  /** 质量门内但名称超长被拒的数量 */
+  rejectedByNameLength: number;
+};
+
+/** 默认每类候选数（blueprint §5.4）；用户点名型号时扩到 RECALL_EXACT_K */
+export const RECALL_DEFAULT_K = 6;
+export const RECALL_EXACT_K = 20;
+/** 多样性补召回上限：主池之外补不同性能档，避免候选全是同一档 */
+export const RECALL_DIVERSITY_K = 2;
+
+/**
+ * 单类别分桶召回：
+ * - exact：型号短语与 name/nameZh/别名规范化后**全等**（用户就打了型号本身）；
+ * - alias：短语**包含**别名或中文名（"换成 4070S"、"就用小雕显卡"）；
+ * - ranked：现有规则排序补满主池；用户点名型号（exact/alias 非空）时 K 扩到 20；
+ * - diversity：主池之外补不同性能档 ≤2 条。
+ * 硬约束不在此过滤（唯一候选不能被召回层滤掉），仍由方案层规则裁决。
+ */
+export function buildCategoryCandidates(input: {
+  entries: RankedCandidate[];
+  category: BuildItemCategory;
+  intent: StructuredIntent;
+  priceByCanonicalId?: Map<string, VerifiedPriceFact>;
+  now?: string;
+  /** 用户语句（原始目标/修订指令/已有部件）——内部抽取型号短语；空 = 不激活 exact/alias 桶 */
+  queries?: string[];
+}): { candidates: CandidateSummary[]; stats: CategoryRecallStats } {
+  const inCategory = input.entries.filter((candidate) => candidate.category === input.category);
+  const qualityPassed = inCategory.filter(
+    (candidate) => candidate.qualityStatus === "verified" || candidate.qualityStatus === "supported",
+  );
+  const rejectedByQuality = inCategory.length - qualityPassed.length;
+  const usable = qualityPassed.filter((candidate) => isCandidateNameUsable(candidate.name));
+  const rejectedByNameLength = qualityPassed.length - usable.length;
+  const stats: CategoryRecallStats = {
+    category: input.category,
+    considered: qualityPassed.length,
+    pooled: 0,
+    rejectedByQuality,
+    rejectedByNameLength,
+  };
+
+  const phraseNorms = (input.queries ?? []).flatMap((query) => modelPhrases(query)).map(normalizeModelText);
+  // 中文俗称没有字母+数字，不形成型号短语：中文名匹配在整句规范化文本上进行
+  const queryNorms = (input.queries ?? []).map(normalizeModelText);
+  const exactIds = new Set<string>();
+  const namedIds = new Set<string>();
+  if (phraseNorms.length > 0 || queryNorms.length > 0) {
+    for (const candidate of usable) {
+      const nameNorm = normalizeModelText(candidate.name);
+      const nameZhNorm = candidate.nameZh ? normalizeModelText(candidate.nameZh) : "";
+      const aliasNorms = candidate.aliases.map(normalizeModelText).filter((alias) => alias.length >= 2);
+      if (
+        phraseNorms.some(
+          (phrase) => phrase === nameNorm || (nameZhNorm && phrase === nameZhNorm) || aliasNorms.some((alias) => alias === phrase),
+        ) ||
+        (nameZhNorm && queryNorms.some((query) => query === nameZhNorm))
+      ) {
+        exactIds.add(candidate.id);
+        namedIds.add(candidate.id);
+        continue;
+      }
+      if (
+        phraseNorms.some(
+          (phrase) =>
+            aliasNorms.some((alias) => phrase.includes(alias)) || (nameZhNorm.length >= 2 && phrase.includes(nameZhNorm)),
+        ) ||
+        (nameZhNorm.length >= 2 && queryNorms.some((query) => query.includes(nameZhNorm)))
+      ) {
+        namedIds.add(candidate.id);
+      }
+    }
+  }
+
+  const ranked: CandidateSummary[] = rankCandidates(usable, input.intent, input.priceByCanonicalId, input.now).map(
+    (summary): CandidateSummary => ({
+      ...summary,
+      bucket: exactIds.has(summary.canonicalId)
+        ? "exact"
+        : namedIds.has(summary.canonicalId)
+          ? "alias"
+          : "ranked",
+    }),
+  );
+
+  // 桶序：exact → alias → ranked；桶内保持规则排序
+  const named = ranked.filter((candidate) => candidate.bucket !== "ranked");
+  const rest = ranked.filter((candidate) => candidate.bucket === "ranked");
+  const k = namedIds.size > 0 ? RECALL_EXACT_K : RECALL_DEFAULT_K;
+  const pooledList = [...named, ...rest].slice(0, k);
+
+  // diversity：主池之外补未出现过的性能档 ≤2
+  const pooledIds = new Set(pooledList.map((candidate) => candidate.canonicalId));
+  const seenTiers = new Set(
+    pooledList.map((candidate) => candidate.spec["tier"]).filter((tier): tier is number => typeof tier === "number"),
+  );
+  const diversity: typeof pooledList = [];
+  for (const candidate of rest) {
+    if (diversity.length >= RECALL_DIVERSITY_K) break;
+    if (pooledIds.has(candidate.canonicalId)) continue;
+    const tier = candidate.spec["tier"];
+    if (typeof tier === "number" && !seenTiers.has(tier)) {
+      seenTiers.add(tier);
+      diversity.push({ ...candidate, bucket: "diversity" });
+    }
+  }
+
+  const candidates = [...pooledList, ...diversity];
+  stats.pooled = candidates.length;
+  return { candidates, stats };
+}
 
 /** 组装候选池：质量硬过滤 → 按类别排序 → 每类取前 N；附带无候选类别的缺失清单。
  *  已有硬件的类别排除发生在方案生成层（候选池保持完整，模型可见全局）。 */
