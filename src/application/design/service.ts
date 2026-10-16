@@ -68,6 +68,27 @@ function createRigEmitter(requestId: string): (runId: string, payload: RigEvent)
   };
 }
 
+/**
+ * LLM 调用硬看门狗（Alpha 自测反馈 2026-10-16）：fetch abort（70s）在真实环境
+ * 出现过一次未生效 → 修订流程挂死 9 分钟。此看门狗不依赖 abort——到点即以
+ * fallback 兜底返回（底层 promise 结果被丢弃， eventual abort 由客户端超时自然回收）。
+ * deadline = 客户端超时 + 5s 缓冲。
+ */
+function withLlmDeadline<T>(promise: Promise<T>, fallback: T, config: LlmConfig): Promise<T> {
+  const deadlineMs = (Number(process.env.RIGMATE_LLM_TIMEOUT_MS) > 0
+    ? Number(process.env.RIGMATE_LLM_TIMEOUT_MS)
+    : 12_000) + 5_000;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), deadlineMs);
+  });
+  // 看门狗已返回后，底层 promise 迟到的失败不能变成 unhandled rejection
+  promise.catch(() => undefined);
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+const LLM_FAIL = (reason: string) => ({ ok: false as const, reason });
+
 /** 压缩候选池（选件降级阶梯）：每类只保留排序前 N 条——只减量不改字段，"事实存活"纪律不变 */
 function compressCandidatePoolForRetry<T extends { category: BuildItemCategory }>(
   pool: readonly T[],
@@ -374,14 +395,18 @@ export async function createDesignRequest(
       type: "tool_call", runId, tool: "parse_intent", state: "running",
       detail: "大模型解析预算、用途与偏好。", resultIds: [], startedAt: intentStartedAt, finishedAt: null,
     });
-    const llmResult = await parseIntentWithLlm({
-      rawInput: data.rawInput,
-      explicitBudgetYuan: data.budgetCents !== null && data.budgetCents !== undefined ? data.budgetCents / 100 : null,
-      config: llmConfig,
-      // M5 评测结论（data/evals/intent-report.json）：关思考质量持平（预算 96.7%=96.7%、F1 97.1 vs 95.4）、延迟降 3 倍（1.9s vs 5.7s）——意图通道不值得思考
-      thinking: "disabled",
-      maxTokens: 1500,
-    });
+    const llmResult = await withLlmDeadline(
+      parseIntentWithLlm({
+        rawInput: data.rawInput,
+        explicitBudgetYuan: data.budgetCents !== null && data.budgetCents !== undefined ? data.budgetCents / 100 : null,
+        config: llmConfig,
+        // M5 评测结论（data/evals/intent-report.json）：关思考质量持平（预算 96.7%=96.7%、F1 97.1 vs 95.4）、延迟降 3 倍（1.9s vs 5.7s）——意图通道不值得思考
+        thinking: "disabled",
+        maxTokens: 1500,
+      }),
+      LLM_FAIL("意图解析看门狗超时，已用本地规则理解目标。"),
+      llmConfig,
+    );
     if (llmResult.ok) llmFollowup = llmResult.followupQuestion;
     if (llmResult.ok) {
       intent = llmResult.data;
@@ -466,15 +491,19 @@ export async function createDesignRequest(
               type: "tool_call", runId, tool: "select_catalog_candidates", state: "running",
               detail: `大模型在质量达标候选中挑选${compressedNote}。`, resultIds: [], startedAt: selectionStartedAt, finishedAt: null,
             });
-            const selection = await selectCatalogCandidatesWithLlm({
-              intent,
-              candidates,
-              config: llmConfig,
-              // M6 A/B 评测（evals:live 开关对照）：关思考 6/6 过守卫（开思考 4/6、两例 70s 超时）、
-              // 延迟约一半、组合质量反而更优（模型更优 2 vs 0）——选件通道思考无稳定增益，全阶梯关闭
-              thinking: "disabled",
-              maxTokens: 3000,
-            });
+            const selection = await withLlmDeadline(
+              selectCatalogCandidatesWithLlm({
+                intent,
+                candidates,
+                config: llmConfig,
+                // M6 A/B 评测（evals:live 开关对照）：关思考 6/6 过守卫（开思考 4/6、两例 70s 超时）、
+                // 延迟约一半、组合质量反而更优（模型更优 2 vs 0）——选件通道思考无稳定增益，全阶梯关闭
+                thinking: "disabled",
+                maxTokens: 3000,
+              }),
+              LLM_FAIL("选件看门狗超时，已回退本地规则排序。"),
+              llmConfig,
+            );
             if (!selection.ok) {
               emit(runId, {
                 type: "tool_call", runId, tool: "select_catalog_candidates", state: "error",
@@ -510,7 +539,11 @@ export async function createDesignRequest(
           // 换件是小型决策：M6 A/B 评测（evals:swap）——思考开 96s 超时失败、关思考 4.2s
           // 给出正确提案（冲突 1→0 消除），全阶关思考；失败或模型诚实认为无更优（ok+null）
           // → 该类别保留原件，规则安全网不受影响
-          const proposal = await proposeSwapWithLlm({ ...swapInput, config: llmConfig, thinking: "disabled", maxTokens: 1200 });
+          const proposal = await withLlmDeadline(
+            proposeSwapWithLlm({ ...swapInput, config: llmConfig, thinking: "disabled", maxTokens: 1200 }),
+            LLM_FAIL("换件看门狗超时，保留原组合。"),
+            llmConfig,
+          );
           // data = null 是模型的诚实结论（池内没有更优候选），不是错误
           if (!proposal.ok || !proposal.data) {
             emit(runId, {
@@ -736,19 +769,23 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
       type: "tool_call", runId, tool: "revise_intent", state: "running",
       detail: "大模型理解调整要求。", resultIds: [], startedAt: reviseStartedAt, finishedAt: null,
     });
-    const llmResult = await reviseIntentWithLlm({
-      currentIntent: request.intent,
-      instruction,
-      context: buildConversationContext({
-        requestId,
-        turn: countAgentRuns(requestId) + 1,
-        intent: request.intent,
-        latestProposal: latest,
-        userMessages: [instruction],
+    const llmResult = await withLlmDeadline(
+      reviseIntentWithLlm({
+        currentIntent: request.intent,
+        instruction,
+        context: buildConversationContext({
+          requestId,
+          turn: countAgentRuns(requestId) + 1,
+          intent: request.intent,
+          latestProposal: latest,
+          userMessages: [instruction],
+        }),
+        config: llmConfig,
+        maxTokens: 1200,
       }),
-      config: llmConfig,
-      maxTokens: 1200,
-    });
+      LLM_FAIL("修订理解看门狗超时，已回退本地规则。"),
+      llmConfig,
+    );
     if (llmResult.ok) {
       // M1 合并守卫：模型只被允许改动用户明确触及的字段，漂移字段还原 before 值
       const merge = mergeRevisionIntent({ before: request.intent, instruction, modelIntent: llmResult.data });
@@ -814,7 +851,12 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
       type: "tool_call", runId, tool: "select_catalog_candidates", state: "running",
       detail: `大模型在质量达标候选中调整第 ${version} 版。`, resultIds: [], startedAt: selectionStartedAt, finishedAt: null,
     });
-    const selection = await selectCatalogCandidatesWithLlm({ intent: updatedIntent, candidates: context.pool, config: llmConfig, maxTokens: 3000 });
+    // M6 漏改路径（Alpha 实测挂死点）：修订/补充流程的选件此前仍开思考，现对齐创建流程关思考 + 看门狗
+    const selection = await withLlmDeadline(
+      selectCatalogCandidatesWithLlm({ intent: updatedIntent, candidates: context.pool, config: llmConfig, thinking: "disabled", maxTokens: 3000 }),
+      LLM_FAIL("选件看门狗超时，已回退本地规则排序。"),
+      llmConfig,
+    );
     if (selection.ok) {
       preferredIds = selection.data.selectedIds;
       rationaleByCategory = selection.data.rationaleByCategory;
