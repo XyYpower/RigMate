@@ -25,6 +25,7 @@
     "gate:data:fixture": "tsx scripts/fixture-gate.ts",
     "db:fixture": "tsx scripts/seed-catalog-fixture.ts",
     "evals:design": "tsx scripts/run-design-evals.ts",
+    "evals:swap": "tsx scripts/run-swap-evals.ts",
     "evals:revision": "tsx scripts/run-revision-evals.ts",
     "evals:intent": "tsx scripts/run-intent-evals.ts",
     "evals:recall": "tsx scripts/run-recall-evals.ts",
