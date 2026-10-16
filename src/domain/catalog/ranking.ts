@@ -248,7 +248,7 @@ export function buildCategoryCandidates(input: {
   };
 
   const phraseNorms = (input.queries ?? []).flatMap((query) => modelPhrases(query)).map(normalizeModelText);
-  // 中文俗称没有字母+数字，不形成型号短语：中文名匹配在整句规范化文本上进行
+  // 中文俗称没有字母+数字，不形成型号短语：中文名/中文别名匹配在整句规范化文本上进行
   const queryNorms = (input.queries ?? []).map(normalizeModelText);
   const exactIds = new Set<string>();
   const namedIds = new Set<string>();
@@ -257,23 +257,23 @@ export function buildCategoryCandidates(input: {
       const nameNorm = normalizeModelText(candidate.name);
       const nameZhNorm = candidate.nameZh ? normalizeModelText(candidate.nameZh) : "";
       const aliasNorms = candidate.aliases.map(normalizeModelText).filter((alias) => alias.length >= 2);
-      if (
-        phraseNorms.some(
-          (phrase) => phrase === nameNorm || (nameZhNorm && phrase === nameZhNorm) || aliasNorms.some((alias) => alias === phrase),
-        ) ||
-        (nameZhNorm && queryNorms.some((query) => query === nameZhNorm))
-      ) {
+      const identityParts = [nameNorm, ...(nameZhNorm ? [nameZhNorm] : []), ...aliasNorms];
+      // exact：全等，或查询是型号全名的子串（前缀命中，launch-readiness §6.1；len≥4 防短查询误触发）
+      const exactHit =
+        phraseNorms.some((phrase) => identityParts.some((part) => part === phrase || (phrase.length >= 4 && part.includes(phrase)))) ||
+        queryNorms.some((query) => identityParts.some((part) => part === query));
+      if (exactHit) {
         exactIds.add(candidate.id);
         namedIds.add(candidate.id);
         continue;
       }
-      if (
-        phraseNorms.some(
-          (phrase) =>
-            aliasNorms.some((alias) => phrase.includes(alias)) || (nameZhNorm.length >= 2 && phrase.includes(nameZhNorm)),
+      // alias：别名/中文名包含于查询（"换成 4070S""就想用七彩虹巡洋舰"）
+      const aliasHit =
+        aliasNorms.some(
+          (alias) => phraseNorms.some((phrase) => phrase.includes(alias)) || queryNorms.some((query) => query.includes(alias)),
         ) ||
-        (nameZhNorm.length >= 2 && queryNorms.some((query) => query.includes(nameZhNorm)))
-      ) {
+        (nameZhNorm.length >= 2 && queryNorms.some((query) => query.includes(nameZhNorm)));
+      if (aliasHit) {
         namedIds.add(candidate.id);
       }
     }
