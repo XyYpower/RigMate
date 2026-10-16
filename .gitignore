@@ -30,6 +30,7 @@
 /data/evals/*
 !/data/evals/design-selection-cases.json
 !/data/evals/recall-cases.json
+!/data/evals/intent-cases.json
 # 精选硬件规格库（hw-agent 产物，723 型号人工校验，agent 主参考目录）；catalog 其余仍本地
 !/data/catalog/
 /data/catalog/*

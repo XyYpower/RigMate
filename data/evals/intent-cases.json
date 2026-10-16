@@ -1,0 +1,353 @@
+{
+  "$comment": "意图理解固定评测（M5，blueprint §9.2 理解指标）。expect.budgetCents 为期望预算（分，null=不应识别出预算）；expect.useCases/appearance 为期望槽位（比较经同义词归一 + 双向包含容忍）；expectFollowup=缺少关键槽位应追问；expectRefusal=域外请求应拒绝并引导回装机。规则路径与真实模型路径跑同一份样本。",
+  "cases": [
+    {
+      "id": "normal-netvideo-10k",
+      "goal": "预算 1 万，玩网游和看视频",
+      "expect": {
+        "budgetCents": 1000000,
+        "useCases": [
+          "游戏",
+          "视频剪辑"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "normal-white-clip-game-20k",
+      "goal": "预算两万，白色海景房，剪视频和打游戏",
+      "expect": {
+        "budgetCents": 2000000,
+        "useCases": [
+          "视频剪辑",
+          "游戏"
+        ],
+        "appearance": [
+          "白色",
+          "海景房"
+        ]
+      }
+    },
+    {
+      "id": "normal-office-8k",
+      "goal": "8000 块，办公为主",
+      "expect": {
+        "budgetCents": 800000,
+        "useCases": [
+          "办公"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "normal-aaa-15kw",
+      "goal": "预算 1.5w 打 3A",
+      "expect": {
+        "budgetCents": 1500000,
+        "useCases": [
+          "游戏"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "normal-dev-quiet-25k",
+      "goal": "2 万 5，开发用，要静音",
+      "expect": {
+        "budgetCents": 2500000,
+        "useCases": [
+          "开发"
+        ],
+        "appearance": [
+          "静音"
+        ]
+      }
+    },
+    {
+      "id": "normal-ai-draw-30k",
+      "goal": "预算 3 万做 AI 绘图",
+      "expect": {
+        "budgetCents": 3000000,
+        "useCases": [
+          "AI 绘图"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "normal-study-9k",
+      "goal": "预算 9000 网课轻办公",
+      "expect": {
+        "budgetCents": 900000,
+        "useCases": [
+          "办公"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "normal-game-clip-12k",
+      "goal": "1.2 万，主要打游戏，偶尔剪视频",
+      "expect": {
+        "budgetCents": 1200000,
+        "useCases": [
+          "游戏",
+          "视频剪辑"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "normal-code-6k",
+      "goal": "预算 6000，写代码用",
+      "expect": {
+        "budgetCents": 600000,
+        "useCases": [
+          "开发"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "normal-stream-game-white-20k",
+      "goal": "2 万预算，直播加游戏，白色",
+      "expect": {
+        "budgetCents": 2000000,
+        "useCases": [
+          "游戏"
+        ],
+        "appearance": [
+          "白色"
+        ]
+      }
+    },
+    {
+      "id": "normal-clip-ai-40k",
+      "goal": "预算 4 万，剪辑和 AI 绘图都要",
+      "expect": {
+        "budgetCents": 4000000,
+        "useCases": [
+          "视频剪辑"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "normal-home-office-8k",
+      "goal": "8000 元，家用办公机",
+      "expect": {
+        "budgetCents": 800000,
+        "useCases": [
+          "办公"
+        ],
+        "appearance": []
+      }
+    },
+    {
+      "id": "existing-gpu-10k",
+      "goal": "预算 1 万，我已有 4070S",
+      "expect": {
+        "budgetCents": 1000000,
+        "useCases": [],
+        "appearance": [],
+        "existingPartsContains": [
+          "4070"
+        ],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "existing-psu-case-20k",
+      "goal": "2 万，手里有电源和机箱",
+      "expect": {
+        "budgetCents": 2000000,
+        "useCases": [],
+        "appearance": [],
+        "existingPartsContains": [
+          "电源",
+          "机箱"
+        ],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "existing-cpu-9k",
+      "goal": "预算 9000，保留我的 9800X3D",
+      "expect": {
+        "budgetCents": 900000,
+        "useCases": [],
+        "appearance": [],
+        "existingPartsContains": [
+          "9800X3D"
+        ],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "existing-ram-15k",
+      "goal": "1 万 5 组装机，已有 DDR4 内存",
+      "expect": {
+        "budgetCents": 1500000,
+        "useCases": [],
+        "appearance": [],
+        "existingPartsContains": [
+          "DDR4"
+        ],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "existing-gpu2-20k",
+      "goal": "预算 2 万，现有 RTX 4060 继续用",
+      "expect": {
+        "budgetCents": 2000000,
+        "useCases": [],
+        "appearance": [],
+        "existingPartsContains": [
+          "4060"
+        ],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "existing-case-8k",
+      "goal": "8000，机箱保留用旧的",
+      "expect": {
+        "budgetCents": 800000,
+        "useCases": [],
+        "appearance": [],
+        "existingPartsContains": [
+          "机箱"
+        ],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "followup-game-no-budget",
+      "goal": "想配一台玩游戏的",
+      "expect": {
+        "budgetCents": null,
+        "useCases": [
+          "游戏"
+        ],
+        "appearance": [],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "followup-nothing",
+      "goal": "配台电脑",
+      "expect": {
+        "budgetCents": null,
+        "useCases": [],
+        "appearance": [],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "followup-budget-only",
+      "goal": "预算 1 万",
+      "expect": {
+        "budgetCents": 1000000,
+        "useCases": [],
+        "appearance": [],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "followup-white-budget",
+      "goal": "白色海景房，预算 1.5 万",
+      "expect": {
+        "budgetCents": 1500000,
+        "useCases": [],
+        "appearance": [
+          "白色",
+          "海景房"
+        ],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "followup-vague",
+      "goal": "帮我配个主机",
+      "expect": {
+        "budgetCents": null,
+        "useCases": [],
+        "appearance": [],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "followup-clip-no-budget",
+      "goal": "剪辑用的，预算没想好",
+      "expect": {
+        "budgetCents": null,
+        "useCases": [
+          "视频剪辑"
+        ],
+        "appearance": [],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "refusal-weather",
+      "goal": "今天天气怎么样？",
+      "expect": {
+        "budgetCents": null,
+        "useCases": [],
+        "appearance": [],
+        "expectRefusal": true
+      }
+    },
+    {
+      "id": "refusal-poem",
+      "goal": "帮我写一首诗",
+      "expect": {
+        "budgetCents": null,
+        "useCases": [],
+        "appearance": [],
+        "expectRefusal": true
+      }
+    },
+    {
+      "id": "refusal-math",
+      "goal": "1+1 等于几",
+      "expect": {
+        "budgetCents": null,
+        "useCases": [],
+        "appearance": [],
+        "expectRefusal": true
+      }
+    },
+    {
+      "id": "ambiguous-budget-1.5",
+      "goal": "预算 1.5",
+      "expect": {
+        "budgetCents": null,
+        "useCases": [],
+        "appearance": [],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "ambiguous-budget-around-8k",
+      "goal": "预算大概 8000 左右吧",
+      "expect": {
+        "budgetCents": 800000,
+        "useCases": [],
+        "appearance": [],
+        "expectFollowup": true
+      }
+    },
+    {
+      "id": "ambiguous-budget-within-10k",
+      "goal": "价钱随便，1 万以内吧",
+      "expect": {
+        "budgetCents": 1000000,
+        "useCases": [],
+        "appearance": [],
+        "expectFollowup": true
+      }
+    }
+  ]
+}

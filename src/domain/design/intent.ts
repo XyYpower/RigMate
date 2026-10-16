@@ -14,8 +14,11 @@ function parseBudgetCents(input: string): number | null {
   const amount = Number(match[1]);
   if (!Number.isFinite(amount) || amount <= 0) return null;
   const unit = match[2]?.toLowerCase();
-  const multiplier = unit === "万" || unit === "w" ? 10000 : unit === "千" ? 1000 : 1;
-  return Math.round(amount * multiplier * 100);
+  if (unit === "万" || unit === "w") return Math.round(amount * 10000 * 100);
+  if (unit === "千") return Math.round(amount * 1000 * 100);
+  if (unit === "元") return Math.round(amount * 100);
+  // 无单位（"预算 1.5"）：歧义不猜——只有明显是元（≥1000）才认，对齐修订通道 parseBudgetRevision
+  return amount >= 1000 ? Math.round(amount * 100) : null;
 }
 
 function collectMatches(input: string, patterns: Array<[RegExp, string]>): string[] {
