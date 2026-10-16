@@ -53,7 +53,7 @@ describe("buildCategoryCandidates（分桶召回）", () => {
     }
   });
 
-  it("短语包含别名 → alias 桶置顶并扩 K（用户点名的型号）", () => {
+  it("点名型号（run 与别名全等）→ exact 置顶并扩 K", () => {
     const { candidates } = buildCategoryCandidates({
       entries,
       category: "gpu",
@@ -61,7 +61,7 @@ describe("buildCategoryCandidates（分桶召回）", () => {
       queries: ["换成 4070S"],
     });
     expect(candidates[0]?.canonicalId).toBe("gpu-4070s");
-    expect(candidates[0]?.bucket).toBe("alias");
+    expect(candidates[0]?.bucket).toBe("exact");
     // 点名型号激活 K=20：ranked 桶补满全部剩余
     expect(candidates).toHaveLength(4);
     expect(candidates[1]?.bucket).toBe("ranked");
@@ -78,14 +78,14 @@ describe("buildCategoryCandidates（分桶召回）", () => {
     expect(candidates[0]?.bucket).toBe("exact");
   });
 
-  it("别名包含于短语 → alias 桶次优先", () => {
+  it("中文别名包含于整句（无 run）→ alias 桶", () => {
     const { candidates } = buildCategoryCandidates({
-      entries,
+      entries: [entryOf({ id: "gpu-cruiser", name: "Colorful CVN Cruiser", aliases: ["七彩虹巡洋舰"], spec: { tier: 8 } })],
       category: "gpu",
       intent: INTENT,
-      queries: ["我想要一张 9070xt 的卡"],
+      queries: ["就想用七彩虹巡洋舰"],
     });
-    expect(candidates[0]?.canonicalId).toBe("gpu-9070");
+    expect(candidates[0]?.canonicalId).toBe("gpu-cruiser");
     expect(candidates[0]?.bucket).toBe("alias");
   });
 

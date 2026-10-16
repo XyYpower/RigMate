@@ -37,10 +37,14 @@ describe("modelTokens / modelPhrases", () => {
     expect(modelTokens("B850M 小雕")).toEqual(["b850m"]);
   });
 
-  it("modelPhrases 抽取含字母+数字的短语（候选型号句）", () => {
-    expect(modelPhrases("预算 1.5 万，换成 4070S")).toEqual(["换成 4070S"]);
-    expect(modelPhrases("我已有 7950X3D 和 850W 金牌")).toEqual(["我已有 7950X3D 和 850W 金牌"]);
-    // 纯数字或纯中文段不是型号短语
+  it("modelPhrases 抽取字母数字 run，中文是天然边界", () => {
+    expect(modelPhrases("预算 1.5 万，换成 4070S")).toEqual(["4070s"]);
+    expect(modelPhrases("我已有 7950X3D 和 850W 金牌")).toEqual(["7950x3d", "850w"]);
+    expect(modelPhrases("cpu 就用 9800X3D，打网游为主")).toEqual(["9800x3d"]);
+    // 带内部空格的型号保持完整 run
+    expect(modelPhrases("换成 r7 9800x3d")).toEqual(["r7 9800x3d"]);
+    // 纯数字或纯字母段不是型号短语
     expect(modelPhrases("预算压到 1.2 万")).toEqual([]);
+    expect(modelPhrases("cpu 就用 intel 的")).toEqual([]);
   });
 });

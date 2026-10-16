@@ -39,14 +39,18 @@ export function modelTokens(text: string): string[] {
 }
 
 /**
- * 从用户语句抽取「型号短语」：按标点切段，保留同时含字母和数字的段
- * （型号几乎必然字母数字混写；纯数字预算、纯中文意图不是型号）。
- * 短语是 exact/alias 桶的匹配输入，抽不出来就不激活，绝不硬凑。
+ * 从用户语句抽取「型号短语」：抽取字母数字连续段（run）——段内允许空格/连字符/点
+ * 连接（"R7 9800X3D""4070 SUPER"），中文字符天然成为 run 边界。
+ * 必须同时含字母和数字（纯数字预算、纯 "cpu" 不是型号）；抽不出来就不激活，绝不硬凑。
  */
 export function modelPhrases(text: string): string[] {
-  return text
-    .split(/[，。；！？、\n,;!?]+/)
-    .map((segment) => segment.trim())
-    .filter((segment) => segment.length > 0 && segment.length <= 40)
-    .filter((segment) => /[a-z]/i.test(segment) && /[0-9]/.test(segment));
+  const normalized = toHalfWidth(text).toLowerCase();
+  const runs = normalized.match(/[a-z0-9]+(?:[\-_. ][a-z0-9]+)*/g) ?? [];
+  return [
+    ...new Set(
+      runs
+        .map((run) => run.trim())
+        .filter((run) => run.length > 0 && /[a-z]/.test(run) && /[0-9]/.test(run)),
+    ),
+  ];
 }

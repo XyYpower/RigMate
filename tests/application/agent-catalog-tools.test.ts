@@ -34,10 +34,10 @@ describe("searchCatalog 工具（分桶召回）", () => {
     }
   });
 
-  it("queries 点名型号：alias 桶置顶且扩 K", () => {
+  it("queries 点名型号：exact 桶置顶且扩 K", () => {
     const result = tool({ category: "gpu", intent: undefined, queries: ["换成 4070S"] });
     expect(result[0]?.canonicalId).toBe("gpu-4070s");
-    expect(result[0]?.bucket).toBe("alias");
+    expect(result[0]?.bucket).toBe("exact");
     expect(result.length).toBeGreaterThan(6);
   });
 
