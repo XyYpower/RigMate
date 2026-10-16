@@ -33,6 +33,7 @@ export const rigEventTypeSchema = z.enum([
   "user_message",
   "run_completed",
   "revision_merged",
+  "answer",
 ]);
 export type RigEventType = z.infer<typeof rigEventTypeSchema>;
 
@@ -99,6 +100,14 @@ export const rigPayloadSchema = z.discriminatedUnion("type", [
     mergedIntent: z.record(z.string(), z.unknown()),
     changedFields: z.array(z.string()),
     rejectedFields: z.array(z.string()),
+  }),
+  z.object({
+    // 结构化回答（M6 信任层）：AnswerDraft 渲染前的结构化形态——summary 按行渲染，
+    // 动作单独展示；内容全部来自方案事实，模型零参与
+    type: z.literal("answer"),
+    runId: z.string(),
+    summary: z.string(),
+    actions: z.array(z.string()),
   }),
 ]);
 export type RigEvent = z.infer<typeof rigPayloadSchema>;

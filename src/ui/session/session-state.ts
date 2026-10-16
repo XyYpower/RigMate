@@ -31,6 +31,7 @@ export type TimelineItem =
       at: string;
     }
   | { kind: "question"; seq: number; message: string; at: string }
+  | { kind: "answer"; seq: number; summary: string; actions: string[]; at: string }
   | { kind: "proposal"; seq: number; proposalId: string; version: number; title: string; at: string };
 
 export type SessionRunStatus = "idle" | "running" | "completed";
@@ -113,6 +114,10 @@ export function applyEnvelope(state: SessionState, envelope: RigEnvelope): Sessi
       break;
     case "question":
       item = { kind: "question", seq: envelope.seq, message: payload.message, at };
+      break;
+    case "answer":
+      // 结构化回答卡（M6）：不进 question 状态——回答不是追问，不触发 needs-input 横幅
+      item = { kind: "answer", seq: envelope.seq, summary: payload.summary, actions: payload.actions, at };
       break;
     case "proposal":
       item = {

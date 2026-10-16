@@ -686,7 +686,12 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     events.push(event(run.id, "understanding", "started", "正在理解你的问题。"));
     events.push(event(run.id, "question", "waiting", guidance));
     emitRig({ type: "phase", runId, phase: "understanding", message: "这是说明类问题，不重新生成方案。" });
-    emitRig({ type: "question", runId, message: guidance });
+    if (draft) {
+      // 结构化回答卡（M6）：summary/actions 分离渲染，不冒充追问
+      emitRig({ type: "answer", runId, summary: draft.summary, actions: [...draft.actions] });
+    } else {
+      emitRig({ type: "question", runId, message: guidance });
+    }
     emitRig({ type: "run_completed", runId, status: "needs_input" });
     run.status = "completed";
     run.completedAt = now();

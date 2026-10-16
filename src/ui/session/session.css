@@ -109,10 +109,30 @@
 .session-anomaly-fallback { display: block; color: var(--wb-ink-faint); font-size: 11px; }
 
 .session-item-question .session-item-mark { background: var(--wb-warn); }
+.session-item-answer .session-item-mark { background: var(--wb-accent); }
 .session-question-text {
   margin: 0; padding: 10px 12px;
   background: var(--wb-warn-soft); border: 1px solid var(--wb-warn);
   border-radius: 10px; color: var(--wb-ink); font-weight: 600;
+}
+
+/* ---------- 结构化回答卡（M6 信任层）：内容来自方案事实，区别于追问的警示黄 ---------- */
+.session-answer {
+  padding: 10px 12px;
+  background: var(--wb-panel, #fff); border: 1px solid var(--wb-hairline);
+  border-radius: 10px;
+}
+.session-answer-label {
+  display: block; margin-bottom: 6px;
+  font-size: 11px; font-weight: 700; color: var(--wb-ink-faint);
+}
+.session-answer-body p {
+  margin: 0 0 4px; font-size: 13px; line-height: 1.55; color: var(--wb-ink);
+}
+.session-answer-body p:last-child { margin-bottom: 0; }
+.session-answer-actions {
+  margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed var(--wb-hairline);
+  font-size: 12px; color: var(--wb-ink-muted);
 }
 
 /* ---------- 方案卡 ---------- */

@@ -151,3 +151,24 @@ describe("会话状态投影（session-state）", () => {
     }
   });
 });
+
+describe("answer 富事件（M6 信任层）", () => {
+  it("answer 折叠为结构化回答条目，不污染 question 状态", () => {
+    const state = replay([
+      { type: "user_message", runId: RUN_ID, text: "为什么选这个显卡？" },
+      { type: "run_started", runId: RUN_ID, model: "glm-5.3", promptVersion: "revision-v1" },
+      {
+        type: "answer",
+        runId: RUN_ID,
+        summary: "【显卡】RTX 4070 SUPER：2K 下兼顾剪辑与游戏\n需要留意的未知项：暂无。",
+        actions: ["继续调整：直接说要改哪里", "接受这一版"],
+      },
+      { type: "run_completed", runId: RUN_ID, status: "needs_input" },
+    ]);
+    const answerItem = state.timeline.find((item) => item.kind === "answer");
+    expect(answerItem).toBeDefined();
+    expect(answerItem?.kind === "answer" && answerItem.actions).toEqual(["继续调整：直接说要改哪里", "接受这一版"]);
+    // 回答不是追问：question 状态保持 null（needs-input 横幅不被误触发）
+    expect(state.question).toBeNull();
+  });
+});

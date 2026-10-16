@@ -231,6 +231,21 @@ function renderItem(
       );
     case "question":
       return <p className="session-question-text">{item.message}</p>;
+    case "answer":
+      // 结构化回答卡（M6 信任层）：内容全部来自方案事实（AnswerDraft），按行渲染
+      return (
+        <div className="session-answer" aria-label="装机助手的回答">
+          <span className="session-answer-label">装机助手</span>
+          <div className="session-answer-body">
+            {item.summary.split("\n").map((line, index) => (
+              <p key={index}>{line}</p>
+            ))}
+          </div>
+          {item.actions.length > 0 && (
+            <p className="session-answer-actions">接下来可以：{item.actions.join("；")}。</p>
+          )}
+        </div>
+      );
     case "proposal": {
       const proposal = context.proposals.find((entry) => entry.id === item.proposalId);
       if (!proposal) {
