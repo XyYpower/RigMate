@@ -5,7 +5,7 @@
 > **本文档的用途**：AI 协同开发的"进度锚点"。每完成一个大的功能板块，AI 必须更新本文档（进度快照、里程碑、下一步），然后 git 提交推送——这是与用户约定的固定动作。
 > **任何新会话 / 协作者，开工前先完整读完本文档，再按需读第 2 节的文档，不要凭猜测继续开发。**
 >
-> 最后更新：2026-10-15 ｜ 当前阶段：**launch-readiness Phase 2 完成（M1-M6）+ Phase 5 首块落地（v4.34：run 指标聚合器 + /diagnostics 观测页 + 规则降级基线 93.3%/97.1%/96.7% + 换件 A/B——五类模型调用全部按数据关思考，无 LLM 主流程完全可用）**。**下一步：内部 Alpha 准备（5-10 名真实用户：脱敏埋点、备份/恢复演练、Docker 实测）→ Phase 5 余量（feature flag 灰度、成本指标、claim 支持率评测）→ 小范围 Beta。**
+> 最后更新：2026-10-16 ｜ 当前阶段：**内部 Alpha 运行中（2026-10-16 启动：Docker 容器 rigmate-alpha，宿主真实数据卷 + GLM key，--restart unless-stopped；冒烟 30s 出全方案）**——工程侧 Phase 2（M1-M6）+ Phase 5 首块 + Alpha 准备（v4.27-v4.35）全部完成。**等待 5-10 名真实用户反馈**；Alpha 剩余人工项见 docs/DEPLOYMENT.md §6（知情说明/反馈渠道/离机备份/防火墙放行）。
 > **换窗口交接：先读 §0 交接快照。**
 > 仓库：<https://github.com/XyYpower/RigMate>（main 分支）｜ 本地：`D:\XyyWork\RigMate`
 

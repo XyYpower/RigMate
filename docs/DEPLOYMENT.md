@@ -58,9 +58,14 @@ docker run -d --name rigmate -p 3000:3000 -v rigmate-data:/app/data rigmate:alph
 
 ## 6. 内部 Alpha 检查清单
 
-- [ ] 备份脚本跑通 + 恢复演练通过（`db:backup` → `db:restore-verify`）
-- [ ] Docker 构建/运行/自动迁移验证（第 5 节命令）
-- [ ] `.env.local` 就位（LLM key 或明确纯规则模式）
-- [ ] 真实库备份一份离机存放
+- [x] 备份脚本跑通 + 恢复演练通过（2026-10-16，v14 + 五表行数一致）
+- [x] Docker 构建/运行/自动迁移验证（2026-10-16 实测，见 Dockerfile 头注释）
+- [x] `.env.local` 就位（GLM key，容器经 `--env-file` 注入）
+- [x] Alpha 实例已启动（2026-10-16）：`docker run -d --name rigmate-alpha --restart unless-stopped -p 3000:3000 --env-file .env.local -e RIGMATE_DB_PATH=/app/data/rigmate.db -v "D:/XyyWork/RigMate/data:/app/data" rigmate:alpha`，挂真实数据卷；冒烟通过（30s 出全方案 + 4 条建议）
+- [ ] 真实库备份一份**离机**存放（本机已有 data/backups/）
 - [ ] 用户知情说明：价格均为证据价或经验估算（非实时成交价）；建议区内容不参与兼容检查
 - [ ] 反馈回收渠道约定（问题截图带会话页 URL）
+- [ ] 局域网防火墙放行 TCP 3000（需管理员：`netsh advfirewall firewall add rule name="RigMate Alpha" dir=in action=allow protocol=TCP localport=3000`；或首次访问时允许 Windows 弹窗）
+
+> **Git Bash 注意**：`docker run` 的 `-e RIGMATE_DB_PATH=/app/...` 必须加 `MSYS_NO_PATHCONV=1`，否则 MSYS 会把路径改写成宿主 Git 安装路径（2026-10-16 实踩：应用在容器内错误路径自建空库，好在数据卷未被污染）。
+> **停止/更新**：`docker stop rigmate-alpha`；更新代码后 `docker build -t rigmate:alpha . && docker rm -f rigmate-alpha` 再按上面命令重启（数据卷不变）。
