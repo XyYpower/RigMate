@@ -3,6 +3,7 @@ import type { BuildItemCategory } from "@/domain/build/types";
 import { requiredFieldsOf } from "./quality";
 import type { PublishStatus } from "./quality";
 import { modelPhrases, normalizeModelText } from "./normalize";
+import { decisionSpecsOf } from "./decision-specs";
 
 /**
  * 目录候选检索与排序（内核恢复计划 Task B；M2 分桶召回）。
@@ -48,6 +49,8 @@ export type CandidateSummary = {
   retrievalReasons: string[];
   /** M2 分桶标注：exact/alias = 用户点名型号；ranked = 规则排序入选；diversity = 档位补召回 */
   bucket?: CandidateBucket;
+  /** decisionSpecs 白名单投影（blueprint §6.2）：模型可见的决策字段子集，提示词一律用它替代裸 spec */
+  decisionSpecs?: Record<string, unknown>;
 };
 
 /** 候选摘要可携带的来源等级：sourceIds 由应用层按证据链回填，领域层保持纯函数 */
@@ -164,6 +167,7 @@ export function rankCandidates(
         category: candidate.category,
         name: candidate.name,
         spec: candidate.spec,
+        decisionSpecs: decisionSpecsOf(candidate.category, candidate.spec),
         qualityStatus: candidate.qualityStatus as "verified" | "supported",
         sourceIds: [] as string[],
         missingFields: missing,

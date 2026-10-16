@@ -63,6 +63,7 @@ export function renderAdvicePrompt(input: {
       category: candidate.category,
       name: candidate.name,
       qualityStatus: candidate.qualityStatus,
+      decisionSpecs: candidate.decisionSpecs ?? {},
     })),
   )}
 请按系统规则输出经验建议或数据库外产品提示，没有就输出空数组。`;
