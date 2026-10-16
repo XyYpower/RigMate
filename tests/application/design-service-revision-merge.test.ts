@@ -98,38 +98,33 @@ describe("修订合并守卫接线（LLM 已配置，模型返回漂移意图）
     expect(event.mergedIntent.budgetCents).toBe(2_000_000);
   });
 
-  it("确定性预算指令：用户显式值优先于模型返回的不同数字", async () => {
+  it("快速路由：纯预算指令直接走规则（M3），不调模型，审计照常", async () => {
     const created = await service.createDesignRequest({ rawInput: "2 万预算，剪辑和游戏" });
-    // 模型这次返回预算 9000 元（漂移）；指令里明确"预算 8000" → 显式值赢
     const client = await import("@/infra/llm/client");
-    vi.mocked(client.completeJson).mockImplementation(async (options: { system: string }) => {
-      if (options.system.includes("方案调整器")) {
-        return {
-          ok: true as const,
-          data: {
-            budgetYuan: 9000,
-            useCases: ["视频剪辑"],
-            appearance: [],
-            existingParts: [],
-            constraints: [],
-            region: "中国大陆",
-          },
-        };
-      }
-      return { ok: false as const, reason: "测试桩：其余模型路径禁用" };
-    });
+    vi.mocked(client.completeJson).mockClear();
 
     const revised = await service.reviseDesign(created.request.id, { instruction: "预算 8000" });
     expect(revised.request.intent.budgetCents).toBe(800_000);
+    // 快速路由：修订的 revise_intent 模型调用根本没发生
+    const revisionCalls = vi
+      .mocked(client.completeJson)
+      .mock.calls.filter((call) => (call[0] as { system: string }).system.includes("方案调整器"));
+    expect(revisionCalls).toHaveLength(0);
+    // 规则路径的 revision_merged 审计照常
     const events = revisionMergedEvents(created.request.id);
     expect(events).toHaveLength(1);
     expect((events[0] as { changedFields: string[] }).changedFields).toEqual(["budgetCents"]);
-    // 模型还顺手删了用途（"游戏"）和约束 → 一并被守卫拒绝
-    expect((events[0] as { rejectedFields: string[] }).rejectedFields).toEqual([
-      "budgetCents",
-      "useCases",
-      "constraints",
-    ]);
-    expect(revised.request.intent.useCases).toEqual(["视频剪辑", "游戏"]);
+    expect((events[0] as { rejectedFields: string[] }).rejectedFields).toEqual([]);
+  });
+
+  it("快速路由：说明类问题不重新生成方案", async () => {
+    const created = await service.createDesignRequest({ rawInput: "2 万预算，剪辑和游戏" });
+    const before = created.proposal!.id;
+    const revised = await service.reviseDesign(created.request.id, { instruction: "为什么选这个显卡？" });
+    // 没有新版本，方案保持原样
+    expect(revised.proposal?.id).toBe(before);
+    expect(revised.proposal?.version).toBe(1);
+    const question = revised.run.events.find((e) => e.type === "question");
+    expect(question?.message).toContain("不用改方案");
   });
 });

@@ -6,6 +6,7 @@ import { generateExperienceAdvice } from "./advice-llm";
 import { parseIntentWithLlm, proposeSwapWithLlm, reviseIntentWithLlm, selectCatalogCandidatesWithLlm } from "./intent-llm";
 import { loadPriceContext } from "./price-context";
 import { parseDesignIntent, intentNeedsInput, followupQuestionFor } from "@/domain/design/intent";
+import { classifyRevision } from "@/domain/design/revision-route";
 import { reviseIntentWithRules } from "@/domain/design/revision";
 import { buildConversationContext } from "@/domain/design/conversation-context";
 import { INTENT_FIELD_LABELS, mergeRevisionIntent, type IntentField, type RevisionMergeResult } from "@/domain/design/revision-merge";
@@ -670,6 +671,22 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   let updatedIntent: StructuredIntent | null = null;
   let note = "";
   let fallbackReason = "";
+  // M3 快速路由：确定性分类器先决定走法——规则能处理不调模型，问句不重新生成
+  const revisionRoute = latest ? classifyRevision(instruction) : "llm";
+  if (latest && revisionRoute === "question") {
+    // 说明类问题：方案与版本保持不动，诚实指引依据位置（blueprint §2：不重新生成）
+    const guidance =
+      "这是说明类问题，不用改方案。每件配置的入选理由与取舍在「为什么这样搭配 / 取舍说明」里可展开查看；要调整配置直接说改哪里，例如「换成白色机箱」。";
+    events.push(event(run.id, "understanding", "started", "正在理解你的问题。"));
+    events.push(event(run.id, "question", "waiting", guidance));
+    emitRig({ type: "phase", runId, phase: "understanding", message: "这是说明类问题，不重新生成方案。" });
+    emitRig({ type: "question", runId, message: guidance });
+    emitRig({ type: "run_completed", runId, status: "needs_input" });
+    run.status = "completed";
+    run.completedAt = now();
+    saveAgentRun(run);
+    return { request, proposal: latest, run, changes: [], versions: findProposals(requestId) };
+  }
   if (!latest) {
     // needs_input 会话的补充目标（agent-ui P3）：不再挡回，走意图修订 + 重新生成；
     // 规则修订理解不了时，把补充并入原始描述做一次完整规则理解兜底
@@ -701,7 +718,7 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     events.push(event(run.id, "understanding", "started", "正在理解你的补充。"));
     events.push(event(run.id, "understanding", "completed", note));
     emitRig({ type: "phase", runId, phase: "understanding", message: note });
-  } else if (llmConfig) {
+  } else if (llmConfig && revisionRoute === "llm") {
     const reviseStartedAt = now();
     emitRig({
       type: "tool_call", runId, tool: "revise_intent", state: "running",
