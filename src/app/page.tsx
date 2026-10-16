@@ -50,6 +50,11 @@ export default function Home() {
     const formData = new FormData(event.currentTarget);
     const goalValue = String(formData.get("goal") ?? "").trim();
     if (!goalValue) return;
+    // 与服务端校验（rawInput ≥3 字）同口径：太短不发请求，就地给可执行的示例提示
+    if (goalValue.length < 3) {
+      setMessage("目标描述太短了，多写几个字——比如「预算 8000，办公和网课用」。");
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
