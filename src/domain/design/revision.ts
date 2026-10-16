@@ -32,6 +32,15 @@ export function existingPartCategories(parts: string[]): BuildItemCategory[] {
   return [...new Set(found)];
 }
 
+/** 从任意语句识别提到的八类类别（M4 问依据的解释通道用） */
+export function categoriesMentionedIn(text: string): BuildItemCategory[] {
+  const found: BuildItemCategory[] = [];
+  for (const [pattern, category] of CATEGORY_KEYWORDS) {
+    if (pattern.test(text)) found.push(category);
+  }
+  return [...new Set(found)];
+}
+
 /** 修订语句中的预算：带单位（万/w/千/元）直接换算；无单位仅接受 ≥1000 的元值，避免把"1.8"这类歧义当事实 */
 export function parseBudgetRevision(text: string): number | null {
   const match = text.match(/(?:预算|控制在|压到|压在|改成|调整为)\s*(?:人民币|¥|￥)?\s*([\d.]+)\s*(万|w|千|元)?/i);

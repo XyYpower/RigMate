@@ -7,6 +7,7 @@ import { parseIntentWithLlm, proposeSwapWithLlm, reviseIntentWithLlm, selectCata
 import { loadPriceContext } from "./price-context";
 import { parseDesignIntent, intentNeedsInput, followupQuestionFor } from "@/domain/design/intent";
 import { classifyRevision } from "@/domain/design/revision-route";
+import { buildExplainAnswer, renderAnswerDraft } from "@/domain/design/explain";
 import { reviseIntentWithRules } from "@/domain/design/revision";
 import { buildConversationContext } from "@/domain/design/conversation-context";
 import { INTENT_FIELD_LABELS, mergeRevisionIntent, type IntentField, type RevisionMergeResult } from "@/domain/design/revision-merge";
@@ -674,9 +675,12 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   // M3 快速路由：确定性分类器先决定走法——规则能处理不调模型，问句不重新生成
   const revisionRoute = latest ? classifyRevision(instruction) : "llm";
   if (latest && revisionRoute === "question") {
-    // 说明类问题：方案与版本保持不动，诚实指引依据位置（blueprint §2：不重新生成）
-    const guidance =
-      "这是说明类问题，不用改方案。每件配置的入选理由与取舍在「为什么这样搭配 / 取舍说明」里可展开查看；要调整配置直接说改哪里，例如「换成白色机箱」。";
+    // 说明类问题：能定位方案内类别时给确定性解释（M4 AnswerDraft，模型零参与），
+    // 定位不到再回落到通用指引；方案与版本保持不动（blueprint §2：不重新生成）
+    const draft = buildExplainAnswer({ instruction, proposal: latest });
+    const guidance = draft
+      ? renderAnswerDraft(draft)
+      : "这是说明类问题，不用改方案。每件配置的入选理由与取舍在「为什么这样搭配 / 取舍说明」里可展开查看；要调整配置直接说改哪里，例如「换成白色机箱」。";
     events.push(event(run.id, "understanding", "started", "正在理解你的问题。"));
     events.push(event(run.id, "question", "waiting", guidance));
     emitRig({ type: "phase", runId, phase: "understanding", message: "这是说明类问题，不重新生成方案。" });

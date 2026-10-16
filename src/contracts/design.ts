@@ -166,6 +166,22 @@ export const proposalChangeSchema = z.object({
   toLabel: z.string().nullable(),
 });
 
+/**
+ * 回答层契约（M4，blueprint §7.4）：回答只能引用已存在的事实与建议项
+ * （claimIds/adviceIds 为引用，文本由渲染器从 summary/actions 生成），strict——
+ * 模型不产出回答文案，数字与型号全部来自方案事实。
+ */
+export const answerDraftSchema = z
+  .object({
+    summary: z.string().trim().min(1).max(2000),
+    actions: z.array(z.string().trim().min(1).max(80)).max(4).default([]),
+    questions: z.array(z.string().trim().min(1).max(200)).max(2).default([]),
+    claimIds: z.array(z.string().trim().min(1).max(80)).max(40).default([]),
+    adviceIds: z.array(z.number().int().nonnegative()).max(8).default([]),
+  })
+  .strict();
+export type AnswerDraft = z.infer<typeof answerDraftSchema>;
+
 export type DesignRequestInput = z.infer<typeof designRequestInputSchema>;
 export type DesignRequestStatus = z.infer<typeof designRequestStatusSchema>;
 export type StructuredIntent = z.infer<typeof structuredIntentSchema>;

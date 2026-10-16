@@ -117,14 +117,19 @@ describe("修订合并守卫接线（LLM 已配置，模型返回漂移意图）
     expect((events[0] as { rejectedFields: string[] }).rejectedFields).toEqual([]);
   });
 
-  it("快速路由：说明类问题不重新生成方案", async () => {
+  it("快速路由：说明类问题给确定性解释，不重新生成方案", async () => {
     const created = await service.createDesignRequest({ rawInput: "2 万预算，剪辑和游戏" });
     const before = created.proposal!.id;
+    const gpuLabel = created.proposal!.items.find((item) => item.category === "gpu")!.label;
     const revised = await service.reviseDesign(created.request.id, { instruction: "为什么选这个显卡？" });
-    // 没有新版本，方案保持原样
+    // 没有新版本，方案保持原样；回答含该件真实理由（M4 AnswerDraft）
     expect(revised.proposal?.id).toBe(before);
     expect(revised.proposal?.version).toBe(1);
     const question = revised.run.events.find((e) => e.type === "question");
-    expect(question?.message).toContain("不用改方案");
+    expect(question?.message).toContain(gpuLabel);
+    // 定位不到方案内类别 → 回落通用指引
+    const fallback = await service.reviseDesign(created.request.id, { instruction: "为什么选这个声卡？" });
+    const fallbackQuestion = fallback.run.events.find((e) => e.type === "question");
+    expect(fallbackQuestion?.message).toContain("不用改方案");
   });
 });
