@@ -332,7 +332,10 @@ export function DesignWorkbenchView() {
             </details>
           </section>
 
-          <ExperienceAdviceSection advice={viewedProposal.experienceAdvice} />
+          <ExperienceAdviceSection
+            advice={viewedProposal.experienceAdvice}
+            sourceNote={`v${viewedProposal.version} · ${viewedProposal.id.slice(0, 8)}`}
+          />
 
           <div className="proposal-actions">
             {!isHistoryView && (

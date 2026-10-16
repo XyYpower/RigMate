@@ -1,10 +1,16 @@
+"use client";
+
+import { useState } from "react";
 import type { ExperienceAdviceItem } from "@/contracts/design";
 import { ASSEMBLY_CATEGORY_LABELS } from "@/ui/workbench/assembly-rail";
+import { externalHintQueuePayload } from "@/ui/session/advice-queue";
 
 /**
- * 模型建议分区（hybrid-llm-advice 计划 Task 4）：经验建议与待验证产品独立展示。
+ * 模型建议分区（hybrid-llm-advice Task 4 + M4 队列入口）：经验建议与待验证产品独立展示。
  * 信任边界：这是唯一渲染 proposal.experienceAdvice 的区域——正式配置、价格与兼容
  * 摘要不读取建议内容；没有建议时不渲染空区域。
+ * 库外产品提示带「加入待审核队列」动作（蓝图 §7.3）：只写 pending_catalog_queue，
+ * 不自动建产品、不影响正式方案与接受路径。
  */
 
 export const EXPERIENCE_ADVICE_LABELS = {
@@ -37,9 +43,59 @@ export function experienceAdviceViewFrom(
   return { experience, external };
 }
 
-export function ExperienceAdviceSection({ advice }: { advice: ExperienceAdviceItem[] }) {
+function ExternalHintActions({ advice, sourceNote }: { advice: ExperienceAdviceItem; sourceNote: string }) {
+  const [state, setState] = useState<"idle" | "submitting" | "done">("idle");
+  const [error, setError] = useState("");
+  const payload = externalHintQueuePayload(advice, sourceNote);
+  if (!payload) return null;
+  async function queueHint() {
+    if (state !== "idle") return;
+    setState("submitting");
+    setError("");
+    try {
+      const response = await fetch("/api/catalog/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error ?? "进队失败，请重试。");
+      }
+      setState("done");
+    } catch (cause) {
+      setState("idle");
+      setError(cause instanceof Error ? cause.message : "进队失败，请重试。");
+    }
+  }
+  if (state === "done") {
+    return <span className="experience-advice-queued">已进审核队列</span>;
+  }
+  return (
+    <span className="experience-advice-queue">
+      <button
+        type="button"
+        className="experience-advice-queue-button"
+        onClick={() => void queueHint()}
+        disabled={state === "submitting"}
+      >
+        {state === "submitting" ? "提交中…" : "加入待审核队列"}
+      </button>
+      {error && <span className="experience-advice-queue-error">{error}</span>}
+    </span>
+  );
+}
+
+export function ExperienceAdviceSection({
+  advice,
+  sourceNote = "",
+}: {
+  advice: ExperienceAdviceItem[];
+  sourceNote?: string;
+}) {
   if (advice.length === 0) return null;
   const view = experienceAdviceViewFrom({ experienceAdvice: advice });
+  const externalItems = advice.filter((item) => item.kind === "external_product_hint");
   return (
     <section className="experience-advice" aria-label="模型建议">
       <h2>模型建议</h2>
@@ -59,11 +115,12 @@ export function ExperienceAdviceSection({ advice }: { advice: ExperienceAdviceIt
       )}
       {view.external.length > 0 && (
         <ul className="experience-advice-list" aria-label={EXPERIENCE_ADVICE_LABELS.external}>
-          {view.external.map((item) => (
+          {view.external.map((item, index) => (
             <li key={item.heading}>
               <span className="experience-advice-tag external">{EXPERIENCE_ADVICE_LABELS.external}</span>
               <strong>{item.heading}</strong>
               <span>{item.detail}</span>
+              <ExternalHintActions advice={externalItems[index]!} sourceNote={sourceNote} />
             </li>
           ))}
         </ul>

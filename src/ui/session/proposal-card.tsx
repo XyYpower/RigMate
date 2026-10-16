@@ -51,7 +51,7 @@ export function ProposalCard({
         <em className="block">{compatibility.blockCount} 阻断</em>
         <span className="session-proposal-compat-message">{compatibility.message}</span>
       </p>
-      <ExperienceAdviceSection advice={proposal.experienceAdvice} />
+      <ExperienceAdviceSection advice={proposal.experienceAdvice} sourceNote={`v${proposal.version} · ${proposal.id.slice(0, 8)}`} />
       <footer className="session-proposal-actions">
         {isLatest ? (
           <>

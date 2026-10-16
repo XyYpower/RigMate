@@ -172,6 +172,17 @@
   padding: 0 6px; border-radius: 2px;
 }
 .experience-advice-tag.external { color: var(--wb-accent); border-color: var(--wb-accent); }
+.experience-advice-queue { display: inline-flex; align-items: center; gap: 6px; }
+.experience-advice-queue-button {
+  flex: none; font-size: 11px; font-weight: 700;
+  color: var(--wb-accent); background: transparent;
+  border: 1px solid var(--wb-accent); border-radius: 2px;
+  padding: 1px 8px; cursor: pointer;
+}
+.experience-advice-queue-button:hover { background: var(--wb-accent); color: #fff; }
+.experience-advice-queue-button:disabled { opacity: 0.6; cursor: default; }
+.experience-advice-queued { flex: none; font-size: 11px; color: var(--wb-ink-faint); }
+.experience-advice-queue-error { font-size: 11px; color: var(--wb-block); }
 
 /* ---------- 追问态 / 输入框 ---------- */
 .session-needs-input {
