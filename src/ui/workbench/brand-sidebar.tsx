@@ -79,6 +79,7 @@ const NAV_ITEMS: NavEntry[] = [
 const SCENE_ITEMS: NavEntry[] = [
   { href: "/diy", label: "高级 DIY", icon: "diy", match: (p) => p.startsWith("/diy") || p.startsWith("/builds/") },
   { href: "/evidence", label: "证据台账", icon: "evidence", match: (p) => p.startsWith("/evidence") },
+  { href: "/diagnostics", label: "运行诊断", icon: "evidence", match: (p) => p.startsWith("/diagnostics") },
 ];
 
 function NavLink({ item, pathname }: { item: NavEntry; pathname: string }) {
