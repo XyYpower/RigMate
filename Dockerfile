@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
-# RigMate 生产镜像（M33）。
-# 注意：本机未安装 Docker 时无法实测构建，此文件按标准 Next.js + better-sqlite3
-# 形态编写；首次部署如遇原生模块编译问题，builder 阶段已含构建工具链。
+# RigMate 生产镜像（M33 编写，2026-10-15 Alpha 实测通过）。
+# 实测记录：build 成功（重负载机器约 30min）；全新卷运行自动迁移 v1→v14、
+# 首页 200、目录 JSON 回退正常。部署步骤见 docs/DEPLOYMENT.md 第 5 节。
 # 运行时数据（SQLite）在 /app/data，请挂载持久卷：docker run -v rigmate-data:/app/data
 
 FROM node:24-slim AS builder
