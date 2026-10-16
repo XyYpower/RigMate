@@ -247,3 +247,50 @@ describe("退避曲线（对齐 ZCode runner-retry 语义）", () => {
     expect(resolved.baseDelayMs).toBe(250);
   });
 });
+
+
+describe("token 用量透传（M5）", () => {
+  const config = {
+    baseUrl: "https://gw.example.com/v1",
+    apiKey: "sk-test",
+    model: "test-model",
+    timeoutMs: 1000,
+  };
+
+  it("响应带 usage → 透传到 result.usage", async () => {
+    const { completeJson, resolveLlmConfigFromEnv } = await import("@/infra/llm/client");
+    void resolveLlmConfigFromEnv;
+    const zod = await import("zod");
+    const result = await completeJson({
+      config,
+      system: "s",
+      user: "u",
+      schema: zod.z.object({ a: zod.z.number() }),
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: '{"a":1}' } }],
+            usage: { prompt_tokens: 120, completion_tokens: 45, total_tokens: 165 },
+          }),
+          { status: 200 },
+        ),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.usage).toEqual({ promptTokens: 120, completionTokens: 45, totalTokens: 165 });
+  });
+
+  it("响应缺 usage → undefined，不猜", async () => {
+    const { completeJson } = await import("@/infra/llm/client");
+    const zod = await import("zod");
+    const result = await completeJson({
+      config,
+      system: "s",
+      user: "u",
+      schema: zod.z.object({ a: zod.z.number() }),
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ choices: [{ message: { content: '{"a":1}' } }] }), { status: 200 }),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.usage).toBeUndefined();
+  });
+});

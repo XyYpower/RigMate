@@ -72,7 +72,10 @@ export function resolveLlmConfigFromEnv(env: NodeJS.ProcessEnv = process.env): L
   };
 }
 
-export type LlmJsonResult<T> = { ok: true; data: T } | { ok: false; reason: string };
+/** token 用量（GLM/OpenAI 兼容响应自带 usage）；缺失 = 上游没给，不猜 */
+export type LlmTokenUsage = { promptTokens: number; completionTokens: number; totalTokens: number };
+
+export type LlmJsonResult<T> = { ok: true; data: T; usage?: LlmTokenUsage } | { ok: false; reason: string };
 
 type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
 
@@ -85,8 +88,21 @@ export function extractJsonPayload(text: string): unknown {
 }
 
 type RequestOutcome =
-  | { kind: "ok"; data: unknown }
+  | { kind: "ok"; data: unknown; usage?: LlmTokenUsage }
   | { kind: "failed"; reason: string; retryable: boolean; retryAfterMs?: number };
+
+/** 响应 usage 防御解析：字段缺失或非有限数字一律 undefined，不猜 */
+function parseUsage(payload: { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown; total_tokens?: unknown } }): LlmTokenUsage | undefined {
+  const raw = payload.usage;
+  if (!raw) return undefined;
+  const toCount = (value: unknown): number | undefined =>
+    typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.floor(value) : undefined;
+  const promptTokens = toCount(raw.prompt_tokens);
+  const completionTokens = toCount(raw.completion_tokens);
+  const totalTokens = toCount(raw.total_tokens);
+  if (promptTokens === undefined || completionTokens === undefined) return undefined;
+  return { promptTokens, completionTokens, totalTokens: totalTokens ?? promptTokens + completionTokens };
+}
 
 /** 单次请求：超时用 AbortController 强制中断，失败分类（不在这里重试） */
 async function requestOnce(options: {
@@ -131,7 +147,9 @@ async function requestOnce(options: {
     }
     const payload = (await response.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
+      usage?: { prompt_tokens?: unknown; completion_tokens?: unknown; total_tokens?: unknown };
     };
+    const usage = parseUsage(payload);
     // 空补全（推理模型把输出预算耗在思考上等）：按 ZCode empty-completion-retry 语义可重试
     const content = payload.choices?.[0]?.message?.content ?? "";
     if (content.trim().length === 0) {
@@ -147,7 +165,7 @@ async function requestOnce(options: {
     if (!result.success) {
       return { kind: "failed", reason: "模型回复不符合目标格式", retryable: false };
     }
-    return { kind: "ok", data: result.data };
+    return { kind: "ok", data: result.data, usage };
   } catch (error) {
     if (controller.signal.aborted) {
       // 超时不在客户端重试：预算已花完，交给调用方策略阶梯（压缩上下文/关思考）调整后再来
@@ -198,7 +216,7 @@ export async function completeJson<T>(options: {
   for (;;) {
     const outcome = await requestOnce({ config, thinking, system, user, schema, maxTokens: options.maxTokens, doFetch });
     if (outcome.kind === "ok") {
-      return { ok: true, data: outcome.data as T };
+      return { ok: true, data: outcome.data as T, usage: outcome.usage };
     }
     failures += 1;
     if (!outcome.retryable || failures >= retry.maxAttempts) {
