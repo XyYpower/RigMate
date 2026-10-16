@@ -1,0 +1,52 @@
+/**
+ * 型号文本规范化（launch-readiness §6.1 召回顺序第一步 / blueprint M2）。
+ *
+ * 目标：同一型号在不同写法下规范化结果一致——大小写、全角、空格/连字符/点、
+ * 括号注记（如「AMD RX 7600（参考规格）」的真实目录脏尾巴）。
+ * 中文保留原文参与比较（中文名命中的基础）。
+ */
+
+/** 全角（FF01–FF5E）转半角；全角空格转半角空格 */
+function toHalfWidth(text: string): string {
+  let out = "";
+  for (const char of text) {
+    const code = char.charCodeAt(0);
+    if (code === 0x3000) out += " ";
+    else if (code >= 0xff01 && code <= 0xff5e) out += String.fromCharCode(code - 0xfee0);
+    else out += char;
+  }
+  return out;
+}
+
+/** 剥离全/半角括号注记（目录导入的「（参考规格）」「(8 核 16 线程)」等说明尾巴） */
+function stripAnnotations(text: string): string {
+  return text
+    .replace(/（[^（）]*）/g, " ")
+    .replace(/\([^()]*\)/g, " ");
+}
+
+export function normalizeModelText(text: string): string {
+  return stripAnnotations(toHalfWidth(text).toLowerCase())
+    .replace(/[\s\-_.+/\\|,]/g, "")
+    .trim();
+}
+
+/** 抽取字母数字 token（中文当分隔符）：别名 token 命中用 */
+export function modelTokens(text: string): string[] {
+  const normalized = toHalfWidth(text).toLowerCase();
+  const matches = normalized.match(/[a-z0-9]+/g) ?? [];
+  return [...new Set(matches)];
+}
+
+/**
+ * 从用户语句抽取「型号短语」：按标点切段，保留同时含字母和数字的段
+ * （型号几乎必然字母数字混写；纯数字预算、纯中文意图不是型号）。
+ * 短语是 exact/alias 桶的匹配输入，抽不出来就不激活，绝不硬凑。
+ */
+export function modelPhrases(text: string): string[] {
+  return text
+    .split(/[，。；！？、\n,;!?]+/)
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0 && segment.length <= 40)
+    .filter((segment) => /[a-z]/i.test(segment) && /[0-9]/.test(segment));
+}
