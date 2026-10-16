@@ -22,6 +22,7 @@ import { resolveLlmConfigFromEnv } from "../src/infra/llm/client";
 
 const args = process.argv.slice(2);
 const live = args.includes("--live");
+const thinkingDisabled = args.includes("--thinking-disabled");
 const casesPath = resolve("data/evals/design-selection-cases.json");
 const reportPath = resolve("data/evals/live-report.json");
 
@@ -84,7 +85,13 @@ async function main(): Promise<void> {
     for (const candidate of pool) rulePick[candidate.category] ??= candidate.canonicalId;
 
     const startedAt = Date.now();
-    const selection = await selectCatalogCandidatesWithLlm({ intent, candidates: pool, config });
+    const selection = await selectCatalogCandidatesWithLlm({
+      intent,
+      candidates: pool,
+      config,
+      // M6 A/B：--thinking-disabled 对照——思考调用 6 例中 2 例 70s 超时（v4.32 基线）
+      ...(thinkingDisabled ? { thinking: "disabled" as const } : {}),
+    });
     const latencyMs = Date.now() - startedAt;
 
     const result: LiveCaseResult = {

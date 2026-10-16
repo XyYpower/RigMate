@@ -453,8 +453,9 @@ export async function createDesignRequest(
     tryModelSelection: llmConfig
       ? async (pool) => {
           // 策略阶梯（对齐 ZCode"分类失败 + 预算内重试 + 结构事实保留"的成熟语义）：
-          // ① 全量池 + 思考（质量优先）→ ② 超时/瞬态失败 → 压缩池（每类前 4，只减量不改字段，事实存活）
-          //    + 关思考（速度优先）→ ③ 仍失败 → null，由同一 CandidateSet 的规则排序兜底。
+          // ① 全量池 + 关思考（M6 A/B：思考在选件上无稳定增益且 33% 超时）→
+          // ② 失败 → 压缩池（每类前 4，只减量不改字段，事实存活）→ ③ 仍失败 → null，
+          // 由同一 CandidateSet 的规则排序兜底。
           const attemptSelection = async (candidates: readonly CandidateSummary[], stage: string): Promise<{
             ok: boolean;
             value?: ModelSelection;
@@ -469,7 +470,9 @@ export async function createDesignRequest(
               intent,
               candidates,
               config: llmConfig,
-              thinking: stage === "compressed" ? "disabled" : "enabled",
+              // M6 A/B 评测（evals:live 开关对照）：关思考 6/6 过守卫（开思考 4/6、两例 70s 超时）、
+              // 延迟约一半、组合质量反而更优（模型更优 2 vs 0）——选件通道思考无稳定增益，全阶梯关闭
+              thinking: "disabled",
               maxTokens: 3000,
             });
             if (!selection.ok) {

@@ -73,7 +73,9 @@ export function buildExplainAnswer(input: {
   const summaryParts = [...lines];
   if (overall) summaryParts.push(`兼容性：${proposal.compatibility.message}`);
   if (proposal.unknowns.length > 0) {
-    summaryParts.push(`需要留意的未知项：${proposal.unknowns.join("、")}。`);
+    const joined = proposal.unknowns.join("、");
+    // unknown 条目可能自带句号：不重复追加
+    summaryParts.push(`需要留意的未知项：${joined}${/[。.!?！？]$/.test(joined) ? "" : "。"}`);
   }
 
   const adviceIds = proposal.experienceAdvice
