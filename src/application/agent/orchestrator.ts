@@ -63,6 +63,8 @@ export async function orchestrateDesignGeneration(input: {
   intent: StructuredIntent;
   attempt: AgentAttempt;
   categories: readonly BuildItemCategory[];
+  /** 用户语句中的型号短语来源（原始目标/修订指令/已有部件）：激活召回的 exact/alias 桶 */
+  modelQueries?: string[];
   retrieve: () => Omit<RetrievalContext, "pool" | "missingCategories"> & Partial<Pick<RetrievalContext, "pool" | "missingCategories">>;
   /** 守卫后的模型选择（返回 null/抛错 = 走规则回退） */
   tryModelSelection?: (pool: readonly CandidateSummary[]) => Promise<ModelSelection | null>;
@@ -91,12 +93,16 @@ export async function orchestrateDesignGeneration(input: {
   const missingCategories: BuildItemCategory[] = [];
   for (const category of input.categories) {
     const startedAt = new Date().toISOString();
-    const categoryPool = [...tools.searchCatalog({ category, intent: input.intent, limit: 8 })];
+    const categoryPool = [...tools.searchCatalog({ category, intent: input.intent, queries: input.modelQueries })];
     if (categoryPool.length === 0) missingCategories.push(category);
     pool.push(...categoryPool);
-    // 逐类目实时事件（agent-ui P1）：时间线上每类一个检索块，而不是只有汇总一条
+    // 逐类目实时事件（agent-ui P1）：时间线上每类一个检索块；分桶摘要说明候选构成
+    const namedCount = categoryPool.filter((candidate) => candidate.bucket === "exact" || candidate.bucket === "alias").length;
+    const diversityCount = categoryPool.filter((candidate) => candidate.bucket === "diversity").length;
+    const bucketNote = namedCount > 0 ? `，点名型号 ${namedCount} 条` : "";
+    const diversityNote = diversityCount > 0 ? `，档位补召回 ${diversityCount} 条` : "";
     runState.log(
-      `已检索 ${category}：命中 ${categoryPool.length} 个候选。`,
+      `已检索 ${category}：命中 ${categoryPool.length} 个候选${bucketNote}${diversityNote}。`,
       {
         retrievalIds: categoryPool.map((candidate) => candidate.canonicalId),
         toolCalls: [

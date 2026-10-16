@@ -11,7 +11,7 @@ import { buildConversationContext } from "@/domain/design/conversation-context";
 import { INTENT_FIELD_LABELS, mergeRevisionIntent, type IntentField, type RevisionMergeResult } from "@/domain/design/revision-merge";
 import { diffProposals } from "@/domain/design/diff";
 import { generateDesignProposal, type CandidateQualityContext } from "@/domain/design/proposal";
-import { buildCandidatePool, type CandidateSummary } from "@/domain/catalog/ranking";
+import { buildCategoryCandidates, type CandidateSummary } from "@/domain/catalog/ranking";
 import { computeEvidenceBackedFieldStatuses } from "@/application/catalog-review/service";
 import {
   findDesignRequest,
@@ -151,18 +151,27 @@ function createRun(requestId: string): { run: AgentRun; events: AgentEvent[] } {
 
 const CANDIDATE_CATEGORIES: BuildItemCategory[] = ["cpu", "motherboard", "gpu", "ram", "storage", "psu", "cooler", "case"];
 
-/** 内核恢复管线（Task A/B/C）：目录 → 质量门 + 排序 → 价格上下文 → 候选池 + 字段质量层 */
-function retrieveCandidateContext(intent: StructuredIntent): {
+/** 内核恢复管线（Task A/B/C）+ M2 分桶召回：目录 → 质量门 + 分桶/动态 K → 价格上下文 → 候选池 + 字段质量层 */
+function retrieveCandidateContext(
+  intent: StructuredIntent,
+  queries: string[] = [],
+): {
   catalogSize: number;
   entries: ReturnType<typeof loadSourcedCatalog>["entries"];
   priceByCanonicalId: Map<string, VerifiedPriceFact>;
-  pool: ReturnType<typeof buildCandidatePool>["pool"];
+  pool: CandidateSummary[];
   missingCategories: BuildItemCategory[];
   qualityByCanonicalId: Map<string, CandidateQualityContext>;
 } {
   const { entries, dbBacked } = loadSourcedCatalog();
   const priceByCanonicalId = loadPriceContext({ region: intent.region });
-  const { pool, missingCategories } = buildCandidatePool(entries, intent, CANDIDATE_CATEGORIES, priceByCanonicalId);
+  const pool: CandidateSummary[] = [];
+  const missingCategories: BuildItemCategory[] = [];
+  for (const category of CANDIDATE_CATEGORIES) {
+    const { candidates, stats } = buildCategoryCandidates({ entries, category, intent, priceByCanonicalId, queries });
+    if (stats.pooled === 0) missingCategories.push(category);
+    pool.push(...candidates);
+  }
   // 字段质量层只在有证据链的库目录上解析（JSON 回退/fixture 无证据 → 空映射 = 无质量层）
   const qualityByCanonicalId = new Map<string, CandidateQualityContext>();
   if (dbBacked) {
@@ -207,7 +216,7 @@ function composeOrAsk(input: {
     message: `本地目录就绪（${context.catalogSize.toLocaleString("zh-CN")} 条）；质量门后有效候选 ${context.pool.length} 条。`,
   });
   if (context.pool.length === 0) {
-    const emptyMessage = "目录中暂时没有通过质量门的候选（verified/supported），不能凑出可信方案。请先在目录审核流程中补充证据，再回来生成方案。";
+    const emptyMessage = "目录中暂时没有通过质量门的候选（verified/supported），不能凑出可信方案。可以先放宽预算、换个说法重试，或进入高级 DIY 手动选件；也可以在目录审核流程中补充证据后再来。";
     input.events.push(event(input.run.id, "question", "waiting", emptyMessage));
     emitRig?.({ type: "question", runId: input.run.id, message: emptyMessage });
     emitRig?.({ type: "run_completed", runId: input.run.id, status: "empty_pool" });
@@ -225,7 +234,7 @@ function composeOrAsk(input: {
     rationaleByCategory: input.rationaleByCategory,
   });
   if (generated.status === "insufficient") {
-    const insufficientMessage = `以下类别没有通过质量门的目录候选：${generated.missingCategories.join("、")}。方案不会用资料不足的型号凑数；可在目录中补充证据后重试。`;
+    const insufficientMessage = `以下类别没有通过质量门的目录候选：${generated.missingCategories.join("、")}。方案不会用资料不足的型号凑数；可补充证据后重试，或进入高级 DIY 自行补齐该类别。`;
     input.events.push(event(input.run.id, "question", "waiting", insufficientMessage));
     emitRig?.({ type: "question", runId: input.run.id, message: insufficientMessage });
     emitRig?.({ type: "run_completed", runId: input.run.id, status: "insufficient" });
@@ -419,6 +428,8 @@ export async function createDesignRequest(
     requestId,
     intent,
     attempt,
+    // M2 分桶召回：原始目标里的型号短语激活 exact/alias 桶
+    modelQueries: [data.rawInput],
     categories: CANDIDATE_CATEGORIES,
     onEvent: (runtimeEvent) => {
       for (const payload of rigPayloadsFromRuntimeEvent(runtimeEvent, runId, rigLastPhase)) {
@@ -535,9 +546,9 @@ export async function createDesignRequest(
     // Runtime 判定不可回答（池空 / 候选不足 / grounding 阻断）：如实转为追问，绝不硬凑
     const questionMessage =
       outcome.status === "empty_pool"
-        ? "目录中暂时没有通过质量门的候选（verified/supported），不能凑出可信方案。请先在目录审核流程中补充证据，再回来生成方案。"
+        ? "目录中暂时没有通过质量门的候选（verified/supported），不能凑出可信方案。可以先放宽预算、换个说法重试，或进入高级 DIY 手动选件；也可以在目录审核流程中补充证据后再来。"
         : outcome.status === "insufficient"
-          ? `以下类别没有通过质量门的目录候选：${outcome.missingCategories.join("、")}。方案不会用资料不足的型号凑数；可在目录中补充证据后重试。`
+          ? `以下类别没有通过质量门的目录候选：${outcome.missingCategories.join("、")}。方案不会用资料不足的型号凑数；可补充证据后重试，或进入高级 DIY 自行补齐该类别。`
           : "方案存在无法回溯来源的主张，已被验证器阻止。请稍后重试或调整目标。";
     events.push(event(run.id, "question", "waiting", questionMessage));
     emit(runId, { type: "question", runId, message: questionMessage });
@@ -762,7 +773,8 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   events.push(event(run.id, "understanding", "completed", note));
   events.push(event(run.id, "retrieving", "started", "正在检索目录和已核验规格。"));
   emitRig({ type: "phase", runId, phase: "understanding", message: note });
-  const context = retrieveCandidateContext(updatedIntent);
+  // M2 分桶召回：修订指令与已有部件里的型号短语激活 exact/alias 桶
+  const context = retrieveCandidateContext(updatedIntent, [instruction, ...updatedIntent.existingParts]);
   const version = nextProposalVersion(requestId);
   let preferredIds;
   let rationaleByCategory;

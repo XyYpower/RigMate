@@ -13,10 +13,12 @@ import type { FieldQualityStatus } from "@/domain/catalog/quality";
  * 的 tools/*.ts 中由 application service 装配（传入只读领域函数）。
  */
 
-/** 只读：按类别 + 关键词检索质量门候选摘要 */
+/** 只读：按类别检索质量门候选摘要（M2 分桶召回：queries 点名型号时激活 exact/alias 桶并扩 K） */
 export type SearchCatalogTool = (input: {
   category: BuildItemCategory;
   query?: string;
+  /** 用户语句中的型号短语来源（原始目标/修订指令/已有部件）；内部抽取并规范化匹配 */
+  queries?: string[];
   intent?: StructuredIntent;
   limit?: number;
 }) => readonly CandidateSummary[];
