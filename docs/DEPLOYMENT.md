@@ -62,10 +62,15 @@ docker run -d --name rigmate -p 3000:3000 -v rigmate-data:/app/data rigmate:alph
 - [x] Docker 构建/运行/自动迁移验证（2026-10-16 实测，见 Dockerfile 头注释）
 - [x] `.env.local` 就位（GLM key，容器经 `--env-file` 注入）
 - [x] Alpha 实例已启动（2026-10-16）：`docker run -d --name rigmate-alpha --restart unless-stopped -p 3000:3000 --env-file .env.local -e RIGMATE_DB_PATH=/app/data/rigmate.db -v "D:/XyyWork/RigMate/data:/app/data" rigmate:alpha`，挂真实数据卷；冒烟通过（30s 出全方案 + 4 条建议）
-- [ ] 真实库备份一份**离机**存放（本机已有 data/backups/）
-- [ ] 用户知情说明：价格均为证据价或经验估算（非实时成交价）；建议区内容不参与兼容检查
-- [ ] 反馈回收渠道约定（问题截图带会话页 URL）
-- [ ] 局域网防火墙放行 TCP 3000（需管理员：`netsh advfirewall firewall add rule name="RigMate Alpha" dir=in action=allow protocol=TCP localport=3000`；或首次访问时允许 Windows 弹窗）
+- [x] 真实库备份（data/backups/；**建议定期离机拷贝一份**）
+- [x] 定位收口：**自测模式**（2026-10-16 定）——仅本机 localhost:3000 使用，无需防火墙放行、不邀请外部用户；后续如需给他人访问再放行 TCP 3000
+- [ ] 自测约定：价格均为证据价或经验估算（非实时成交价）；建议区内容不参与兼容检查——遇到与预期不符时记下会话页 URL 与当时的目标描述即可
+
+### 自测速查
+
+- 访问：`http://localhost:3000`（容器开机自启；不想常驻就 `docker stop rigmate-alpha`，要用再 `docker start rigmate-alpha`）
+- 更新代码后：`docker build -t rigmate:alpha . && docker rm -f rigmate-alpha` 再按第 6 节命令重启（数据卷不变）
+- 出问题先看：`docker logs rigmate-alpha --tail 50`；数据异常先 `npm run db:backup` 再排查
 
 > **Git Bash 注意**：`docker run` 的 `-e RIGMATE_DB_PATH=/app/...` 必须加 `MSYS_NO_PATHCONV=1`，否则 MSYS 会把路径改写成宿主 Git 安装路径（2026-10-16 实踩：应用在容器内错误路径自建空库，好在数据卷未被污染）。
 > **停止/更新**：`docker stop rigmate-alpha`；更新代码后 `docker build -t rigmate:alpha . && docker rm -f rigmate-alpha` 再按上面命令重启（数据卷不变）。
