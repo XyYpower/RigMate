@@ -48,14 +48,29 @@ type LiveCaseResult = {
   modelBlocks: number | null;
   ruleOverBudgetCents: number;
   modelOverBudgetCents: number | null;
+  ruleTierGap: number | null;
+  modelTierGap: number | null;
   error?: string;
 };
 
-function compositionScore(proposal: { items: Array<{ priceEstimateLowCents: number | null }>; compatibility: { blockCount: number } }, budgetCents: number | null) {
+function compositionScore(
+  proposal: { items: Array<{ category: string; priceEstimateLowCents: number | null; spec: Record<string, unknown> }>; compatibility: { blockCount: number } },
+  budgetCents: number | null,
+) {
   const priced = proposal.items.reduce((sum, item) => sum + (item.priceEstimateLowCents ?? 0), 0);
+  // 合理性指标（配件合理性反馈）：CPU/显卡档位差，≥4 视为失衡（与 R-BALANCE-001 同口径）
+  const tierOf = (category: string) => {
+    const item = proposal.items.find((entry) => entry.category === category);
+    const tier = item?.spec["tier"];
+    return typeof tier === "number" ? tier : null;
+  };
+  const cpuTier = tierOf("cpu");
+  const gpuTier = tierOf("gpu");
+  const tierGap = cpuTier !== null && gpuTier !== null ? Math.abs(cpuTier - gpuTier) : null;
   return {
     blocks: proposal.compatibility.blockCount,
     overBudgetCents: budgetCents !== null && priced > budgetCents ? priced - budgetCents : 0,
+    tierGap,
   };
 }
 
@@ -110,6 +125,8 @@ async function main(): Promise<void> {
       modelBlocks: null,
       ruleOverBudgetCents: 0,
       modelOverBudgetCents: null,
+      ruleTierGap: null,
+      modelTierGap: null,
     };
 
     // 规则组合基线
@@ -118,6 +135,7 @@ async function main(): Promise<void> {
       const score = compositionScore(ruleGenerated.proposal, intent.budgetCents);
       result.ruleBlocks = score.blocks;
       result.ruleOverBudgetCents = score.overBudgetCents;
+      result.ruleTierGap = score.tierGap;
     }
 
     // 模型组合（守卫通过才生成；失败即回退规则，如实记录）
@@ -132,10 +150,11 @@ async function main(): Promise<void> {
         const score = compositionScore(modelGenerated.proposal, intent.budgetCents);
         result.modelBlocks = score.blocks;
         result.modelOverBudgetCents = score.overBudgetCents;
+        result.modelTierGap = score.tierGap;
       }
     }
     results.push(result);
-    console.log(`${testCase.id}: guard=${selection.ok} latency=${latencyMs}ms ruleBlocks=${result.ruleBlocks} modelBlocks=${result.modelBlocks ?? "-"}`);
+    console.log(`${testCase.id}: guard=${selection.ok} latency=${latencyMs}ms ruleBlocks=${result.ruleBlocks} modelBlocks=${result.modelBlocks ?? "-"} tierGap(规/模)=${result.ruleTierGap ?? "-"}/${result.modelTierGap ?? "-"}`);
   }
 
   const comparable = results.filter((result) => result.modelPick !== null);

@@ -14,6 +14,7 @@ import { checkCpuM2Lanes } from "./cpu-storage";
 import { checkCpuIgpuGpu } from "./cpu-gpu";
 import { checkCoolerRamClearance } from "./cooler-ram";
 import { checkMotherboardCpuPower } from "./motherboard-cpu";
+import { checkCpuGpuTierBalance } from "./balance";
 
 type Rule = {
   id: string;
@@ -37,6 +38,7 @@ const RULES: Rule[] = [
   { id: "R-CPU-MB-002", run: checkCpuM2Lanes },
   { id: "R-MB-CPU-002", run: checkMotherboardCpuPower },
   { id: "R-COOLER-RAM-001", run: checkCoolerRamClearance },
+  { id: "R-BALANCE-001", run: checkCpuGpuTierBalance },
 ];
 
 const STATUS_RANK: Record<FindingStatus, number> = {
