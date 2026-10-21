@@ -72,5 +72,6 @@ docker run -d --name rigmate -p 3000:3000 -v rigmate-data:/app/data rigmate:alph
 - 更新代码后：`docker build -t rigmate:alpha . && docker rm -f rigmate-alpha` 再按第 6 节命令重启（数据卷不变）
 - 出问题先看：`docker logs rigmate-alpha --tail 50`；数据异常先 `npm run db:backup` 再排查
 
+> **2026-10-16 补充**：Docker Desktop 关闭再启动时，`--restart unless-stopped` 的容器会被 daemon 自动拉起（无需手动）——但**镜像不会自动更新**：提交新代码后仍需 `docker build` + `docker rm -f` + 按第 6 节重启。
 > **Git Bash 注意**：`docker run` 的 `-e RIGMATE_DB_PATH=/app/...` 必须加 `MSYS_NO_PATHCONV=1`，否则 MSYS 会把路径改写成宿主 Git 安装路径（2026-10-16 实踩：应用在容器内错误路径自建空库，好在数据卷未被污染）。
 > **停止/更新**：`docker stop rigmate-alpha`；更新代码后 `docker build -t rigmate:alpha . && docker rm -f rigmate-alpha` 再按上面命令重启（数据卷不变）。
