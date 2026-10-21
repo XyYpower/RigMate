@@ -9,3 +9,7 @@ samples
 *.md
 .env
 .env.local
+
+# codex git worktree（自带整套 node_modules，~600MB：不排除会让构建上下文传 15 分钟）
+.worktrees
+.tmp-ppt
