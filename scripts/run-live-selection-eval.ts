@@ -6,6 +6,8 @@ import { selectCatalogCandidatesWithLlm, CATALOG_SELECTION_PROMPT_VERSION } from
 import { generateDesignProposal } from "../src/domain/design/proposal";
 import { parseDesignIntent } from "../src/domain/design/intent";
 import { fixtureCatalogEntries, fixtureVerifiedPriceMap } from "../src/infra/catalog-import/fixture";
+import { loadSourcedCatalog } from "../src/infra/catalog-import/load";
+import { loadPriceContext } from "../src/application/design/price-context";
 import { resolveLlmConfigFromEnv } from "../src/infra/llm/client";
 
 /**
@@ -88,8 +90,14 @@ async function main(): Promise<void> {
   const file = JSON.parse(readFileSync(casesPath, "utf8")) as EvalCaseFile;
   // live 只跑纯目标用例（带受控 model 输出的是守卫用例，守卫已在离线评测覆盖）
   const liveCases = file.cases.filter((testCase) => !testCase.model);
-  const entries = fixtureCatalogEntries().filter((entry) => entry.qualityStatus !== "partial") as RankedCandidate[];
-  const prices = fixtureVerifiedPriceMap();
+  // --real-catalog：真实目录 + 真实价格上下文（tierGap 合理性指标需要 tier 字段，fixture 池没有）
+  const useRealCatalog = args.includes("--real-catalog");
+  const entries = useRealCatalog
+    ? (loadSourcedCatalog().entries as RankedCandidate[])
+    : (fixtureCatalogEntries().filter((entry) => entry.qualityStatus !== "partial") as RankedCandidate[]);
+  const prices = useRealCatalog
+    ? loadPriceContext({ region: "中国大陆" })
+    : fixtureVerifiedPriceMap();
 
   const results: LiveCaseResult[] = [];
   for (const testCase of liveCases) {
@@ -104,8 +112,8 @@ async function main(): Promise<void> {
       intent,
       candidates: pool,
       config,
-      // M6 A/B：--thinking-disabled 对照——思考调用 6 例中 2 例 70s 超时（v4.32 基线）
-      ...(thinkingDisabled ? { thinking: "disabled" as const } : {}),
+      // M6 起产线选件全阶关思考（A/B 数据）；评测与产线同口径（--thinking-disabled 保留为显式对照）
+      thinking: "disabled",
     });
     const latencyMs = Date.now() - startedAt;
 

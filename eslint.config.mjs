@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local git worktrees (codex/v2-product) and their build artifacts
     ".worktrees/**",
+    // 本机其他工具的临时产物（非项目代码）
+    ".tmp-ppt/**",
   ]),
 ]);
 
