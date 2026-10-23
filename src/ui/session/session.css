@@ -271,3 +271,4 @@
 }
 .diagnostics-run > span:first-child { font-size: 12px; }
 .diagnostics-tools { font-size: 11px; color: var(--wb-ink-muted); }
+.session-advice-note { margin: 0; font-size: 12px; color: var(--wb-ink-muted); }

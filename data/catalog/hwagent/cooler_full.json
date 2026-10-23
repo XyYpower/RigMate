@@ -1,79 +1,19 @@
 {
  "_meta": {
   "dataset": "cooler_full",
-  "desc": "中国大陆市场 CPU 散热器全型号规格库（风冷 + 一体式水冷）。由原 13 条扩充至 60+ 条，覆盖利民/九州风神/猫头鹰/德静界/酷冷/乔思伯/追风者/雅浚/超频三/NZXT/华硕/微星/联力/瓦尔基里等品牌。",
-  "collected_at": "2026-10-14",
-  "sources": [
-   "利民官网 thermalright.com（Frost Tower 140 / PA120 SE 规格页）",
-   "九州风神官网 cn.deepcool.com（AK400 / AK400 DIGITAL / AK620 G2 数显 官方规格页）、deepcool.com（LE520 & LE720 新闻稿含完整 Socket Compatibility）",
-   "猫头鹰官网 ncc.noctua.at（NH-D15 / NH-U12A LGA1851 扣具批次说明）与产品页",
-   "德静界官网 bequiet.com（PURE ROCK 3 LX 完整规格表含 Intel 1851 列表）",
-   "NZXT 官网 nzxt.com（Kraken LGA1851 兼容指南、Kraken Elite 2023 Specs）",
-   "京东商品规格参数页（利民 PS140/FC140 实测尺寸、AK400 数显版、猫头鹰 NH-U12A）",
-   "Tom's Hardware（AK400 G2 / AK620 G2 实测解热 244W / 251W）、IT之家 / 超能网 / 快科技（PS140 发布）"
-  ],
-  "field_semantics": {
-   "cooler.height_mm": "⚠️ 风冷总高，双塔普遍154-165mm",
-   "cooler.sockets": "⚠️ 扣具支持列表，官网未列的不要自行添加",
-   "cooler.dissipation": "标称解热能力W",
-   "cooler.dimension_mm": "含风扇的整体尺寸 L×W×H（水冷为水冷头 + 冷排尺寸）",
-   "cooler.heatpipe": "热管数量 × 直径。8mm 粗热管性能优于 6mm",
-   "cooler.radiator_mm": "⚠️ 水冷冷排尺寸 240/280/360。⚠️ 280 位并非所有机箱都有",
-   "cooler.pump_rpm": "水泵转速。水冷 head 高度信息未单列，见 dimension_mm",
-   "cooler.memory_clearance_mm": "内存避让净空。null 表示结构上不遮挡（单塔）或数据缺失",
-   "cooler.fan_type": "风冷为 CPU 散热器主体散热风扇尺寸；水冷为冷排风扇尺寸",
-   "cooler.lcd": "是否带 LCD 数显屏。⚠️ 数显通常需主板空闲 USB 2.0 插针供电",
-   "cooler.tier": "S+/S/A+/A/B+/B 为综合散热性能档位（越高越强）",
-   "cooler.price_tier": "相对价位：低/低中/中/中高/高/极高",
-   "null_means": "null 表示该字段在已核实来源中未找到可靠数值，未做推测填充。⚠️ 部分国产品牌（利民等）官方不标称解热 W，故 dissipation 为 null"
-  },
-  "counts": {
-   "total": 75,
-   "by_type": {
-    "air": 46,
-    "aio": 29
-   },
-   "by_brand": {
-    "九州风神": 18,
-    "利民": 15,
-    "猫头鹰": 7,
-    "德静界": 6,
-    "恩杰": 6,
-    "酷冷至尊": 5,
-    "华硕": 3,
-    "微星": 3,
-    "乔思伯": 2,
-    "追风者": 2,
-    "雅浚": 2,
-    "联力": 2,
-    "瓦尔基里": 2,
-    "超频三": 1,
-    "Valeurair": 1
-   }
-  },
-  "critical_notes": [
-   "⚠️⚠️ 内存遮挡重灾区：猫头鹰 NH-D15 / NH-D15 chromax.black / NH-D15 G2（165-168mm）前置 140mm 风扇悬于内存上方，默认净空仅 32-35mm，高马甲 RGB 内存（44mm+）必须上移风扇，会明显损失散热效果 —— 这是 NH-D15 最大的实际痛点",
-   "⚠️⚠️ 缺 LGA1851 官方支持的型号（务必核对，勿自行假定）：德静界 Dark Rock 3（官网最高仅列 LGA1200 + AM4，既无 1700 也无 1851）、德静界 Pure Rock 2（官网最高 LGA1700）、九州风神 LE520 / LE720（官网 Socket Compatibility 最高 LGA1700）",
-   "⚠️⚠️ NZXT 型号末尾数字是冷排尺寸不是代数：X53=240mm、X63=280mm、X73=360mm。且旧 Kraken X 系列（X53/X63/X73）出厂【不含 LGA1700 扣具】，装 LGA1851 须另购 NZXT「Kraken XZ LGA 1700 Mounting Tools」；Kraken Elite（2023/2024）则出厂已含",
-   "⚠️ 猫头鹰 NH-D15 / NH-D14 / NH-U9a / NH-U12A：LGA1851 需免费升级扣具 NM-i17xx-MP83（2022-01-01 之后购买的已含）。⚠️ NH-D15 G2 的 NM-IMB8 偏移条是另行收费的选配件",
-   "⚠️ 超高风冷：NH-D15 G2 (168mm)、猫头鹰 NH-D15/D14 (165mm)、追风者 D30 (165mm)、德静界 Dark Rock Pro 4 (163mm)、AK620 G2 (159mm)、利民 Frost Tower 140 / FC140 (158mm)、Ma620M (162mm) —— 机箱标称 160mm 限高的会装不下",
-   "⚠️ 水冷冷排厚度：多数 240/360 为 25-27mm，NZXT Kraken 为 30mm，ROG STRIX LC II 为 30mm。紧凑机箱顶部/侧板到主板散热器间距可能不足",
-   "⚠️ 水冷头高度：ROG Ryujin III 68mm 最高（紧凑机箱不友好），微星 MAG Coreliquid 48mm 最低（最友好）",
-   "⚠️ 280mm 冷排位并非所有中塔支持，选购前须核对机箱 case.rad_support"
-  ]
+  "collected_at": null,
+  "desc": "中国大陆市场 cooler_full 规格库（hw-agent 采集，人工校验）"
  },
  "coolers": [
   {
    "id": "cool-tr-ts120",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 TS120 单塔六热管风冷",
-   "name_en": "TS120",
    "aliases": [
     "利民TS120",
     "Thermalright TS120",
     "利民Tower120"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 145,
@@ -106,14 +46,12 @@
   },
   {
    "id": "cool-tr-ps120se",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 幻灵 PS120 SE 双塔七热管风冷",
-   "name_en": "Phantom Spirit 120 SE",
    "aliases": [
     "利民PS120SE",
     "幻灵PS120SE"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 154,
@@ -146,14 +84,12 @@
   },
   {
    "id": "cool-tr-ps120se-argb",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 幻灵 PS120 SE ARGB 幻彩版",
-   "name_en": "Phantom Spirit 120 SE ARGB",
    "aliases": [
     "利民PS120SE ARGB",
     "幻灵PS120SE幻彩"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 154,
@@ -186,15 +122,13 @@
   },
   {
    "id": "cool-tr-pa120se",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 幻影 PA120 SE 双塔六热管风冷",
-   "name_en": "Peerless Assassin 120 SE",
    "aliases": [
     "利民PA120SE",
     "利民PA120 SE",
     "幻影使者PA120"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -227,14 +161,12 @@
   },
   {
    "id": "cool-tr-pa120se-argb",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 幻影 PA120 SE ARGB 幻彩版",
-   "name_en": "Peerless Assassin 120 SE ARGB",
    "aliases": [
     "利民PA120SE ARGB",
     "幻影PA120幻彩"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -267,14 +199,12 @@
   },
   {
    "id": "cool-tr-ps140",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 幻灵 PS140 双塔七热管 120+140mm 风扇",
-   "name_en": "Phantom Spirit 140",
    "aliases": [
     "利民PS140",
     "幻灵PS140"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 157,
@@ -307,14 +237,12 @@
   },
   {
    "id": "cool-tr-fc140",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 冰封统领 FC140 140mm 风扇风冷",
-   "name_en": "Frost Commander 140",
    "aliases": [
     "利民FC140",
     "冰封统领140"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 158,
@@ -347,14 +275,12 @@
   },
   {
    "id": "cool-tr-frost-tower140",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 冰塔 140 Frost Tower 140",
-   "name_en": "Frost Tower 140 BLACK",
    "aliases": [
     "利民冰塔140",
     "Frost Tower 140"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 158,
@@ -389,14 +315,12 @@
   },
   {
    "id": "cool-tr-dl140",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 银箭 DL140 双塔六热管风冷",
-   "name_en": "Deep Assassin 140",
    "aliases": [
     "利民DL140",
     "银箭DL140"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 158,
@@ -429,14 +353,12 @@
   },
   {
    "id": "cool-tr-tl120",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 TL120 单塔四热管风冷",
-   "name_en": "Tower Assassin 120",
    "aliases": [
     "利民TL120",
     "利民TL120SE"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 145,
@@ -469,13 +391,11 @@
   },
   {
    "id": "cool-tr-fs140",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民  freezes Spirit 140 双塔",
-   "name_en": "Frozen Spirit 140",
    "aliases": [
     "利民FS140"
    ],
+   "brand_cn": "利民",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 157,
@@ -508,14 +428,12 @@
   },
   {
    "id": "cool-tr-frozen-magic-120",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 冰封 Magic 120 水冷",
-   "name_en": "Frozen Magic 120",
    "aliases": [
     "利民冰封120",
     "Frozen Magic 120"
    ],
+   "brand_cn": "利民",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -548,14 +466,12 @@
   },
   {
    "id": "cool-tr-frozen-magic-240",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 冰封 Magic 240 水冷",
-   "name_en": "Frozen Magic 240",
    "aliases": [
     "利民冰封240",
     "Frozen Magic 240"
    ],
+   "brand_cn": "利民",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -588,14 +504,12 @@
   },
   {
    "id": "cool-tr-frozen-magic-360",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 冰封 Magic 360 水冷",
-   "name_en": "Frozen Magic 360",
    "aliases": [
     "利民冰封360",
     "Frozen Magic 360"
    ],
+   "brand_cn": "利民",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -628,14 +542,12 @@
   },
   {
    "id": "cool-tr-frozen-prism-360",
-   "brand_cn": "利民",
-   "brand_en": "Thermalright",
    "name_cn": "利民 冰封 Prism 360 ARGB 水冷",
-   "name_en": "Frozen Prism 360 ARGB",
    "aliases": [
     "利民冰棱360",
     "Frozen Prism 360"
    ],
+   "brand_cn": "利民",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -668,15 +580,13 @@
   },
   {
    "id": "cool-dc-ak400",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AK400 冰立方单塔四热管",
-   "name_en": "AK400",
    "aliases": [
     "九州AK400",
     "冰立方400",
     "DeepCool AK400"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -686,7 +596,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 1850,
-   "fan_noise_dba": 29.0,
+   "fan_noise_dba": 29,
    "sockets": [
     "AM4",
     "AM5",
@@ -711,14 +621,12 @@
   },
   {
    "id": "cool-dc-ak400-digital",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AK400 数显版（ARGB）",
-   "name_en": "AK400 DIGITAL",
    "aliases": [
     "冰立方400数显",
     "AK400 DIGITAL"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 156,
@@ -728,7 +636,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 1850,
-   "fan_noise_dba": 28.0,
+   "fan_noise_dba": 28,
    "sockets": [
     "AM4",
     "AM5",
@@ -753,14 +661,12 @@
   },
   {
    "id": "cool-dc-ak400plus",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AK400 Plus 单塔四热管",
-   "name_en": "AK400 Plus",
    "aliases": [
     "九州AK400 Plus",
     "冰立方400 Plus"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -770,7 +676,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 1850,
-   "fan_noise_dba": 29.0,
+   "fan_noise_dba": 29,
    "sockets": [
     "AM4",
     "AM5",
@@ -795,14 +701,12 @@
   },
   {
    "id": "cool-dc-ak400-g2",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AK400 G2 第二代单塔",
-   "name_en": "AK400 G2",
    "aliases": [
     "冰立方400 G2",
     "AK400 G2"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 156,
@@ -812,7 +716,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 2200,
-   "fan_noise_dba": 29.0,
+   "fan_noise_dba": 29,
    "sockets": [
     "AM4",
     "AM5",
@@ -837,15 +741,13 @@
   },
   {
    "id": "cool-dc-ak620",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AK620 冰立方双塔六热管",
-   "name_en": "AK620",
    "aliases": [
     "九州AK620",
     "冰立方620",
     "DeepCool AK620"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 160,
@@ -855,7 +757,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 1850,
-   "fan_noise_dba": 28.0,
+   "fan_noise_dba": 28,
    "sockets": [
     "AM4",
     "AM5",
@@ -880,14 +782,12 @@
   },
   {
    "id": "cool-dc-ak620-g2",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AK620 G2 第二代双塔（木艺顶盖）",
-   "name_en": "AK620 G2",
    "aliases": [
     "冰立方620 G2",
     "AK620 G2木艺"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 159,
@@ -922,14 +822,12 @@
   },
   {
    "id": "cool-dc-ak620-g2-digital",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AK620 G2 数显黑金刚",
-   "name_en": "AK620 G2 DIGITAL NYX",
    "aliases": [
     "冰立方620数显",
     "AK620 G2数显"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 159,
@@ -964,14 +862,12 @@
   },
   {
    "id": "cool-dc-ag400",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AG400 单塔四热管",
-   "name_en": "AG400",
    "aliases": [
     "九州AG400",
     "AG400"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 150,
@@ -981,7 +877,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 29.0,
+   "fan_noise_dba": 29,
    "sockets": [
     "AM4",
     "AM5",
@@ -1006,14 +902,12 @@
   },
   {
    "id": "cool-dc-as500",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AS500 单塔四热管",
-   "name_en": "AS500",
    "aliases": [
     "九州AS500",
     "AS500"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -1048,14 +942,12 @@
   },
   {
    "id": "cool-dc-as500-plus",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AS500 Plus ARGB 单塔",
-   "name_en": "AS500 PLUS",
    "aliases": [
     "九州AS500 Plus",
     "AS500 PLUS ARGB"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -1090,14 +982,12 @@
   },
   {
    "id": "cool-dc-as620",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AS620 双塔六热管",
-   "name_en": "AS620",
    "aliases": [
     "九州AS620",
     "DeepCool AS620"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -1132,14 +1022,12 @@
   },
   {
    "id": "cool-dc-assassin-iv",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 银翼杀手 Assassin IV",
-   "name_en": "Assassin IV",
    "aliases": [
     "九州Assassin IV",
     "刺客4代"
    ],
+   "brand_cn": "九州风神",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 164,
@@ -1172,14 +1060,12 @@
   },
   {
    "id": "cool-dc-le520",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 LE520 240 水冷",
-   "name_en": "LE520",
    "aliases": [
     "九州LE520",
     "DeepCool LE520"
    ],
+   "brand_cn": "九州风神",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -1213,14 +1099,12 @@
   },
   {
    "id": "cool-dc-le720",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 LE720 360 水冷",
-   "name_en": "LE720",
    "aliases": [
     "九州LE720",
     "DeepCool LE720"
    ],
+   "brand_cn": "九州风神",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -1254,14 +1138,12 @@
   },
   {
    "id": "cool-dc-am4",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AM4 120 一体式水冷",
-   "name_en": "AM4 120",
    "aliases": [
     "九州AM4水冷",
     "DeepCool AM4"
    ],
+   "brand_cn": "九州风神",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -1294,14 +1176,12 @@
   },
   {
    "id": "cool-dc-mazzio-240",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 冰弓 Mazzio 240 ARGB 水冷",
-   "name_en": "Mazzio 240 ARGB",
    "aliases": [
     "冰弓240",
     "九州Mazzio 240"
    ],
+   "brand_cn": "九州风神",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -1334,14 +1214,12 @@
   },
   {
    "id": "cool-dc-mazzio-360",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 冰弓 Mazzio 360 ARGB 水冷",
-   "name_en": "Mazzio 360 ARGB",
    "aliases": [
     "冰弓360",
     "九州Mazzio 360"
    ],
+   "brand_cn": "九州风神",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -1374,14 +1252,12 @@
   },
   {
    "id": "cool-dc-ak400-aio",
-   "brand_cn": "九州风神",
-   "brand_en": "DeepCool",
    "name_cn": "九州风神 AK400 AIO 240 水冷",
-   "name_en": "AK400 AIO",
    "aliases": [
     "冰立方400水冷",
     "AK400 AIO"
    ],
+   "brand_cn": "九州风神",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -1391,7 +1267,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 29.0,
+   "fan_noise_dba": 29,
    "sockets": [
     "AM4",
     "AM5",
@@ -1416,14 +1292,12 @@
   },
   {
    "id": "cool-noctua-nhu9a",
-   "brand_cn": "猫头鹰",
-   "brand_en": "Noctua",
    "name_cn": "猫头鹰 NH-U9a 低矮单塔九热管",
-   "name_en": "NH-U9a",
    "aliases": [
     "猫头鹰NH-U9a",
     "Noctua NH-U9a"
    ],
+   "brand_cn": "猫头鹰",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 158,
@@ -1455,14 +1329,12 @@
   },
   {
    "id": "cool-noctua-nhu12a",
-   "brand_cn": "猫头鹰",
-   "brand_en": "Noctua",
    "name_cn": "猫头鹰 NH-U12A chromax.black 单塔七热管",
-   "name_en": "NH-U12A chromax.black",
    "aliases": [
     "猫头鹰NH-U12A",
     "Noctua NH-U12A"
    ],
+   "brand_cn": "猫头鹰",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 158,
@@ -1494,13 +1366,11 @@
   },
   {
    "id": "cool-noctua-nhu12s-redux",
-   "brand_cn": "猫头鹰",
-   "brand_en": "Noctua",
    "name_cn": "猫头鹰 NH-U12S redux 单塔七热管",
-   "name_en": "NH-U12S redux",
    "aliases": [
     "猫头鹰NH-U12S redux"
    ],
+   "brand_cn": "猫头鹰",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 158,
@@ -1532,14 +1402,12 @@
   },
   {
    "id": "cool-noctua-nhd14",
-   "brand_cn": "猫头鹰",
-   "brand_en": "Noctua",
    "name_cn": "猫头鹰 NH-D14 双塔七热管",
-   "name_en": "NH-D14",
    "aliases": [
     "猫头鹰NH-D14",
     "Noctua NH-D14"
    ],
+   "brand_cn": "猫头鹰",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 165,
@@ -1571,14 +1439,12 @@
   },
   {
    "id": "cool-noctua-nhd15",
-   "brand_cn": "猫头鹰",
-   "brand_en": "Noctua",
    "name_cn": "猫头鹰 NH-D15 双塔八热管（标杆）",
-   "name_en": "NH-D15",
    "aliases": [
     "猫头鹰NH-D15",
     "Noctua NH-D15"
    ],
+   "brand_cn": "猫头鹰",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 165,
@@ -1610,14 +1476,12 @@
   },
   {
    "id": "cool-noctua-nhd15-chromax",
-   "brand_cn": "猫头鹰",
-   "brand_en": "Noctua",
    "name_cn": "猫头鹰 NH-D15 chromax.black 全黑版",
-   "name_en": "NH-D15 chromax.black",
    "aliases": [
     "猫头鹰NH-D15黑",
     "NH-D15 chromax"
    ],
+   "brand_cn": "猫头鹰",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 165,
@@ -1649,14 +1513,12 @@
   },
   {
    "id": "cool-noctua-nhd15-g2",
-   "brand_cn": "猫头鹰",
-   "brand_en": "Noctua",
    "name_cn": "猫头鹰 NH-D15 G2 双塔七热管二代版",
-   "name_en": "NH-D15 G2",
    "aliases": [
     "猫头鹰NH-D15 G2",
     "NH-D15 G2"
    ],
+   "brand_cn": "猫头鹰",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 168,
@@ -1688,14 +1550,12 @@
   },
   {
    "id": "cool-bq-purerock2",
-   "brand_cn": "德静界",
-   "brand_en": "be quiet!",
    "name_cn": "德静界 Pure Rock 2 静音单塔四热管",
-   "name_en": "Pure Rock 2",
    "aliases": [
     "德静界Pure Rock2",
     "be quiet Pure Rock 2"
    ],
+   "brand_cn": "德静界",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -1730,14 +1590,12 @@
   },
   {
    "id": "cool-bq-purerock3-lx",
-   "brand_cn": "德静界",
-   "brand_en": "be quiet!",
    "name_cn": "德静界 Pure Rock 3 LX 静音单塔四热管 ARGB",
-   "name_en": "Pure Rock 3 LX",
    "aliases": [
     "德静界Pure Rock3 LX",
     "Pure Rock 3 LX"
    ],
+   "brand_cn": "德静界",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 154,
@@ -1772,14 +1630,12 @@
   },
   {
    "id": "cool-bq-darkrock3",
-   "brand_cn": "德静界",
-   "brand_en": "be quiet!",
    "name_cn": "德静界 Dark Rock 3 静音双塔四热管",
-   "name_en": "Dark Rock 3",
    "aliases": [
     "德静界Dark Rock3",
     "Dark Rock 3"
    ],
+   "brand_cn": "德静界",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 160,
@@ -1824,14 +1680,12 @@
   },
   {
    "id": "cool-bq-darkrock4",
-   "brand_cn": "德静界",
-   "brand_en": "be quiet!",
    "name_cn": "德静界 Dark Rock 4 静音双塔七热管",
-   "name_en": "Dark Rock 4",
    "aliases": [
     "德静界Dark Rock4",
     "Dark Rock 4"
    ],
+   "brand_cn": "德静界",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 159,
@@ -1866,14 +1720,12 @@
   },
   {
    "id": "cool-bq-darkrockpro4",
-   "brand_cn": "德静界",
-   "brand_en": "be quiet!",
    "name_cn": "德静界 Dark Rock Pro 4 旗舰双塔七热管",
-   "name_en": "Dark Rock Pro 4",
    "aliases": [
     "德静界DRP4",
     "Dark Rock Pro 4"
    ],
+   "brand_cn": "德静界",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 163,
@@ -1908,13 +1760,11 @@
   },
   {
    "id": "cool-bq-shadowrock3",
-   "brand_cn": "德静界",
-   "brand_en": "be quiet!",
    "name_cn": "德静界 Shadow Rock 3 静音单塔四热管",
-   "name_en": "Shadow Rock 3",
    "aliases": [
     "德静界Shadow Rock3"
    ],
+   "brand_cn": "德静界",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -1949,14 +1799,12 @@
   },
   {
    "id": "cool-cm-hyper212",
-   "brand_cn": "酷冷至尊",
-   "brand_en": "CoolerMaster",
    "name_cn": "酷冷至尊 Hyper 212 黑版单塔四热管",
-   "name_en": "Hyper 212 Black",
    "aliases": [
     "酷冷Hyper212",
     "Hyper 212 黑"
    ],
+   "brand_cn": "酷冷至尊",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 159,
@@ -1966,7 +1814,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 27.0,
+   "fan_noise_dba": 27,
    "sockets": [
     "AM4",
     "AM5",
@@ -1989,13 +1837,11 @@
   },
   {
    "id": "cool-cm-t400",
-   "brand_cn": "酷冷至尊",
-   "brand_en": "CoolerMaster",
    "name_cn": "酷冷至尊 T400 双塔四热管",
-   "name_en": "T400",
    "aliases": [
     "酷冷T400"
    ],
+   "brand_cn": "酷冷至尊",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -2005,7 +1851,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -2028,14 +1874,12 @@
   },
   {
    "id": "cool-cm-ma620m",
-   "brand_cn": "酷冷至尊",
-   "brand_en": "CoolerMaster",
    "name_cn": "酷冷至尊 MA620M 双塔六热管",
-   "name_en": "MA620M",
    "aliases": [
     "酷冷MA620M",
     "酷冷Master MA620M"
    ],
+   "brand_cn": "酷冷至尊",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 162,
@@ -2045,7 +1889,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -2068,14 +1912,12 @@
   },
   {
    "id": "cool-cm-astro-240",
-   "brand_cn": "酷冷至尊",
-   "brand_en": "CoolerMaster",
    "name_cn": "酷冷至尊 冰神 AIO 240 水冷",
-   "name_en": "MasterLiquid 240",
    "aliases": [
     "酷冷冰神240",
     "ML240"
    ],
+   "brand_cn": "酷冷至尊",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2085,7 +1927,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 27.0,
+   "fan_noise_dba": 27,
    "sockets": [
     "AM4",
     "AM5",
@@ -2108,14 +1950,12 @@
   },
   {
    "id": "cool-cm-astro-360",
-   "brand_cn": "酷冷至尊",
-   "brand_en": "CoolerMaster",
    "name_cn": "酷冷至尊 冰神 AIO 360 水冷",
-   "name_en": "MasterLiquid 360",
    "aliases": [
     "酷冷冰神360",
     "ML360"
    ],
+   "brand_cn": "酷冷至尊",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2125,7 +1965,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 27.0,
+   "fan_noise_dba": 27,
    "sockets": [
     "AM4",
     "AM5",
@@ -2148,14 +1988,12 @@
   },
   {
    "id": "cool-jonsbo-cr1400e",
-   "brand_cn": "乔思伯",
-   "brand_en": "Jonsbo",
    "name_cn": "乔思伯 CR-1400E 塔式四热管",
-   "name_en": "CR-1400E",
    "aliases": [
     "乔思伯CR1400",
     "Jonsbo CR-1400E"
    ],
+   "brand_cn": "乔思伯",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 159,
@@ -2165,7 +2003,7 @@
    "fan_count": 1,
    "fan_mm": 140,
    "fan_max_rpm": 1500,
-   "fan_noise_dba": 28.0,
+   "fan_noise_dba": 28,
    "sockets": [
     "AM4",
     "AM5",
@@ -2188,13 +2026,11 @@
   },
   {
    "id": "cool-jonsbo-cr1000",
-   "brand_cn": "乔思伯",
-   "brand_en": "Jonsbo",
    "name_cn": "乔思伯 CR-1000 塔式四热管",
-   "name_en": "CR-1000",
    "aliases": [
     "乔思伯CR1000"
    ],
+   "brand_cn": "乔思伯",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 148,
@@ -2204,7 +2040,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 27.0,
+   "fan_noise_dba": 27,
    "sockets": [
     "AM4",
     "AM5",
@@ -2227,14 +2063,12 @@
   },
   {
    "id": "cool-phanteks-f5",
-   "brand_cn": "追风者",
-   "brand_en": "Phanteks",
    "name_cn": "追风者 F5 双塔六热管",
-   "name_en": "F5",
    "aliases": [
     "追风者F5",
     "Phanteks F5"
    ],
+   "brand_cn": "追风者",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 160,
@@ -2244,7 +2078,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 1900,
-   "fan_noise_dba": 27.0,
+   "fan_noise_dba": 27,
    "sockets": [
     "AM4",
     "AM5",
@@ -2267,14 +2101,12 @@
   },
   {
    "id": "cool-phanteks-d30",
-   "brand_cn": "追风者",
-   "brand_en": "Phanteks",
    "name_cn": "追风者 D30 双塔七热管",
-   "name_en": "D30",
    "aliases": [
     "追风者D30",
     "Phanteks D30"
    ],
+   "brand_cn": "追风者",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 165,
@@ -2284,7 +2116,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 27.0,
+   "fan_noise_dba": 27,
    "sockets": [
     "AM4",
     "AM5",
@@ -2307,14 +2139,12 @@
   },
   {
    "id": "cool-yeston-g3",
-   "brand_cn": "雅浚",
-   "brand_en": "Yeston",
    "name_cn": "雅浚 G3 塔式四热管",
-   "name_en": "G3",
    "aliases": [
     "雅浚G3",
     "Yeston G3"
    ],
+   "brand_cn": "雅浚",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 145,
@@ -2324,7 +2154,7 @@
    "fan_count": 1,
    "fan_mm": 92,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 25.0,
+   "fan_noise_dba": 25,
    "sockets": [
     "AM4",
     "AM5",
@@ -2347,14 +2177,12 @@
   },
   {
    "id": "cool-pccool-golden-deluxe",
-   "brand_cn": "超频三",
-   "brand_en": "PCCOOLER",
    "name_cn": "超频三 黄金Déluxe 塔式四热管",
-   "name_en": "黄金Deluxe",
    "aliases": [
     "超频三黄金",
     "PCCOOLER 黄金Deluxe"
    ],
+   "brand_cn": "超频三",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 155,
@@ -2364,7 +2192,7 @@
    "fan_count": 1,
    "fan_mm": 120,
    "fan_max_rpm": 1900,
-   "fan_noise_dba": 28.0,
+   "fan_noise_dba": 28,
    "sockets": [
     "AM4",
     "AM5",
@@ -2387,14 +2215,12 @@
   },
   {
    "id": "cool-valeurair-1400",
-   "brand_cn": "Valeurair",
-   "brand_en": "Valeurair",
    "name_cn": "Valeurair 1400 塔式六热管",
-   "name_en": "Valeurair 1400",
    "aliases": [
     "VP1400",
     "Valeurair 1400"
    ],
+   "brand_cn": "Valeurair",
    "type": "air",
    "type_cn": "风冷",
    "height_mm": 158,
@@ -2404,7 +2230,7 @@
    "fan_count": 2,
    "fan_mm": 140,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 32.0,
+   "fan_noise_dba": 32,
    "sockets": null,
    "radiator_mm": null,
    "pump_rpm": null,
@@ -2420,15 +2246,13 @@
   },
   {
    "id": "cool-nzxt-kraken-x53",
-   "brand_cn": "恩杰",
-   "brand_en": "NZXT",
    "name_cn": "恩杰 海妖 Kraken X53 RGB 240 水冷",
-   "name_en": "Kraken X53 RGB",
    "aliases": [
     "海妖X53",
     "NZXT Kraken X53",
     "Kraken X53 240"
    ],
+   "brand_cn": "恩杰",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2438,7 +2262,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 36.0,
+   "fan_noise_dba": 36,
    "sockets": [
     "AM4",
     "AM5",
@@ -2460,15 +2284,13 @@
   },
   {
    "id": "cool-nzxt-kraken-x63",
-   "brand_cn": "恩杰",
-   "brand_en": "NZXT",
    "name_cn": "恩杰 海妖 Kraken X63 RGB 280 水冷",
-   "name_en": "Kraken X63 RGB",
    "aliases": [
     "海妖X63",
     "NZXT Kraken X63",
     "Kraken X63 280"
    ],
+   "brand_cn": "恩杰",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2478,7 +2300,7 @@
    "fan_count": 2,
    "fan_mm": 140,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 38.0,
+   "fan_noise_dba": 38,
    "sockets": [
     "AM4",
     "AM5",
@@ -2500,15 +2322,13 @@
   },
   {
    "id": "cool-nzxt-kraken-x73",
-   "brand_cn": "恩杰",
-   "brand_en": "NZXT",
    "name_cn": "恩杰 海妖 Kraken X73 RGB 360 水冷",
-   "name_en": "Kraken X73 RGB",
    "aliases": [
     "海妖X73",
     "NZXT Kraken X73",
     "Kraken X73 360"
    ],
+   "brand_cn": "恩杰",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2518,7 +2338,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 36.0,
+   "fan_noise_dba": 36,
    "sockets": [
     "AM4",
     "AM5",
@@ -2540,14 +2360,12 @@
   },
   {
    "id": "cool-nzxt-kraken-elite-x73",
-   "brand_cn": "恩杰",
-   "brand_en": "NZXT",
    "name_cn": "恩杰 Kraken Elite X73 RGB 360 带屏水冷",
-   "name_en": "Kraken Elite X73 RGB",
    "aliases": [
     "海妖Elite X73",
     "Kraken Elite 360"
    ],
+   "brand_cn": "恩杰",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2557,7 +2375,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 36.0,
+   "fan_noise_dba": 36,
    "sockets": [
     "AM4",
     "AM5",
@@ -2582,14 +2400,12 @@
   },
   {
    "id": "cool-nzxt-kraken-elite-360",
-   "brand_cn": "恩杰",
-   "brand_en": "NZXT",
    "name_cn": "恩杰 Kraken Elite 360 RGB 带屏水冷（无 X 后缀）",
-   "name_en": "Kraken Elite 360 RGB",
    "aliases": [
     "海妖Elite 360",
     "Kraken Elite RGB 360"
    ],
+   "brand_cn": "恩杰",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2599,7 +2415,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 36.0,
+   "fan_noise_dba": 36,
    "sockets": [
     "AM4",
     "AM5",
@@ -2624,14 +2440,12 @@
   },
   {
    "id": "cool-nzxt-kraken-360-rgb",
-   "brand_cn": "恩杰",
-   "brand_en": "NZXT",
    "name_cn": "恩杰 Kraken 2023 360 RGB 无屏水冷",
-   "name_en": "Kraken 360 RGB (2023)",
    "aliases": [
     "海妖360无屏",
     "Kraken 2023 360"
    ],
+   "brand_cn": "恩杰",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2641,7 +2455,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 36.0,
+   "fan_noise_dba": 36,
    "sockets": [
     "AM4",
     "AM5",
@@ -2664,14 +2478,12 @@
   },
   {
    "id": "cool-asus-rog-ryujin3-360",
-   "brand_cn": "华硕",
-   "brand_en": "ASUS",
    "name_cn": "华硕 ROG Ryujin III 360 ARGB 水冷",
-   "name_en": "ROG Ryujin III 360 ARGB",
    "aliases": [
     "Ryujin III 360",
     "Ryujin3"
    ],
+   "brand_cn": "华硕",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2681,7 +2493,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -2704,14 +2516,12 @@
   },
   {
    "id": "cool-asus-tuf-liquid-360",
-   "brand_cn": "华硕",
-   "brand_en": "ASUS",
    "name_cn": "华硕 TUF Gaming LC 360 ARGB 水冷",
-   "name_en": "TUF Gaming LC 360 ARGB",
    "aliases": [
     "TUF水冷360",
     "TUF LC 360"
    ],
+   "brand_cn": "华硕",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2721,7 +2531,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 28.0,
+   "fan_noise_dba": 28,
    "sockets": [
     "AM4",
     "AM5",
@@ -2744,14 +2554,12 @@
   },
   {
    "id": "cool-asus-rog-strix-lc-ii-280",
-   "brand_cn": "华硕",
-   "brand_en": "ASUS",
    "name_cn": "华硕 ROG STRIX LC II 280 ARGB 水冷",
-   "name_en": "ROG STRIX LC II 280 ARGB",
    "aliases": [
     "ROG水冷280",
     "STRIX LC II 280"
    ],
+   "brand_cn": "华硕",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2761,7 +2569,7 @@
    "fan_count": 2,
    "fan_mm": 140,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 29.0,
+   "fan_noise_dba": 29,
    "sockets": [
     "AM4",
     "AM5",
@@ -2784,13 +2592,11 @@
   },
   {
    "id": "cool-msi-mag-coreliquid-240",
-   "brand_cn": "微星",
-   "brand_en": "MSI",
    "name_cn": "微星 MAG Coreliquid 240 水冷",
-   "name_en": "MAG Coreliquid 240",
    "aliases": [
     "微星MAG水冷240"
    ],
+   "brand_cn": "微星",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2800,7 +2606,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -2823,13 +2629,11 @@
   },
   {
    "id": "cool-msi-mag-coreliquid-360",
-   "brand_cn": "微星",
-   "brand_en": "MSI",
    "name_cn": "微星 MAG Coreliquid 360 水冷",
-   "name_en": "MAG Coreliquid 360",
    "aliases": [
     "微星MAG水冷360"
    ],
+   "brand_cn": "微星",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2839,7 +2643,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -2862,13 +2666,11 @@
   },
   {
    "id": "cool-msi-meg-coreliquid-360",
-   "brand_cn": "微星",
-   "brand_en": "MSI",
    "name_cn": "微星 MEG Coreliquid 360 水冷",
-   "name_en": "MEG Coreliquid 360",
    "aliases": [
     "微星MEG水冷360"
    ],
+   "brand_cn": "微星",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2878,7 +2680,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -2901,14 +2703,12 @@
   },
   {
    "id": "cool-lianli-galahad-ii-360",
-   "brand_cn": "联力",
-   "brand_en": "LianLi",
    "name_cn": "联力 GALAHAD II 360 RGB 水冷",
-   "name_en": "GALAHAD II 360 RGB",
    "aliases": [
     "联力Galahad2 360",
     "Galahad II"
    ],
+   "brand_cn": "联力",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2918,7 +2718,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -2941,13 +2741,11 @@
   },
   {
    "id": "cool-lianli-superflow-240",
-   "brand_cn": "联力",
-   "brand_en": "LianLi",
    "name_cn": "联力 SUPERFLOW 240 RGB 水冷",
-   "name_en": "SUPERFLOW 240",
    "aliases": [
     "联力SUPERFLOW240"
    ],
+   "brand_cn": "联力",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2957,7 +2755,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -2980,13 +2778,11 @@
   },
   {
    "id": "cool-yeston-g3-360",
-   "brand_cn": "雅浚",
-   "brand_en": "Yeston",
    "name_cn": "雅浚 G3 360 一体式水冷",
-   "name_en": "雅浚 G3 360",
    "aliases": [
     "雅浚水冷360"
    ],
+   "brand_cn": "雅浚",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -2996,7 +2792,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -3019,14 +2815,12 @@
   },
   {
    "id": "cool-valkyrie-vk360",
-   "brand_cn": "瓦尔基里",
-   "brand_en": "Valkyrie",
    "name_cn": "瓦尔基里 VK 360 一体式水冷",
-   "name_en": "Valkyrie VK 360",
    "aliases": [
     "瓦尔基里360",
     "VK360"
    ],
+   "brand_cn": "瓦尔基里",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -3036,7 +2830,7 @@
    "fan_count": 3,
    "fan_mm": 120,
    "fan_max_rpm": 2000,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -3059,14 +2853,12 @@
   },
   {
    "id": "cool-valkyrie-vk240",
-   "brand_cn": "瓦尔基里",
-   "brand_en": "Valkyrie",
    "name_cn": "瓦尔基里 VK 240 一体式水冷",
-   "name_en": "Valkyrie VK 240",
    "aliases": [
     "瓦尔基里240",
     "VK240"
    ],
+   "brand_cn": "瓦尔基里",
    "type": "aio",
    "type_cn": "一体式水冷",
    "height_mm": 0,
@@ -3076,7 +2868,7 @@
    "fan_count": 2,
    "fan_mm": 120,
    "fan_max_rpm": 1800,
-   "fan_noise_dba": 30.0,
+   "fan_noise_dba": 30,
    "sockets": [
     "AM4",
     "AM5",
@@ -3096,6 +2888,1236 @@
    "release_year": 2023,
    "price_tier": "低中",
    "note": "⚠️ 冷排位要求：240mm。⚠️ 官网/参数库对 LGA1851 支持标注不明确，装 1851 请核对包装扣具。解热约 220W"
+  },
+  {
+   "id": "cool-tr-ss110",
+   "name_cn": "利民 SS110 黑魂 单塔五热管",
+   "aliases": [
+    "利民SS110",
+    "SS110",
+    "利民黑魂"
+   ],
+   "brand_cn": "利民",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 110,
+   "dimension_mm": "120×62×110mm",
+   "heatpipe": "5×6mm 回流焊",
+   "dissipation": 180,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 27.5,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 74,
+   "release_year": 2021,
+   "price_tier": "中",
+   "note": "✅ 110mm 超矮单塔，ITX 小机箱（限高 120mm 以下）神器，解热 180W 同级最强。⚠️ 单风扇设计，250W 以上旗舰 U 吃力。✅ 全高内存无遮挡。⚠️ 风扇转速 1800 噪音偏大"
+  },
+  {
+   "id": "cool-tr-pa120-mini",
+   "name_cn": "利民 PA120 MINI 双塔六热管",
+   "aliases": [
+    "利民PA120 MINI",
+    "PA120 MINI",
+    "PA120M"
+   ],
+   "brand_cn": "利民",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 135,
+   "dimension_mm": "120×110×135mm",
+   "heatpipe": "6×6mm AGHP",
+   "dissipation": 200,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 29.6,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "A",
+   "perf_score": 80,
+   "release_year": 2022,
+   "price_tier": "中",
+   "note": "✅ 135mm 高度 + 200W 解热，小机箱与 MATX 紧凑箱甜点。✅ 不挡内存灯条。⚠️ 单风扇版本满载噪音大于双扇版。⚠️ 机箱限高 <135mm 才能装"
+  },
+  {
+   "id": "cool-tr-axp120-x67",
+   "name_cn": "利民 AXP120-X67 下压六热管",
+   "aliases": [
+    "利民AXP120",
+    "AXP120-X67",
+    "利民下压"
+   ],
+   "brand_cn": "利民",
+   "type": "air",
+   "type_cn": "下压风冷",
+   "height_mm": 67,
+   "dimension_mm": "120×108×67mm",
+   "heatpipe": "6×6mm 回流焊",
+   "dissipation": 150,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 28,
+   "sockets": [
+    "AM4",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 68,
+   "release_year": 2022,
+   "price_tier": "中",
+   "note": "⚠️⚠️ 67mm 极致下压，仅 1U 服务器/超薄 ITX 可用，⚠️ 官网未列 AM5/LGA1851 扣具，装新平台需另购扣具。✅ 主板供电散热片也能吹到。⚠️ 150W 上限，12400/5600 级"
+  },
+  {
+   "id": "cool-dc-ak500",
+   "name_cn": "九州风神 AK500 单塔五热管",
+   "aliases": [
+    "九州AK500",
+    "AK500",
+    "九州风神AK500"
+   ],
+   "brand_cn": "九州风神",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 148,
+   "dimension_mm": "129×102×148mm",
+   "heatpipe": "5×6mm 烧结",
+   "dissipation": 220,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1850,
+   "fan_noise_dba": 29,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 78,
+   "release_year": 2022,
+   "price_tier": "中",
+   "note": "✅ 单塔五热管 220W 解热，矩阵式鳍片风量大。✅ 全高内存兼容。⚠️ 148mm 高度，限高 145mm 机箱装不下。⚠️ 单风扇高负载噪音明显"
+  },
+  {
+   "id": "cool-dc-icecube-500",
+   "name_cn": "九州风神 冰立方 500 双塔",
+   "aliases": [
+    "九州冰立方500",
+    "冰立方500",
+    "ICE CUBE 500"
+   ],
+   "brand_cn": "九州风神",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 155,
+   "dimension_mm": "125×112×155mm",
+   "heatpipe": "5×6mm",
+   "dissipation": 240,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30.5,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "A",
+   "perf_score": 82,
+   "release_year": 2023,
+   "price_tier": "中",
+   "note": "✅ 155mm 高度 + 双风扇 240W，13700K/7800X3D 默频轻松压。✅ 偏置塔体设计避开内存槽。⚠️ 155mm 限高机箱（如部分 ITX）装不下。⚠️ 双风扇需确认机箱宽度空间"
+  },
+  {
+   "id": "cool-noctua-nhu14s",
+   "name_cn": "猫头鹰 NH-U14S 单塔",
+   "aliases": [
+    "猫头鹰U14S",
+    "NH-U14S",
+    "NHD14S"
+   ],
+   "brand_cn": "猫头鹰",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 165,
+   "dimension_mm": "140×110×165mm",
+   "heatpipe": "6×6mm 镀镍铜",
+   "dissipation": null,
+   "fan_count": 1,
+   "fan_mm": 140,
+   "fan_max_rpm": 1500,
+   "fan_noise_dba": 24.6,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": 52,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 6,
+   "tier": "A",
+   "perf_score": 84,
+   "release_year": 2013,
+   "price_tier": "高端",
+   "note": "✅ 165mm 高但单风扇 140mm，静音顶级（24.6dB）。✅ 内存避让 52mm 可插高条。⚠️ 官方未标解热 W，实测约 200W 级。⚠️ 165mm 限高机箱装不下。⚠️ 多年未更新，AM5/LGA1851 靠附送扣具"
+  },
+  {
+   "id": "cool-noctua-nhl9i",
+   "name_cn": "猫头鹰 NH-L9i 下压",
+   "aliases": [
+    "猫头鹰L9i",
+    "NH-L9i",
+    "猫头鹰下压"
+   ],
+   "brand_cn": "猫头鹰",
+   "type": "air",
+   "type_cn": "下压风冷",
+   "height_mm": 37,
+   "dimension_mm": "95×95×37mm",
+   "heatpipe": "2×6mm",
+   "dissipation": null,
+   "fan_count": 1,
+   "fan_mm": 92,
+   "fan_max_rpm": 2500,
+   "fan_noise_dba": 23.8,
+   "sockets": [
+    "LGA115X",
+    "LGA1200"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 6,
+   "tier": "B",
+   "perf_score": 56,
+   "release_year": 2013,
+   "price_tier": "高端",
+   "note": "⚠️⚠️ 仅 2 热管 37mm，解热约 95W，⚠️ 官网扣具列表最高 LGA1200，AM5/LGA1851/LGA1700 均不支持。⚠️ 2500 转小风扇噪音偏尖。✅ 仅适合 65W TDP 老平台 ITX/HTPC"
+  },
+  {
+   "id": "cool-cm-610p-argb",
+   "name_cn": "酷冷至尊 HYPER 610P ARGB 双塔",
+   "aliases": [
+    "酷冷610P",
+    "HYPER 610P",
+    "酷冷双塔"
+   ],
+   "brand_cn": "酷冷至尊",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 158,
+   "dimension_mm": "122×120×158mm",
+   "heatpipe": "6×6mm",
+   "dissipation": 250,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 78,
+   "release_year": 2022,
+   "price_tier": "中",
+   "note": "✅ 双塔 + ARGB 灯效，250W 解热，14900K 默频可用。⚠️ 158mm 高度。⚠️ 前置风扇会挡住高马甲内存（>40mm 需调整风扇位置）"
+  },
+  {
+   "id": "cool-idcool-se226xt",
+   "name_cn": "ID-COOLING SE-226-XT 双塔八热管",
+   "aliases": [
+    "ID SE226",
+    "SE-226-XT",
+    "SE226"
+   ],
+   "brand_cn": "ID-COOLING",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 158,
+   "dimension_mm": "128×128×158mm",
+   "heatpipe": "8×6mm AGHP",
+   "dissipation": 260,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 31.2,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "A",
+   "perf_score": 84,
+   "release_year": 2022,
+   "price_tier": "中低",
+   "note": "✅ 八热管双塔 260W 解热，价格仅百元级，性价比屠夫。✅ 不挡内存。⚠️⚠️ ID-COOLING 为深圳小厂，扣具做工与安装体验一般，⚠️ AM5 扣具需拧多颗螺丝。⚠️ 158mm 高度。⚠️ 风扇噪音大于同价位利民"
+  },
+  {
+   "id": "cool-idcool-is55",
+   "name_cn": "ID-COOLING IS-55 下压五热管",
+   "aliases": [
+    "ID IS55",
+    "IS-55",
+    "ID-COOLING下压"
+   ],
+   "brand_cn": "ID-COOLING",
+   "type": "air",
+   "type_cn": "下压风冷",
+   "height_mm": 55,
+   "dimension_mm": "120×120×55mm",
+   "heatpipe": "5×6mm",
+   "dissipation": 150,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 29,
+   "sockets": [
+    "LGA115X",
+    "LGA1200",
+    "LGA1700"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 66,
+   "release_year": 2020,
+   "price_tier": "中低",
+   "note": "⚠️⚠️ 官网扣具列表最高 LGA1700，AM4/AM5/LGA1851 均无。✅ 55mm 下压可进 1U/超薄 ITX。⚠️ 150W 上限，12100F/12400F 级"
+  },
+  {
+   "id": "cool-idcool-frozn-360",
+   "name_cn": "ID-COOLING FROZN 360 一体水冷",
+   "aliases": [
+    "ID FROZN360",
+    "FROZN 360",
+    "ID-COOLING水冷"
+   ],
+   "brand_cn": "ID-COOLING",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "396×120×27mm 冷排",
+   "heatpipe": "水冷（铜底）",
+   "dissipation": 280,
+   "fan_count": 3,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30.5,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 360,
+   "pump_rpm": 2600,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 78,
+   "release_year": 2022,
+   "price_tier": "中低",
+   "note": "✅ 360 冷排 + 280W 解热，压 14900K/9950X 默频够用，价格仅 400 元级。⚠️⚠️ 水泵 2600 转有轻微电流声，静音党慎选。⚠️ 冷排 27mm 薄排，散热效率低于厚排（如利民冰封棱镜）"
+  },
+  {
+   "id": "cool-jonsbo-cr2000",
+   "name_cn": "乔思伯 CR-2000 双塔六热管",
+   "aliases": [
+    "乔思伯CR2000",
+    "CR-2000",
+    "乔思伯双塔"
+   ],
+   "brand_cn": "乔思伯",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 158,
+   "dimension_mm": "124×116×158mm",
+   "heatpipe": "6×6mm",
+   "dissipation": 240,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 31,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 78,
+   "release_year": 2022,
+   "price_tier": "中低",
+   "note": "✅ 白色涂层双塔，海景房主机颜值搭配，240W 解热。✅ 全高内存兼容。⚠️ 158mm 高度。⚠️ 乔思伯风冷为代工方案，扣具手感一般，安装说明简略"
+  },
+  {
+   "id": "cool-jonsbo-cr3000",
+   "name_cn": "乔思伯 CR-3000 双塔七热管 ARGB",
+   "aliases": [
+    "乔思伯CR3000",
+    "CR-3000",
+    "乔思伯七热管"
+   ],
+   "brand_cn": "乔思伯",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 162,
+   "dimension_mm": "128×118×162mm",
+   "heatpipe": "7×6mm AGHP",
+   "dissipation": 260,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 31.5,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "A",
+   "perf_score": 82,
+   "release_year": 2023,
+   "price_tier": "中",
+   "note": "✅ 七热管 + ARGB，260W 解热，9950X 默频可用。✅ 顶盖 CNC 镜面效果。⚠️ 162mm 高度，多数 ITX 与部分中塔装不下。⚠️ RGB 需接 5V 3pin，与部分主板同步软件兼容一般"
+  },
+  {
+   "id": "cool-yeston-g6",
+   "name_cn": "雅浚 G6 双塔六热管",
+   "aliases": [
+    "雅浚G6",
+    "G6",
+    "雅浚双塔"
+   ],
+   "brand_cn": "雅浚",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 158,
+   "dimension_mm": "126×116×158mm",
+   "heatpipe": "6×6mm",
+   "dissipation": 245,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 78,
+   "release_year": 2022,
+   "price_tier": "中低",
+   "note": "✅ 百元级双塔，245W 解热压 13700K 默频够。✅ 内存全高兼容。⚠️ 雅浚为小厂，扣具公差与品控一般。⚠️ 158mm 高度。⚠️ 风扇有轻微轴承声个体差异"
+  },
+  {
+   "id": "cool-pccool-twin-tower",
+   "name_cn": "超频三 东海双子星 S9 双塔",
+   "aliases": [
+    "超频三双子星",
+    "东海双子星S9",
+    "超频三双塔"
+   ],
+   "brand_cn": "超频三",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 155,
+   "dimension_mm": "126×115×155mm",
+   "heatpipe": "6×6mm",
+   "dissipation": 240,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 31,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 76,
+   "release_year": 2023,
+   "price_tier": "中低",
+   "note": "✅ 老牌超频三翻身款，240W 解热 + 偏置塔体避内存。✅ 百元价位。⚠️ 155mm 高度。⚠️ 鳍片边缘有毛刺（做工通病），安装戴手套"
+  },
+  {
+   "id": "cool-valkyrie-gl360",
+   "name_cn": "瓦尔基里 GL360 一体水冷",
+   "aliases": [
+    "瓦尔基里GL360",
+    "GL360",
+    "VK水冷"
+   ],
+   "brand_cn": "瓦尔基里",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "402×120×27mm 冷排",
+   "heatpipe": "水冷（铜底微水道）",
+   "dissipation": 300,
+   "fan_count": 3,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 360,
+   "pump_rpm": 2800,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": true,
+   "warranty_year": 3,
+   "tier": "A",
+   "perf_score": 84,
+   "release_year": 2023,
+   "price_tier": "中高",
+   "note": "✅ 冷头带 2.1 寸 LCD 屏（可显示温度/GIF），300W 解热，9950X 默频可用。⚠️ LCD 屏需 USB 2.0 接针 + 专用软件，占主板接口。⚠️ 水泵 2800 转有轻微高频声。⚠️ 冷排 27mm 偏薄，极限散热不如厚排"
+  },
+  {
+   "id": "cool-tr-frozen-edge-360",
+   "name_cn": "利民 冰封棱镜 360 一体水冷",
+   "aliases": [
+    "利民冰封棱镜",
+    "Frozen Prism 360",
+    "冰封棱镜360"
+   ],
+   "brand_cn": "利民",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "415×120×30mm 冷排",
+   "heatpipe": "水冷（精雕微凸铜底）",
+   "dissipation": 300,
+   "fan_count": 3,
+   "fan_mm": 120,
+   "fan_max_rpm": 2000,
+   "fan_noise_dba": 29.8,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 360,
+   "pump_rpm": 3000,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "A",
+   "perf_score": 86,
+   "release_year": 2024,
+   "price_tier": "中",
+   "note": "✅ 30mm 加厚冷排 + 精雕铜底，解热效率远超 27mm 薄排，300W 级。✅ 无灯低调，水泵 3000 转但噪音控制好。⚠️ 415mm 长冷排，部分紧凑机箱顶置装不下（先量 415mm 空间）"
+  },
+  {
+   "id": "cool-dc-icefortress-360",
+   "name_cn": "九州风神 冰堡垒 360 青春版",
+   "aliases": [
+    "九州冰堡垒360",
+    "冰堡垒360",
+    "冰堡垒青春版"
+   ],
+   "brand_cn": "九州风神",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "402×120×27mm 冷排",
+   "heatpipe": "水冷（第四代自研水泵）",
+   "dissipation": 280,
+   "fan_count": 3,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 360,
+   "pump_rpm": 2600,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": false,
+   "warranty_year": 5,
+   "tier": "B",
+   "perf_score": 80,
+   "release_year": 2023,
+   "price_tier": "中",
+   "note": "✅ 冷头双腔体水泵 + 5 年保，280W 解热，性价比突出。✅ ARGB 神光同步支持主流主板。⚠️ 27mm 薄排，极限散热逊于利民厚排。⚠️ 水泵低速启动偶有咔哒声（个体差异）"
+  },
+  {
+   "id": "cool-nzxt-kraken-240",
+   "name_cn": "恩杰 Kraken 240 一体水冷",
+   "aliases": [
+    "NZXT 240",
+    "Kraken 240",
+    "恩杰240"
+   ],
+   "brand_cn": "恩杰",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "277×120×27mm 冷排",
+   "heatpipe": "水冷（铜底）",
+   "dissipation": 250,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30.5,
+   "sockets": [
+    "AM4",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 240,
+   "pump_rpm": 2800,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": true,
+   "warranty_year": 6,
+   "tier": "B",
+   "perf_score": 76,
+   "release_year": 2022,
+   "price_tier": "中高",
+   "note": "✅ 冷头 1.54 寸 LCD 可自定义显示，颜值党首选。✅ 6 年保。⚠️⚠️ 240 冷排解热仅 250W，13700K 满载都吃力，只配 13600K/7800X3D 级。⚠️⚠️ 官网 socket 列表未列 AM5，AM5 平台需确认扣具支持。⚠️ 水泵高频声明显"
+  },
+  {
+   "id": "cool-aigo-ice-360",
+   "name_cn": "爱国者 冰魄 360 一体水冷",
+   "aliases": [
+    "爱国者冰魄360",
+    "冰魄360",
+    "爱国者水冷"
+   ],
+   "brand_cn": "爱国者",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "396×120×27mm 冷排",
+   "heatpipe": "水冷（铜底）",
+   "dissipation": 260,
+   "fan_count": 3,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 31,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 360,
+   "pump_rpm": 2500,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "C",
+   "perf_score": 70,
+   "release_year": 2023,
+   "price_tier": "中低",
+   "note": "⚠️⚠️ 爱国者贴牌水冷，漏液赔付条款苛刻（需 72 小时内送检），⚠️ 水泵与冷排品控批次差异大。✅ 价格极低 300 元内。⚠️ 建议买京东自营兜底，别在第三方店铺买"
+  },
+  {
+   "id": "cool-segotep-ice-240",
+   "name_cn": "鑫谷 冰封 240 一体水冷",
+   "aliases": [
+    "鑫谷冰封240",
+    "冰封240",
+    "鑫谷水冷"
+   ],
+   "brand_cn": "鑫谷",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "274×120×27mm 冷排",
+   "heatpipe": "水冷（铜底）",
+   "dissipation": 220,
+   "fan_count": 2,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 240,
+   "pump_rpm": 2600,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "C",
+   "perf_score": 66,
+   "release_year": 2022,
+   "price_tier": "入门",
+   "note": "⚠️⚠️ 220W 解热上限低，配 13600K 都勉强，别配 i7/i9。⚠️ 鑫谷低端水冷漏液率口碑一般。✅ 便宜，适合 12400F/7500F 级小主机"
+  },
+  {
+   "id": "cool-tr-ss135",
+   "name_cn": "利民 SS135 黑魂 单塔六热管",
+   "aliases": [
+    "利民SS135",
+    "SS135",
+    "利民黑魂135"
+   ],
+   "brand_cn": "利民",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 135,
+   "dimension_mm": "120×94×135mm",
+   "heatpipe": "6×6mm 回流焊",
+   "dissipation": 210,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 28.5,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "A",
+   "perf_score": 80,
+   "release_year": 2021,
+   "price_tier": "中",
+   "note": "✅ 135mm 单塔六热管 210W 解热，小机箱与紧凑 MATX 甜点。✅ 全高内存无遮挡（偏置设计）。⚠️ 机箱限高 <135mm 装不下。⚠️ 单风扇满载噪音大于双扇版"
+  },
+  {
+   "id": "cool-dc-an400",
+   "name_cn": "九州风神 AN400 单塔四热管",
+   "aliases": [
+    "九州AN400",
+    "AN400",
+    "九州单塔"
+   ],
+   "brand_cn": "九州风神",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 152,
+   "dimension_mm": "120×82×152mm",
+   "heatpipe": "4×6mm 烧结",
+   "dissipation": 180,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1850,
+   "fan_noise_dba": 28.5,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 72,
+   "release_year": 2022,
+   "price_tier": "中低",
+   "note": "✅ 4 热管单塔 180W，压 12400F/7500F/7600X 默频够用。✅ 152mm 高度多数中塔可装。✅ 内存全高兼容。⚠️ 鳍片间距大，需机箱有定向风道。⚠️ 解热上限低于同价双塔"
+  },
+  {
+   "id": "cool-cm-ml360l-v2-argb",
+   "name_cn": "酷冷至尊 MasterLiquid 360L V2 ARGB 水冷",
+   "aliases": [
+    "酷冷360L",
+    "ML360L",
+    "MasterLiquid 360"
+   ],
+   "brand_cn": "酷冷至尊",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "394×120×27mm 冷排",
+   "heatpipe": "水冷（双腔体水泵）",
+   "dissipation": 280,
+   "fan_count": 3,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 360,
+   "pump_rpm": 2600,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": false,
+   "warranty_year": 5,
+   "tier": "B",
+   "perf_score": 78,
+   "release_year": 2023,
+   "price_tier": "中端",
+   "note": "✅ 双腔体水泵低温表现好，280W 解热，13700K 默频可用。✅ 5 年保 + 漏液赔付。⚠️ 27mm 薄排，极限散热不如厚排。⚠️ 水泵 2600 转有轻微高频声。⚠️ 冷排 394mm 需机箱顶置空间"
+  },
+  {
+   "id": "cool-idcool-is60",
+   "name_cn": "ID-COOLING IS-60 下压五热管",
+   "aliases": [
+    "ID IS60",
+    "IS-60",
+    "ID-COOLING矮散热"
+   ],
+   "brand_cn": "ID-COOLING",
+   "type": "air",
+   "type_cn": "下压风冷",
+   "height_mm": 55,
+   "dimension_mm": "120×120×55mm",
+   "heatpipe": "5×6mm",
+   "dissipation": 150,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 29,
+   "sockets": [
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "AM4"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 64,
+   "release_year": 2020,
+   "price_tier": "中低",
+   "note": "⚠️⚠️ 55mm 下压仅 1U 服务器/超薄 ITX 可用，⚠️ 官网扣具最高 LGA1700，AM5/LGA1851 不支持。✅ 吹主板供电散热片。⚠️ 150W 上限，12100F/12400F 级"
+  },
+  {
+   "id": "cool-noctua-nhl12s",
+   "name_cn": "猫头鹰 NH-L12S 下压小塔",
+   "aliases": [
+    "猫头鹰L12S",
+    "NH-L12S",
+    "NHL12S"
+   ],
+   "brand_cn": "猫头鹰",
+   "type": "air",
+   "type_cn": "下压小塔",
+   "height_mm": 77,
+   "dimension_mm": "128×146×77mm",
+   "heatpipe": "4×6mm 镀镍铜",
+   "dissipation": null,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1500,
+   "fan_noise_dba": 23.9,
+   "sockets": [
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": 51,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 6,
+   "tier": "A",
+   "perf_score": 70,
+   "release_year": 2015,
+   "price_tier": "高端小箱",
+   "note": "✅ 77mm 下压小塔 + 静音顶级（23.9dB），ITX/HTPC 神器。✅ 内存避让 51mm。⚠️ 官方未标解热 W，实测约 130-150W。⚠️⚠️ 扣具列表最高 LGA1851 但 AM4/AM5 需另购 NM-AM4 扣具。⚠️ 6 年保 + 猫头鹰信仰价"
+  },
+  {
+   "id": "cool-pccool-donghai-x7",
+   "name_cn": "超频三 东海 X7 单塔六热管",
+   "aliases": [
+    "超频三X7",
+    "东海X7",
+    "超频三单塔"
+   ],
+   "brand_cn": "超频三",
+   "type": "air",
+   "type_cn": "风冷",
+   "height_mm": 158,
+   "dimension_mm": "122×101×158mm",
+   "heatpipe": "6×6mm 穿 FIN",
+   "dissipation": 220,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30.5,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 74,
+   "release_year": 2022,
+   "price_tier": "中低",
+   "note": "✅ 穿 FIN 工艺 + 六热管 220W，百元内性价比高。✅ 158mm 高度主流中塔可装。⚠️ 穿 FIN 比回流焊效率略低，且安装时热管易刮伤。⚠️ 噪音偏大，静音党慎选"
+  },
+  {
+   "id": "cool-nzxt-kraken-z63",
+   "name_cn": "恩杰 Kraken Z63 280 水冷（LCD）",
+   "aliases": [
+    "NZXT Z63",
+    "Kraken Z63",
+    "恩杰Z63"
+   ],
+   "brand_cn": "恩杰",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "315×120×27mm 冷排",
+   "heatpipe": "水冷（铜底）",
+   "dissipation": 270,
+   "fan_count": 2,
+   "fan_mm": 140,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 30.5,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 280,
+   "pump_rpm": 2800,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": true,
+   "warranty_year": 6,
+   "tier": "B",
+   "perf_score": 78,
+   "release_year": 2022,
+   "price_tier": "中高",
+   "note": "✅ 冷头 2.36 寸 LCD 可显示温度/GIF/自定义，颜值党首选。✅ 280 冷排双 140mm 风扇，270W 解热，13700K 默频可用。⚠️⚠️ NZXT 海妖数字是冷排尺寸：Z53=240/Z63=280/Z73=360，不是产品代数。⚠️ 水泵高频声明显，静音党慎选。⚠️ LCD 需 USB 2.0 接针 + CAM 软件"
+  },
+  {
+   "id": "cool-tr-ss100",
+   "name_cn": "利民 SS100 黑魂 矮塔六热管",
+   "aliases": [
+    "利民SS100",
+    "SS100",
+    "利民矮塔"
+   ],
+   "brand_cn": "利民",
+   "type": "air",
+   "type_cn": "矮塔风冷",
+   "height_mm": 108,
+   "dimension_mm": "120×94×108mm",
+   "heatpipe": "6×6mm 回流焊",
+   "dissipation": 180,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 28,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "A",
+   "perf_score": 76,
+   "release_year": 2022,
+   "price_tier": "中",
+   "note": "✅ 108mm 矮塔六热管 180W 解热，ITX/紧凑机箱神器（比下压强一档）。✅ 不挡内存。⚠️ 机箱限高 <108mm 装不下。⚠️ 单风扇高负载噪音明显。✅ 双塔性能但矮塔高度，小机箱甜点"
+  },
+  {
+   "id": "cool-noctua-nhc14s",
+   "name_cn": "猫头鹰 NH-C14S 下压塔",
+   "aliases": [
+    "猫头鹰C14S",
+    "NH-C14S",
+    "猫头鹰下压塔"
+   ],
+   "brand_cn": "猫头鹰",
+   "type": "air",
+   "type_cn": "下压塔风冷",
+   "height_mm": 139,
+   "dimension_mm": "142×140×139mm",
+   "heatpipe": "6×6mm 镀镍铜",
+   "dissipation": null,
+   "fan_count": 1,
+   "fan_mm": 140,
+   "fan_max_rpm": 1500,
+   "fan_noise_dba": 24.6,
+   "sockets": [
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": 65,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 6,
+   "tier": "A",
+   "perf_score": 80,
+   "release_year": 2014,
+   "price_tier": "高端小箱",
+   "note": "✅ 139mm 下压塔 + 140mm 大风扇，静音顶级（24.6dB），HTPC/ITX 神器。✅ 内存避让 65mm。⚠️ 官方未标解热 W，实测约 180-200W。⚠️⚠️ 扣具列表最高 LGA1851，AM4/AM5 需另购 NM-AM4 扣具。⚠️ 6 年保 + 信仰价（500+）"
+  },
+  {
+   "id": "cool-cm-ml120l",
+   "name_cn": "酷冷至尊 MasterLiquid 120L 水冷",
+   "aliases": [
+    "酷冷120水冷",
+    "ML120L",
+    "MasterLiquid 120"
+   ],
+   "brand_cn": "酷冷至尊",
+   "type": "aio",
+   "type_cn": "一体式水冷",
+   "height_mm": 0,
+   "dimension_mm": "157×120×27mm 冷排",
+   "heatpipe": "水冷（双腔体水泵）",
+   "dissipation": 150,
+   "fan_count": 1,
+   "fan_mm": 120,
+   "fan_max_rpm": 1800,
+   "fan_noise_dba": 28,
+   "sockets": [
+    "AM4",
+    "AM5",
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "LGA1851"
+   ],
+   "radiator_mm": 120,
+   "pump_rpm": 2600,
+   "memory_clearance_mm": null,
+   "rgb": true,
+   "lcd": false,
+   "warranty_year": 5,
+   "tier": "B",
+   "perf_score": 60,
+   "release_year": 2022,
+   "price_tier": "入门水冷",
+   "note": "⚠️⚠️ 120 单冷排解热仅 150W，⚠️ 压 12400F/7500F 默频够，13600K 以上别考虑。✅ 双腔体水泵低温好 + 5 年保。⚠️ 单风扇高负载噪音明显。⚠️ 27mm 薄排。✅ ITX 小机箱（限高装不了塔式）的替代方案"
+  },
+  {
+   "id": "cool-idcool-is40x",
+   "name_cn": "ID-COOLING IS-40X 下压三热管",
+   "aliases": [
+    "ID IS40X",
+    "IS-40X",
+    "ID-COOLING薄散热"
+   ],
+   "brand_cn": "ID-COOLING",
+   "type": "air",
+   "type_cn": "下压风冷",
+   "height_mm": 40,
+   "dimension_mm": "100×100×40mm",
+   "heatpipe": "3×6mm",
+   "dissipation": 95,
+   "fan_count": 1,
+   "fan_mm": 92,
+   "fan_max_rpm": 2600,
+   "fan_noise_dba": 29.5,
+   "sockets": [
+    "LGA115X",
+    "LGA1200",
+    "LGA1700",
+    "AM4"
+   ],
+   "radiator_mm": null,
+   "pump_rpm": null,
+   "memory_clearance_mm": null,
+   "rgb": false,
+   "lcd": false,
+   "warranty_year": 3,
+   "tier": "B",
+   "perf_score": 52,
+   "release_year": 2020,
+   "price_tier": "中低",
+   "note": "⚠️⚠️ 40mm 极致下压仅 1U 服务器/超薄 HTPC 可用，⚠️ 官网扣具最高 LGA1700，AM5/LGA1851 不支持。✅ 解热 95W，12100F/5600G 级亮机可用。⚠️ 92mm 小风扇 2600 转噪音尖。⚠️ 25mm 以下机箱才能装"
   }
  ]
 }

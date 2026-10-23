@@ -73,8 +73,10 @@ describe("设计服务 advice 接入（LLM 已配置）", () => {
       expect(item.catalogId).toBeTruthy();
       expect(item.sourceLevel).toBe("supported_catalog");
     }
-    expect(result.proposal?.experienceAdvice).toHaveLength(1);
-    // 持久化：重读后建议仍在
+    // 非阻塞语义（M6）：响应立即返回、advice 异步补齐——响应里先为空
+    expect(result.proposal?.experienceAdvice).toEqual([]);
+    // 后台建议落库后就地可见
+    await new Promise((resolve) => setTimeout(resolve, 50));
     const reloaded = service.getDesignResult(result.request.id);
     expect(reloaded?.proposal?.experienceAdvice).toHaveLength(1);
     expect(reloaded?.proposal?.experienceAdvice[0]?.kind).toBe("external_product_hint");
@@ -107,7 +109,11 @@ describe("设计服务 advice 接入（LLM 已配置）", () => {
     const created = await service.createDesignRequest({ rawInput: "2 万预算，剪辑和游戏" });
     const revised = await service.reviseDesign(created.request.id, { instruction: "预算压到 1.8 万" });
     expect(revised.proposal?.version).toBe(2);
-    expect(revised.proposal?.experienceAdvice).toHaveLength(1);
+    // 非阻塞语义：修订响应立即返回（advice 异步补齐）
+    expect(revised.proposal?.experienceAdvice).toEqual([]);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const reloaded = service.getDesignResult(created.request.id);
+    expect(reloaded?.proposal?.experienceAdvice).toHaveLength(1);
     expect(generateAdviceMock.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 });

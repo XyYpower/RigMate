@@ -12,10 +12,12 @@ import {
   agentRunStatusSchema,
   designProposalSchema,
   designRequestStatusSchema,
+  experienceAdviceItemSchema,
   type AgentEvent,
   type AgentRun,
   type DesignProposal,
   type DesignRequest,
+  type ExperienceAdviceItem,
   type StructuredIntent,
 } from "@/contracts/design";
 import { decorateProposalItems } from "@/infra/catalog-import/display-names";
@@ -352,4 +354,14 @@ export function markProposalsReplaced(requestId: string, exceptProposalId: strin
 
 export function markProposalAccepted(proposalId: string, buildId: string): void {
   ensureDatabase().update(designProposals).set({ status: "accepted", acceptedBuildId: buildId, updatedAt: new Date().toISOString() }).where(eq(designProposals.id, proposalId)).run();
+}
+
+/** 非阻塞建议落库（M6 异步化）：后台建议跑完后回写方案行；空数组即"无建议" */
+export function updateDesignProposalAdvice(proposalId: string, advice: ExperienceAdviceItem[]): void {
+  const parsed = experienceAdviceItemSchema.array().max(8).parse(advice);
+  ensureDatabase()
+    .update(designProposals)
+    .set({ experienceAdvice: JSON.stringify(parsed), updatedAt: new Date().toISOString() })
+    .where(eq(designProposals.id, proposalId))
+    .run();
 }

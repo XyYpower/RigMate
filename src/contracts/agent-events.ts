@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { experienceAdviceItemSchema } from "./design";
 
 /**
  * 会话事件流契约（agent-ui-design §4，P1）。
@@ -34,6 +35,7 @@ export const rigEventTypeSchema = z.enum([
   "run_completed",
   "revision_merged",
   "answer",
+  "advice",
 ]);
 export type RigEventType = z.infer<typeof rigEventTypeSchema>;
 
@@ -108,6 +110,14 @@ export const rigPayloadSchema = z.discriminatedUnion("type", [
     runId: z.string(),
     summary: z.string(),
     actions: z.array(z.string()),
+  }),
+  z.object({
+    // 非阻塞建议到达（M6 异步化）：方案已落库返回后，后台建议跑完经此事件推送。
+    // 建议不参与兼容检查/价格/接受路径；前端就地补进方案卡的建议分区。
+    type: z.literal("advice"),
+    runId: z.string(),
+    proposalId: z.string(),
+    advice: z.array(experienceAdviceItemSchema).max(8),
   }),
 ]);
 export type RigEvent = z.infer<typeof rigPayloadSchema>;

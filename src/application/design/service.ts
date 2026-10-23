@@ -32,6 +32,7 @@ import {
   updateDesignRequestStatus,
   findPreviousProposal,
   countAgentRuns,
+  updateDesignProposalAdvice,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
 import { decorateProposalItems } from "@/infra/catalog-import/display-names";
@@ -353,6 +354,42 @@ async function requestExperienceAdvice(input: {
   return result.data;
 }
 
+/**
+ * 非阻塞建议任务（M6 异步化）：后台跑 advice → 落库 → 经 advice 事件推送。
+ * 看门狗保证必然 settle；失败只留事件（正式方案与接受路径零感知）。
+ */
+function startAsyncAdvice(input: {
+  requestId: string;
+  runId: string;
+  proposal: DesignProposal;
+  intent: StructuredIntent;
+  candidates: readonly CandidateSummary[];
+  config: LlmConfig;
+  emit: (payload: RigEvent) => void;
+}): void {
+  void (async () => {
+    const advice = await requestExperienceAdvice({
+      runId: input.runId,
+      intent: input.intent,
+      proposal: input.proposal,
+      candidates: input.candidates,
+      config: input.config,
+      emit: input.emit,
+    });
+    if (advice.length === 0) return;
+    updateDesignProposalAdvice(input.proposal.id, advice);
+    input.emit({
+      type: "advice",
+      runId: input.runId,
+      proposalId: input.proposal.id,
+      advice,
+    });
+  })().catch((error) => {
+    // 后台建议的任何意外都不允许波及主流程
+    console.error("[api/design] 后台建议失败：", error);
+  });
+}
+
 export async function createDesignRequest(
   input: unknown,
   options: { onStarted?: (requestId: string) => void } = {},
@@ -601,18 +638,9 @@ export async function createDesignRequest(
   events.push(event(run.id, "validating", "started", "正在自动检查主要硬件之间的兼容关系。"));
   events.push(event(run.id, "validating", "completed", proposal.compatibility.message));
   events.push(event(run.id, "validating", "completed", "候选、价格与兼容事实由本地目录、价格证据和规则引擎核验，模型不参与事实判断。"));
-  // 混合建议层：正式方案已就绪，advice 只增补、失败即空（不改变上方任何事实事件）
-  const experienceAdvice = llmConfig
-    ? await requestExperienceAdvice({
-        runId,
-        intent,
-        proposal,
-        candidates: outcome.pool,
-        config: llmConfig,
-        emit: (payload) => emit(runId, payload),
-      })
-    : [];
-  const finalProposal: DesignProposal = { ...proposal, experienceAdvice };
+  // 混合建议层（蓝图 §5.4 非阻塞）：方案先落库返回，建议后台跑完经 advice 事件推送。
+  // 建议绝不阻塞正式方案——创建响应不再等 advice 调用（约省 11s）。
+  const finalProposal: DesignProposal = { ...proposal, experienceAdvice: [] };
   events.push(event(run.id, "completed", "completed", "方案已准备好，可以接受、调整或进入高级 DIY。"));
 
   saveDesignProposal(finalProposal);
@@ -625,6 +653,17 @@ export async function createDesignRequest(
   request.status = "ready_to_review";
   request.updatedAt = now();
   updateDesignRequestStatus(request.id, request.status);
+  if (llmConfig) {
+    startAsyncAdvice({
+      requestId,
+      runId,
+      proposal: finalProposal,
+      intent,
+      candidates: outcome.pool,
+      config: llmConfig,
+      emit: (payload) => emit(runId, payload),
+    });
+  }
   return { request: { ...request, intent, status: "ready_to_review" as const }, proposal: finalProposal, run, changes: [], versions: [finalProposal] };
 }
 
@@ -894,18 +933,8 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
     return { request, proposal: latest, run, changes: [], versions: findProposals(requestId) };
   }
   const revisionReadyMessage = `第 ${version} 版已就绪：可继续调整、接受，或进入高级 DIY。`;
-  // 混合建议层：新版本生成后同样增补 advice，失败即空（不改变版本与差异语义）
-  const experienceAdvice = llmConfig
-    ? await requestExperienceAdvice({
-        runId,
-        intent: updatedIntent,
-        proposal,
-        candidates: context.pool,
-        config: llmConfig,
-        emit: emitRig,
-      })
-    : [];
-  const finalProposal: DesignProposal = { ...proposal, experienceAdvice };
+  // 混合建议层（非阻塞）：新版本先落库返回，建议后台补齐
+  const finalProposal: DesignProposal = { ...proposal, experienceAdvice: [] };
   events.push(event(run.id, "completed", "completed", revisionReadyMessage));
   emitRig({ type: "phase", runId, phase: "answered", message: revisionReadyMessage });
 
@@ -918,6 +947,17 @@ export async function reviseDesign(requestId: string, instructionInput: unknown)
   run.completedAt = now();
   saveAgentRun(run);
   updateDesignRequestIntent(request.id, updatedIntent, "ready_to_review");
+  if (llmConfig) {
+    startAsyncAdvice({
+      requestId,
+      runId,
+      proposal: finalProposal,
+      intent: updatedIntent,
+      candidates: context.pool,
+      config: llmConfig,
+      emit: emitRig,
+    });
+  }
   return {
     request: { ...request, intent: updatedIntent, status: "ready_to_review" as const },
     proposal: finalProposal,

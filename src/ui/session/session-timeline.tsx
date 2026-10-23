@@ -231,6 +231,12 @@ function renderItem(
       );
     case "question":
       return <p className="session-question-text">{item.message}</p>;
+    case "advice":
+      return (
+        <p className="session-advice-note">
+          经验建议 {item.count} 条已补充到方案卡（不参与兼容检查与价格）。
+        </p>
+      );
     case "answer":
       // 结构化回答卡（M6 信任层）：内容全部来自方案事实（AnswerDraft），按行渲染
       return (

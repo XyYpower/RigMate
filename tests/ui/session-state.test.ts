@@ -172,3 +172,32 @@ describe("answer 富事件（M6 信任层）", () => {
     expect(state.question).toBeNull();
   });
 });
+
+describe("advice 非阻塞到达（M6 异步化）", () => {
+  it("advice 事件就地补进对应方案的建议分区，并出时间线条目", () => {
+    // 快照先带一个无建议的方案
+    let state = initialSessionState();
+    state = hydrateSnapshot(state, {
+      result: {
+        request: { id: "req-9", rawInput: "2 万", intent: { budgetCents: 2000000, useCases: ["游戏"], appearance: [], existingParts: [], constraints: [], region: "中国大陆" }, status: "ready_to_review", createdAt: "t", updatedAt: "t" },
+        proposal: null,
+        run: { id: "run-0", requestId: "req-9", proposalId: "prop-1", status: "completed", createdAt: "t", completedAt: "t", events: [] },
+        changes: [],
+        versions: [{
+          id: "prop-1", requestId: "req-9", version: 1, status: "ready", title: "方案", summary: "s",
+          budgetCents: 2000000, estimatedLowCents: 1, estimatedHighCents: 2,
+          items: [{ category: "gpu", label: "4070S", spec: {}, sourceLevel: "supported_catalog", qualityStatus: "supported", fieldQuality: {}, evidenceSourceIds: [], priceEstimateLowCents: null, priceEstimateHighCents: null, priceBasis: "unknown", rationale: "r", confirmationRequired: false }],
+          fitNotes: [], tradeoffs: [], unknowns: [], experienceAdvice: [],
+          compatibility: { status: "ok", message: "m", blockCount: 0, warnCount: 0, unknownCount: 0, passCount: 0 },
+          createdAt: "t", updatedAt: "t",
+        }],
+      },
+      request: null,
+      events: [],
+    });
+    state = applyEnvelope(state, envelope(20, { type: "advice", runId: "run-9", proposalId: "prop-1", advice: [{ kind: "experience_advice", category: "gpu", title: "显存取舍", detail: "d", requiresVerification: false }] }));
+    const updated = state.proposals.find((p) => p.id === "prop-1");
+    expect(updated?.experienceAdvice).toHaveLength(1);
+    expect(state.timeline.at(-1)?.kind).toBe("advice");
+  });
+});

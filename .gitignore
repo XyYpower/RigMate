@@ -64,3 +64,6 @@ next-env.d.ts
 
 # ZCode 会话本地状态
 .zcode/
+
+# 外部工具临时产物（PPT 构建等）
+.tmp-ppt/
