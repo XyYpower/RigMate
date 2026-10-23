@@ -591,74 +591,9 @@
 .diy-bottombar-counts .warn { color: var(--wb-warn); }
 .diy-bottombar-counts .pass { color: var(--wb-pass); }
 .diy-bottombar-actions { margin-left: auto; }
-.home-dot {
-  display: inline-block;
-  width: 0.18em; height: 0.18em;
-  margin-left: 0.12em;
-  border-radius: 50%;
-  background: var(--wb-accent);
-}
 
-/* 次级入口卡 */
-.home-entry-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 680px; margin-top: 18px; }
-.home-entry {
-  display: flex; flex-direction: column; gap: 3px;
-  padding: 14px 18px;
-  background: var(--wb-surface);
-  border: 1px solid var(--wb-hairline);
-  border-radius: var(--wb-radius-panel);
-  box-shadow: var(--wb-shadow-panel);
-  text-decoration: none;
-  transition: border-color var(--wb-fast), transform var(--wb-fast);
-}
-.home-entry:hover { border-color: var(--wb-accent); }
-.home-entry strong { color: var(--wb-ink); font-size: 13.5px; }
-.home-entry span { color: var(--wb-ink-faint); font-size: 11.5px; }
-
-@media (max-width: 720px) {
-  .home-entry-cards { grid-template-columns: 1fr; }
-}
-
-/* ============================================================================
-   决策台首页（2026-10-08 UI 重置）：标题 → 八类空槽位 → 目标输入 → 预算 → 主按钮
-   右栏不再放"怎么工作"解释卡；最近方案保留为次级入口。
-   ========================================================================== */
-
-.home-rail { margin-top: 26px; }
-.home-rail-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.home-rail-head h2 { margin: 0; color: var(--wb-ink); font-size: 15px; font-weight: 700; }
-.home-rail-hint { color: var(--wb-ink-faint); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+/* 会话加载态步进条的容器样式（消费方：design-workbench 加载态） */
 .agent-progress { margin: 12px 0 0; padding: 10px 12px; border-radius: var(--wb-radius-control); background: var(--wb-slate-soft); color: var(--wb-slate); font-size: 12.5px; }
-
-.home-ruler-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 12px;
-  margin-top: 12px;
-}
-.home-caps {
-  list-style: none;
-  margin: 0;
-  padding: 6px 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.home-caps li { padding: 9px 0; border-bottom: 1px solid var(--wb-hairline); }
-.home-caps li:last-child { border-bottom: 0; }
-.home-caps strong { color: var(--wb-ink); font-size: 12.5px; font-weight: 700; }
-.home-caps p { margin: 2px 0 0; color: var(--wb-ink-muted); font-size: 11.5px; line-height: 1.55; }
-
-@media (max-width: 720px) {
-  .home-rail { margin-top: 20px; }
-  .home-ruler-row { grid-template-columns: minmax(0, 1fr); }
-}
 
 /* ============================================================================
    资料页割裂感根治（用户反馈"为了对齐而对齐"）：

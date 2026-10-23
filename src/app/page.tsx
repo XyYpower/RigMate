@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 
 type BuildSummary = {
   id: string;
@@ -100,7 +101,7 @@ export default function Home() {
           <div className="home-composer-toolbar">
             <span className="home-composer-hint">回车或点击开始，缺的信息我会追问</span>
             <button className="button primary home-submit" type="submit" disabled={busy || goal.trim().length < 3}>
-              {busy ? "正在开始…" : "开始搭配"}<span aria-hidden>→</span>
+              {busy ? "正在开始…" : "开始搭配"}<ArrowRight size={14} aria-hidden />
             </button>
           </div>
           {message && <p className="form-feedback" role="status">{message}</p>}
@@ -116,7 +117,7 @@ export default function Home() {
                 onClick={() => setGoal(suggestion.full)}
                 disabled={busy}
               >
-                <span aria-hidden>›</span>
+                <ChevronRight size={12} aria-hidden />
                 {suggestion.tag}
               </button>
             ))}
@@ -142,7 +143,7 @@ export default function Home() {
                 </li>
               ))}
               <li className="home-recent-more">
-                <Link href="/design">全部方案会话 <span aria-hidden>→</span></Link>
+                <Link href="/design">全部方案会话 <ChevronRight size={12} aria-hidden /></Link>
               </li>
             </ul>
           </section>
