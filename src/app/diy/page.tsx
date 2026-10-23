@@ -4,7 +4,7 @@ import { ArrowUpRight, RefreshCw } from "lucide-react";
 import { CATEGORY_META, CATEGORY_ORDER } from "@/ui/category-form";
 import { SizeCompare } from "@/ui/workbench/size-compare";
 import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
-import { EMPTY_DRAFT, formatTime } from "./types";
+import { formatTime } from "./types";
 import { useDiyProjects } from "./use-diy-projects";
 import { ProjectBar } from "./project-bar";
 import { BudgetSummarySection } from "./budget-summary-section";
@@ -19,7 +19,7 @@ import { DiagnosticsAside } from "./diagnostics-aside";
  */
 export default function Home() {
   const diy = useDiyProjects();
-  const { build, findings, resultMeta, busy, itemCategory, setItemCategory, setDrafts, editingItemId, counts } = diy;
+  const { build, findings, resultMeta, busy, itemCategory, setItemCategory, counts } = diy;
   const summary = build?.budgetSummary;
 
   return (
