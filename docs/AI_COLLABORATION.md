@@ -46,6 +46,7 @@
 | 工作线 | 独立文档 | 主要改动路径 | 状态（2026-10-13） |
 |---|---|---|---|
 | **A：Agent UI / LLM 运行时** | 见 §0 交接快照 | `src/application/agent/`、`src/app/api/design/`、`src/ui/session/`、`src/app/globals.css`、`src/app/page.tsx` | 混合建议层已落地（v4.27）；余 Phase 2 召回 + 文本流式 |
+| **A-UI：UI 产品化 v3（ZCode 架构移植，浅色）** | 根目录 `DESIGN.md`（v2，2026-10-23 起） | `DESIGN.md`、`src/ui/theme.css`、`src/app/globals.css`、`src/ui/workbench/{brand-sidebar,workspace-header,workbench-shell}.tsx`、`src/ui/workbench/workbench.css`、`src/app/page.tsx`、`src/app/layout.tsx`、`src/app/{icon.svg,favicon.ico}`、`src/ui/session/{session-timeline.tsx,proposal-card.tsx,session.css}`、`package.json`（+lucide-react、−tailwindcss） | 2026-10-23 开工；第一阶段=地基+门面（外壳/首页/会话时间线），第二阶段再铺其余页面。与 §0 ADR"否决整体套用 ZCode"不冲突：只借 token 架构，不移植代码、不做深色 |
 | **B：中文展示层 + 大陆目录采集** | [CN_CATALOG_AND_LOCALIZATION.md](./CN_CATALOG_AND_LOCALIZATION.md) | `src/domain/catalog/localization.ts`、`src/infra/catalog-import/cn/**`、`src/infra/catalog-import/display-names.ts`、`scripts/collect-cn-catalog.mts`、`scripts/repair-cn-names.ts`、`scripts/localization-report.ts`、`scripts/catalog-duplicate-report.ts`、`tests/catalog/**` | 已完成管道，见 B 文档 §4 结论 |
 
 **分工边界（避免冲突）**

@@ -4,6 +4,7 @@
 > 视觉事实源：`docs/design/reference/plan-workbench.png`（方案工作台）、`docs/design/reference/diy-workbench.png`（高级 DIY）。
 > 方法借鉴：[VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md)（MIT）；产品决策与红线见 `docs/superpowers/specs/2026-09-28-rigmate-ui-redesign.md`。
 > 2026-09-28 定稿：替代旧"技术规格单"视觉体系（boards/ 已删除）。
+> 2026-10-23 v2 增补：借鉴 ZCode（zai-org/ZCode）DESIGN.md 的**设计系统架构**——字号刻度、表面分层、输入三态、圆角衰减、图标体系、工具摘要行模式。仅借架构不移植代码；亮色基底与仪器橙不变（与 ADR §3.6"否决整体套用 ZCode"不冲突）。
 
 ## 1. Overview
 
@@ -19,11 +20,18 @@ RigMate 是 PC 装机与升级决策的 Agent 工作台。视觉基调：**明�
 - **Accent Soft** `#fdeee5`：当前导航项底色、推荐徽章底、决策条背景（约 8% 透明橙的实色近似）。
 
 ### Surface
-- **Canvas** `#f4f5f6`：页面画布。浅灰白，刻意不纯白，让白面板浮起。
-- **Surface（面板）** `#ffffff`：三栏中所有内容面板、顶栏、卡片。
-- **Surface Subtle** `#f8f9fa`：面板内的表格斑马纹、代码/摘要底、子导航悬停底。
-- **Hairline** `#e5e7eb`：面板边框、行分隔线。1px，统一全站。
-- **Hairline Strong** `#d1d5db`：输入框边框、可点击分隔。
+表面按层级各司其职，**禁止跨层使用、禁止 ad hoc 透明度叠色**（如 `rgba(ink,0.6)` 这类临时值）：
+- **Canvas** `#f4f5f6`（`--wb-canvas`）：页面画布。浅灰白，刻意不纯白，让白面板浮起。
+- **Surface（面板）** `#ffffff`（`--wb-surface`）：三栏中所有内容面板、顶栏、卡片。
+- **Surface Subtle / Hover** `#f8f9fa`（`--wb-surface-subtle` = `--wb-hover`）：面板内的表格斑马纹、代码/摘要底、子导航与列表行**悬停底**。
+- **Hairline** `#e5e7eb`（`--wb-hairline`）：面板边框、行分隔线。1px，统一全站。
+- **Hairline Strong** `#d1d5db`（`--wb-hairline-strong`）：输入框边框、可点击分隔。
+
+### 输入三态（ZCode 式"冷静不发光"）
+- 默认：白底 + `hairline-strong` 边框。
+- hover：边框加深一档（`#9aa3af`，`--wb-hairline-input-hover`），底色不变。
+- focus：边框转仪器橙，底色微升一档（`#fffdfa`，`--wb-input-focused`）；**不加发光 ring、不加大于 2px 的 outline**。
+- 同一时刻只允许一个焦点强调；焦点样式全站统一，禁止各页面自造。
 
 ### Text
 - **Ink** `#111827`：标题、正文主色（深蓝灰黑）。
@@ -47,11 +55,20 @@ RigMate 是 PC 装机与升级决策的 Agent 工作台。视觉基调：**明�
 ## 3. Typography
 
 - **字体**：中文系统无衬线栈 `"Segoe UI", "Microsoft YaHei", system-ui, sans-serif`；数字/价格/型号用 `ui-monospace` 等宽 + `tabular-nums`。
-- **层级**（桌面）：
-  - 页面标题（方案名）：22-24px / 700
-  - 区块标题（配置清单、兼容性诊断）：16px / 700，左侧配 3px 橙色竖条
-  - 正文/表格：13-14px / 400-500
-  - 辅助说明、表头：11-12px / 500-600
+- **字号刻度（v2，绑单变量 `--ui-font-size`，默认 14px）**：接口文字一律用刻度，**禁止散装 px**（11.5px、12.5px、13.5px 这类半档一律归档）：
+
+  | Token | 公式 | 默认值 | 角色 |
+  |---|---|---|---|
+  | `--wb-text-xl` | base + 4px | 18px | 一级阅读标题（方案名、报告大标题） |
+  | `--wb-text-lg` | base + 2px | 16px | 区块标题（配置清单、兼容性诊断），左侧配 3px 橙色竖条 |
+  | `--wb-text-base` | `--ui-font-size` | 14px | 正文、表格、按钮、工作区标题 |
+  | `--wb-text-caption` | base − 1px | 13px | 紧凑辅助文案（比正文稳定低一档的场合） |
+  | `--wb-text-sm` | base − 2px | 12px | 次要说明、表头、时间戳、摘要行 |
+  | `--wb-text-xs` | base − 4px | 10px | 徽章、计数器、快捷键、最弱元数据 |
+
+  - 层级靠**字重**分级（700/600/500/400），不靠改字号；改界面字号只许动 `--ui-font-size` 一个变量。
+  - **白名单例外（内容级标题，不随刻度缩放）**：页面标题 22px/700（`.titleline h2`）、首页大标题 26px/700（`.home-entry h1`）。除这两处外不得出现刻度外的接口字号。
+  - 旧散值归档规则：11 / 11.5px → 按角色入 sm 或 xs；12.5px → sm；13.5px → base；15px → lg。
 - 中文正文行高 1.6；表格单元格内不换行截断时用 ellipsis + title。
 
 ## 4. Layout
@@ -71,11 +88,17 @@ RigMate 是 PC 装机与升级决策的 Agent 工作台。视觉基调：**明�
 
 ## 5. Shapes & Elevation
 
-- **圆角**：面板 12px；按钮/输入 8px；徽章/状态点 999px（pill）。
-- **阴影**：默认无；悬浮面板 `0 1px 2px rgba(16,24,40,0.05)`；主按钮/时间线节点不用阴影。
+- **圆角按嵌套深度衰减（v2）**：第一层可见圆角容器 12px（面板 `--wb-radius-panel`）→ 内嵌控件 8px（`--wb-radius-control`）→ 再嵌套一层（菜单项、内层 chip）6px（`--wb-radius-nested`）→ 胶囊/圆点 999px。16px 以上圆角**白名单制**：仅首页 composer 外壳可用；"到处大圆角"是违例。
+- **阴影**：默认无；悬浮面板 `0 1px 2px rgba(16,24,40,0.05)`；浮层（下拉/tooltip，如引入）用 `--wb-shadow-overlay`，Toast 独享最强档。**背景分层比阴影强度更重要**——层级优先用 canvas/surface/subtle 三层底色表达。
 - **发丝线优先**：结构关系用 1px `#e5e7eb` 表达，阴影只给"浮在画布上"的面板。
 
 ## 6. Components
+
+### 图标体系（v2，lucide-react）
+- 图标一律用 `lucide-react` 组件，尺寸基线 **16px**（紧凑场合 14px，图标按钮 18px 封顶），`strokeWidth` 默认 2、次级场景可 1.75。
+- **禁止用 unicode 字符当图标**（`→ ↻ ⚠ ✓ ✕ › ▸` 这类文本符号）：跨平台字形不一、有 emoji 化风险、无法继承语义色。装饰用图标必须 `aria-hidden`；承载语义的图标必须配可访问文本。
+- 图标颜色只许用语义 token（`--wb-ink-muted` / `--wb-accent` / 语义色），禁止硬编码 hex。
+- 常用映射：提交/前进 `ArrowRight`、次级前进 `ChevronRight`、展开 `ChevronDown`、通过 `Check`、阻断/警示 `AlertTriangle`、关闭/清除 `X`、重试 `RefreshCw`、检索 `Search`。
 
 ### BrandSidebar（左导航）
 Logo（22px 墨底方块 + "R"）+ "RigMate" + 副标题"装机决策台"。导航为**三个主入口 + 场景入口**结构：主入口 **开始配置、我的方案、硬件资料**（`/`、`/projects`、`/hardware`，其中 `/design/[id]` 方案页归属"我的方案"active）；场景入口 **高级 DIY、证据台账**（`/diy`、`/evidence`）在主导航之下以次级分组呈现，任何已有路径均可到达。当前项：浅橙底 `--wb-accent-soft`、橙图标、右侧 3px 短竖线；非当前项灰字，悬停 Ink。禁止用 CSS 隐藏重复链接；导航 aria-label 与链接名称唯一。
@@ -94,6 +117,9 @@ Logo（22px 墨底方块 + "R"）+ "RigMate" + 副标题"装机决策台"。导�
 
 ### AgentProgressCard（Agent 处理进度）
 垂直时间线：完成=橙色实心圆+对勾、进行中=橙色描边空心、等待=灰描边。每步：标题 + 1-2 行说明 + HH:mm 时间戳。数据来自 `AgentEvent`，**不伪造分步动画**；同步生成只显示"已完成"态。
+
+### 会话工具摘要行（session tool row，v2 借鉴 ZCode ToolSummaryRow）
+时间线里的工具调用**不做成卡片**，做成一行可展开摘要行：`状态点 + 类别词 + 摘要（--wb-text-sm，最弱墨色 ink-faint）+ 旋转 chevron`，整行点击 `<details>` 展开。摘要文字刻意弱化，避免过程噪音喧宾夺主。运行中：类别词用**文字扫光**（背景位移的柔和高光）表达，不用旋转 spinner；失败：状态词挂虚线下划线，`title` 提示失败原因。状态点保持形状+文字+颜色三通道（点形=就绪/菱形=待确认/空心=检索中），不依赖单一通道。
 
 ### BuildPartsTable（配置清单表）
 固定列：部件（图标+类别）、型号、数量、参考价格、详情箭头。行高 44px、发丝线分行、悬停 `--wb-surface-subtle`。价格右对齐等宽。底部合计行加粗。
@@ -134,6 +160,7 @@ Logo（22px 墨底方块 + "R"）+ "RigMate" + 副标题"装机决策台"。导�
 
 - 时长两档：**150ms**（hover/按下/颜色）与 **250ms**（面板展开、时间线节点点亮）。
 - 步进指示呼吸动画 1.2s 交错；仅用于进行中状态。
+- **文字扫光（v2）**：运行中状态（工具行类别词、"正在生成…"）用 1.8s 循环的柔和高光扫过文字；这是唯一的"进行中"文字动效，替代一切旋转 spinner。
 - 全部动效尊重 `prefers-reduced-motion`（直接呈现终态）。
 
 ## 9. Voice（文案语气）
