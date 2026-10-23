@@ -6,6 +6,8 @@ const BRAND_TITLE = "RigMate · PC 装机决策工作台";
 const BRAND_DESCRIPTION = "一句话描述装机目标，自动检索已核目录、跑兼容规则，给出可核验的装机方案。";
 
 export const metadata: Metadata = {
+  // 内部 Alpha（见 docs/DEPLOYMENT.md）：单实例 localhost 访问，无公网域名
+  metadataBase: new URL("http://localhost:3000"),
   title: BRAND_TITLE,
   description: BRAND_DESCRIPTION,
   applicationName: "RigMate",
@@ -17,7 +19,7 @@ export const metadata: Metadata = {
     siteName: "RigMate",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: BRAND_TITLE,
     description: BRAND_DESCRIPTION,
   },
