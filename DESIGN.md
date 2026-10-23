@@ -67,7 +67,7 @@ RigMate 是 PC 装机与升级决策的 Agent 工作台。视觉基调：**明�
   | `--wb-text-xs` | base − 4px | 10px | 徽章、计数器、快捷键、最弱元数据 |
 
   - 层级靠**字重**分级（700/600/500/400），不靠改字号；改界面字号只许动 `--ui-font-size` 一个变量。
-  - **白名单例外（内容级标题，不随刻度缩放）**：页面标题 22px/700（`.titleline h2`）、首页大标题 26px/700（`.home-entry h1`）。除这两处外不得出现刻度外的接口字号。
+  - **白名单例外（内容级标题与 KPI 数字，不随刻度缩放）**：页面标题 22px/700（`.titleline h2`、`.route-loading h1`、`.hw-head h1`）、首页大标题 26px/700（`.home-entry h1`）、报告标题 21px（`.report-title`）、KPI 数字（`.hw-stat-num` 26px、`.build-summary-price strong` 30px）。除白名单外不得出现刻度外的接口字号。
   - 旧散值归档规则：11 / 11.5px → 按角色入 sm 或 xs；12.5px → sm；13.5px → base；15px → lg。
 - 中文正文行高 1.6；表格单元格内不换行截断时用 ellipsis + title。
 
