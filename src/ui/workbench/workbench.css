@@ -1,7 +1,7 @@
 /* ============================================================================
    三栏工作台壳（Task 2，DESIGN.md §4/§6）
    左 220 导航 / 主区自适应 / 右 340 上下文；<900px 单列。
-   消费 --wb-* tokens（theme.css）；旧 --rm-* 别名仅作过渡。
+   消费 --wb-* tokens（theme.css）；接口字号一律走 --wb-text-* 刻度。
    ========================================================================== */
 
 .workbench-shell {
@@ -29,13 +29,13 @@
 .brand-block { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
 .brand-logo {
   display: grid; place-items: center;
-  width: 26px; height: 26px; border-radius: 7px;
+  width: 26px; height: 26px; border-radius: var(--wb-radius-control);
   background: var(--wb-accent); color: #fff;
-  font: 800 14px/1 ui-monospace, Consolas, monospace;
+  font: 800 14px/1 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
 }
 .brand-copy { display: flex; flex-direction: column; min-width: 0; }
-.brand-copy strong { font-size: 15px; font-weight: 800; color: var(--wb-ink); letter-spacing: -0.01em; }
-.brand-copy small { color: var(--wb-ink-faint); font-size: 10.5px; margin-top: 1px; }
+.brand-copy strong { font-size: var(--wb-text-lg); font-weight: 800; color: var(--wb-ink); letter-spacing: -0.01em; }
+.brand-copy small { color: var(--wb-ink-faint); font-size: var(--wb-text-xs); margin-top: 1px; }
 
 .brand-nav { display: flex; flex-direction: column; gap: 2px; }
 .brand-nav-item {
@@ -43,7 +43,7 @@
   display: flex; align-items: center; gap: 10px;
   height: 40px; padding: 0 12px;
   border-radius: var(--wb-radius-control);
-  color: var(--wb-ink-muted); font-size: 13.5px; font-weight: 600;
+  color: var(--wb-ink-muted); font-size: var(--wb-text-base); font-weight: 600;
   text-decoration: none;
   transition: background var(--wb-fast), color var(--wb-fast);
 }
@@ -64,12 +64,12 @@
 .brand-nav-scene { margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--wb-hairline); }
 .brand-nav-caption {
   margin: 0 0 4px; padding: 0 12px;
-  color: var(--wb-ink-faint); font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.08em;
 }
-.brand-nav-scene .brand-nav-item { height: 36px; font-size: 12.5px; }
+.brand-nav-scene .brand-nav-item { height: 36px; font-size: var(--wb-text-sm); }
 .brand-footnote {
   margin: auto 8px 0;
-  color: var(--wb-ink-faint); font-size: 11px; line-height: 1.6;
+  color: var(--wb-ink-faint); font-size: var(--wb-text-sm); line-height: 1.6;
 }
 
 /* ---- 主区容器 ---- */
@@ -85,10 +85,10 @@
 }
 .workbench-header-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .workbench-header-title h1 {
-  margin: 0; font-size: 17px; font-weight: 700; color: var(--wb-ink);
+  margin: 0; font-size: var(--wb-text-lg); font-weight: 700; color: var(--wb-ink);
   letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.workbench-header-title p { margin: 0; color: var(--wb-ink-faint); font-size: 12px; white-space: nowrap; }
+.workbench-header-title p { margin: 0; color: var(--wb-ink-faint); font-size: var(--wb-text-sm); white-space: nowrap; }
 .workbench-header-summary { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 .workbench-header-summary:empty { display: none; }
 .workbench-header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
@@ -99,7 +99,7 @@
   padding-bottom: 8px;
   border-bottom: 1px solid var(--wb-hairline);
   color: var(--wb-ink-muted);
-  font-size: 13px;
+  font-size: var(--wb-text-caption);
   font-weight: 700;
 }
 
@@ -107,7 +107,7 @@
 .wb-status-badge {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 3px 10px; border-radius: 999px;
-  font-size: 12px; font-weight: 600; white-space: nowrap;
+  font-size: var(--wb-text-sm); font-weight: 600; white-space: nowrap;
 }
 .wb-status-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .wb-status-ready { color: var(--wb-pass); background: var(--wb-pass-soft); }
@@ -153,7 +153,7 @@
   }
   .brand-nav, .brand-nav-scene { flex-direction: row; flex-wrap: wrap; gap: 4px 6px; }
   .brand-nav-scene { margin-top: 0; padding-top: 0; border-top: 0; padding-left: 8px; }
-  .brand-nav-scene .brand-nav-item { height: 34px; padding: 0 10px; font-size: 12px; }
+  .brand-nav-scene .brand-nav-item { height: 34px; padding: 0 10px; font-size: var(--wb-text-sm); }
   .brand-nav-caption { display: none; }
   .brand-nav-item { height: 36px; padding: 0 10px; white-space: nowrap; }
   .brand-footnote { display: none; }

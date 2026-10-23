@@ -101,7 +101,7 @@ RigMate 是 PC 装机与升级决策的 Agent 工作台。视觉基调：**明�
 - 常用映射：提交/前进 `ArrowRight`、次级前进 `ChevronRight`、展开 `ChevronDown`、通过 `Check`、阻断/警示 `AlertTriangle`、关闭/清除 `X`、重试 `RefreshCw`、检索 `Search`。
 
 ### BrandSidebar（左导航）
-Logo（22px 墨底方块 + "R"）+ "RigMate" + 副标题"装机决策台"。导航为**三个主入口 + 场景入口**结构：主入口 **开始配置、我的方案、硬件资料**（`/`、`/projects`、`/hardware`，其中 `/design/[id]` 方案页归属"我的方案"active）；场景入口 **高级 DIY、证据台账**（`/diy`、`/evidence`）在主导航之下以次级分组呈现，任何已有路径均可到达。当前项：浅橙底 `--wb-accent-soft`、橙图标、右侧 3px 短竖线；非当前项灰字，悬停 Ink。禁止用 CSS 隐藏重复链接；导航 aria-label 与链接名称唯一。
+Logo（26px 橙底圆角方块 + 白 "R"，与 icon.svg 同源）+ "RigMate" + 副标题"PC 装机决策工作台"（与 metadata 品牌名一致）。导航图标用 lucide（16px，strokeWidth 1.75）。导航为**四个主入口 + 场景入口**结构：主入口 **开始配置、方案会话、我的方案、硬件资料**（`/`、`/design`、`/projects`、`/hardware`，其中 `/design/[id]` 方案页归属"方案会话"active）；场景入口 **高级 DIY、证据台账、运行诊断**（`/diy`、`/evidence`、`/diagnostics`）在主导航之下以次级分组呈现，任何已有路径均可到达。当前项：浅橙底 `--wb-accent-soft`、橙图标、右侧 3px 短竖线；非当前项灰字，悬停 Ink。禁止用 CSS 隐藏重复链接；导航 aria-label 与链接名称唯一。
 
 ### AssemblyRail（装配轨道）
 八类硬件（处理器/主板/显卡/内存/存储/电源/散热器/机箱）各占一个槽位，桌面横向排列，窄屏在组件内部横向滚动（**不得让页面 body 横向滚动**）。每个槽位必有：可访问名称（类别 + 状态）、类别文字、状态文字、详情入口。状态集：empty（等待目标）/ retrieving（检索中）/ ready（已就绪）/ attention（待确认）/ conflict（有冲突）/ unknown（资料不足），状态同时用图形、文字和颜色表达，不依赖单一通道。空槽位语义是"等待目标/待补充"，**不填虚构硬件型号或价格**。槽位可选回调 `onSelect(category)`。

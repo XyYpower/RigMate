@@ -2,95 +2,49 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-/** 导航项内联线性图标（16px，stroke 1.6，零依赖） */
-function NavIcon({ kind }: { kind: string }) {
-  const common = {
-    width: 16,
-    height: 16,
-    viewBox: "0 0 16 16",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.6,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-  switch (kind) {
-    case "start":
-      return (
-        <svg {...common}>
-          <path d="M8 2.5 13.5 7v6.5h-4V9.5h-3v4h-4V7L8 2.5Z" />
-        </svg>
-      );
-    case "plan":
-      return (
-        <svg {...common}>
-          <rect x="2.5" y="2.5" width="11" height="11" rx="2" />
-          <path d="M5.5 6h5M5.5 8.5h5M5.5 11h3" />
-        </svg>
-      );
-    case "session":
-      return (
-        <svg {...common}>
-          <path d="M13.5 8a5.5 5.5 0 0 1-8.2 4.8L2.5 13.5l.8-2.7A5.5 5.5 0 1 1 13.5 8Z" />
-        </svg>
-      );
-    case "hardware":
-      return (
-        <svg {...common}>
-          <rect x="4" y="4" width="8" height="8" rx="1.5" />
-          <path d="M6.5 1.5v2.5M9.5 1.5v2.5M6.5 12v2.5M9.5 12v2.5M1.5 6.5H4M1.5 9.5H4M12 6.5h2.5M12 9.5h2.5" />
-        </svg>
-      );
-    case "diy":
-      return (
-        <svg {...common}>
-          <circle cx="8" cy="8" r="2.5" />
-          <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" />
-        </svg>
-      );
-    default:
-      return (
-        <svg {...common}>
-          <path d="M4 2h6l2.5 2.5V14H4V2Z" />
-          <path d="M6 7.5h4M6 10h4M6 4.5h1.5" />
-        </svg>
-      );
-  }
-}
+import {
+  Activity,
+  ClipboardList,
+  Cpu,
+  FolderOpen,
+  MessageSquarePlus,
+  MessagesSquare,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 
 type NavEntry = {
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   match: (path: string) => boolean;
 };
 
 /** 四个主入口（DESIGN.md §6 BrandSidebar）：/design 为会话列表，/design/[id] 归属"方案会话" */
 const NAV_ITEMS: NavEntry[] = [
-  { href: "/", label: "开始配置", icon: "start", match: (p) => p === "/" },
-  { href: "/design", label: "方案会话", icon: "session", match: (p) => p === "/design" || p.startsWith("/design/") },
-  { href: "/projects", label: "我的方案", icon: "plan", match: (p) => p === "/projects" },
-  { href: "/hardware", label: "硬件资料", icon: "hardware", match: (p) => p.startsWith("/hardware") },
+  { href: "/", label: "开始配置", icon: MessageSquarePlus, match: (p) => p === "/" },
+  { href: "/design", label: "方案会话", icon: MessagesSquare, match: (p) => p === "/design" || p.startsWith("/design/") },
+  { href: "/projects", label: "我的方案", icon: FolderOpen, match: (p) => p === "/projects" },
+  { href: "/hardware", label: "硬件资料", icon: Cpu, match: (p) => p.startsWith("/hardware") },
 ];
 
 /** 场景入口：高级流程与数据台账，从任何页面都可到达 */
 const SCENE_ITEMS: NavEntry[] = [
-  { href: "/diy", label: "高级 DIY", icon: "diy", match: (p) => p.startsWith("/diy") || p.startsWith("/builds/") },
-  { href: "/evidence", label: "证据台账", icon: "evidence", match: (p) => p.startsWith("/evidence") },
-  { href: "/diagnostics", label: "运行诊断", icon: "evidence", match: (p) => p.startsWith("/diagnostics") },
+  { href: "/diy", label: "高级 DIY", icon: Wrench, match: (p) => p.startsWith("/diy") || p.startsWith("/builds/") },
+  { href: "/evidence", label: "证据台账", icon: ClipboardList, match: (p) => p.startsWith("/evidence") },
+  { href: "/diagnostics", label: "运行诊断", icon: Activity, match: (p) => p.startsWith("/diagnostics") },
 ];
 
 function NavLink({ item, pathname }: { item: NavEntry; pathname: string }) {
   const active = item.match(pathname);
+  const Icon = item.icon;
   return (
     <Link
       href={item.href}
       className={`brand-nav-item${active ? " active" : ""}`}
       aria-current={active ? "page" : undefined}
     >
-      <NavIcon kind={item.icon} />
+      <Icon size={16} strokeWidth={1.75} aria-hidden />
       <span>{item.label}</span>
     </Link>
   );
@@ -107,7 +61,7 @@ export function BrandSidebar() {
         </span>
         <span className="brand-copy">
           <strong>RigMate</strong>
-          <small>装机决策台</small>
+          <small>PC 装机决策工作台</small>
         </span>
       </div>
       <nav className="brand-nav" aria-label="主导航">
