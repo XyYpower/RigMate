@@ -11,7 +11,7 @@
   flex-direction: column;
   gap: 14px;
 }
-.session-page h1 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
+.session-page h1 { margin: 0; font-size: var(--wb-text-xl); letter-spacing: -0.02em; }
 .session-loading { color: var(--wb-ink-muted); padding: 40px 0; text-align: center; }
 
 /* ---------- 报头 ---------- */
@@ -21,7 +21,7 @@
 .session-header-main { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .session-header-main h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session-run-status {
-  flex: none; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  flex: none; font-size: var(--wb-text-xs); font-weight: 700; padding: 2px 8px; border-radius: 999px;
   background: var(--wb-unknown-soft); color: var(--wb-ink-muted);
 }
 .session-run-status.running { background: var(--wb-accent-soft); color: var(--wb-accent); }
@@ -36,7 +36,7 @@
   padding: 3px 0; align-items: start;
 }
 .session-item-time {
-  font-size: 10px; color: var(--wb-ink-faint); text-align: right;
+  font-size: var(--wb-text-xs); color: var(--wb-ink-faint); text-align: right;
   padding-top: 3px; font-variant-numeric: tabular-nums;
 }
 .session-item-mark {
@@ -54,59 +54,90 @@
 }
 
 .session-item-phase .session-item-mark { background: var(--wb-alu); }
-.session-phase-text { margin: 0; color: var(--wb-ink-muted); font-size: 12px; }
+.session-phase-text { margin: 0; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); }
 .session-phase-label {
   display: inline-block; font-weight: 700; color: var(--wb-ink);
-  margin-right: 7px; font-size: 12px;
+  margin-right: 7px; font-size: var(--wb-text-sm);
 }
 
 .session-item-running .session-item-mark { background: var(--wb-accent); animation: session-pulse 1.2s ease-in-out infinite; }
-.session-running-hint { color: var(--wb-accent); font-size: 12px; font-weight: 600; }
+.session-running-hint { font-size: var(--wb-text-sm); font-weight: 600; color: transparent;
+  background: linear-gradient(90deg, var(--wb-accent) 0%, var(--wb-accent) 40%, var(--wb-ink) 50%, var(--wb-accent) 60%, var(--wb-accent) 100%);
+  background-size: 200% 100%;
+  background-clip: text; -webkit-background-clip: text;
+  animation: session-sweep 1.8s linear infinite;
+}
 @keyframes session-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+@keyframes session-sweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .session-running-hint { background: none; color: var(--wb-accent); }
+}
 
 .session-run-divider {
-  margin: 4px 0 2px; font-size: 11px; font-weight: 700; color: var(--wb-ink-faint);
+  margin: 4px 0 2px; font-size: var(--wb-text-xs); font-weight: 700; color: var(--wb-ink-faint);
   border-top: 1px dashed var(--wb-hairline); padding-top: 8px;
 }
 .session-item:first-child .session-run-divider { border-top: 0; padding-top: 0; }
 
-/* ---------- 工具块 ---------- */
+/* ---------- 工具块（DESIGN.md §6 会话工具摘要行）：闭合=裸摘要行，展开=轻容器 ---------- */
 .session-item-tool .session-item-mark { background: var(--wb-slate); }
-.session-tool { border: 1px solid var(--wb-hairline); border-radius: 8px; background: var(--wb-surface); }
+.session-tool { border: 1px solid transparent; border-radius: var(--wb-radius-control); }
+.session-tool[open] { border-color: var(--wb-hairline); background: var(--wb-surface); }
 .session-tool summary {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 10px; cursor: pointer; list-style: none; font-size: 12px;
-  border-radius: 8px; min-height: 28px;
+  padding: 5px 10px; cursor: pointer; list-style: none; font-size: var(--wb-text-sm);
+  border-radius: var(--wb-radius-nested); min-height: 28px;
 }
 .session-tool summary::-webkit-details-marker { display: none; }
-.session-tool summary:hover { background: var(--wb-surface-subtle); }
+.session-tool summary:hover { background: var(--wb-hover); }
 .session-tool-state { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--wb-unknown); }
 .session-tool.state-running .session-tool-state { background: var(--wb-accent); animation: session-pulse 1.2s ease-in-out infinite; }
 .session-tool.state-done .session-tool-state { background: var(--wb-pass); }
 .session-tool.state-error .session-tool-state { background: var(--wb-block); }
-.session-tool-label { flex: none; font-weight: 700; }
-.session-tool-summary {
-  color: var(--wb-ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.session-tool-label { flex: none; font-weight: 600; color: var(--wb-ink); }
+/* 运行中：类别词文字扫光（DESIGN.md §8），不用旋转 spinner */
+.session-tool.state-running .session-tool-label {
+  background: linear-gradient(90deg, var(--wb-ink) 0%, var(--wb-ink) 40%, var(--wb-accent) 50%, var(--wb-ink) 60%, var(--wb-ink) 100%);
+  background-size: 200% 100%;
+  background-clip: text; -webkit-background-clip: text;
+  color: transparent;
+  animation: session-sweep 1.8s linear infinite;
 }
+@media (prefers-reduced-motion: reduce) {
+  .session-tool.state-running .session-tool-label { background: none; color: var(--wb-ink); }
+}
+.session-tool-summary {
+  color: var(--wb-ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 失败态：摘要转红挂虚线下划线，title 提示失败原因 */
+.session-tool.state-error .session-tool-summary {
+  color: var(--wb-block);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.session-tool-chevron { flex: none; margin-left: auto; color: var(--wb-ink-faint); transition: transform var(--wb-fast); }
+.session-tool[open] .session-tool-chevron { transform: rotate(180deg); }
 .session-tool-detail { border-top: 1px solid var(--wb-hairline); padding: 8px 10px; }
-.session-tool-detail-label { font-size: 10px; color: var(--wb-ink-faint); font-weight: 700; }
+.session-tool-detail-label { font-size: var(--wb-text-xs); color: var(--wb-ink-faint); font-weight: 700; }
 .session-tool-ids {
   list-style: none; margin: 5px 0 0; padding: 0;
   display: flex; flex-wrap: wrap; gap: 4px;
 }
 .session-tool-ids li {
-  font-size: 10px; padding: 1px 6px; border-radius: 5px;
+  font-size: var(--wb-text-xs); padding: 1px 6px; border-radius: var(--wb-radius-nested);
   background: var(--wb-surface-subtle); border: 1px solid var(--wb-hairline);
   color: var(--wb-ink-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis;
 }
+.session-tool-lines { list-style: none; margin: 5px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.session-tool-lines li { font-size: var(--wb-text-xs); color: var(--wb-ink-muted); }
 
 /* ---------- 异常 / 追问 ---------- */
 .session-item-anomaly .session-item-mark { background: var(--wb-warn); }
-.session-anomaly-text { margin: 0; color: var(--wb-warn); font-size: 12px; }
-.session-anomaly-fallback { display: block; color: var(--wb-ink-faint); font-size: 11px; }
+.session-anomaly-text { margin: 0; color: var(--wb-warn); font-size: var(--wb-text-sm); }
+.session-anomaly-fallback { display: block; color: var(--wb-ink-faint); font-size: var(--wb-text-xs); }
 
 .session-item-question .session-item-mark { background: var(--wb-warn); }
 .session-item-answer .session-item-mark { background: var(--wb-accent); }
@@ -124,51 +155,51 @@
 }
 .session-answer-label {
   display: block; margin-bottom: 6px;
-  font-size: 11px; font-weight: 700; color: var(--wb-ink-faint);
+  font-size: var(--wb-text-xs); font-weight: 700; color: var(--wb-ink-faint);
 }
 .session-answer-body p {
-  margin: 0 0 4px; font-size: 13px; line-height: 1.55; color: var(--wb-ink);
+  margin: 0 0 4px; font-size: var(--wb-text-base); line-height: 1.55; color: var(--wb-ink);
 }
 .session-answer-body p:last-child { margin-bottom: 0; }
 .session-answer-actions {
   margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed var(--wb-hairline);
-  font-size: 12px; color: var(--wb-ink-muted);
+  font-size: var(--wb-text-sm); color: var(--wb-ink-muted);
 }
 
 /* ---------- 方案卡 ---------- */
 .session-proposal-wrap { display: flex; flex-direction: column; gap: 4px; }
-.session-proposal-diff-hint { margin: 0; font-size: 11px; color: var(--wb-ink-faint); }
+.session-proposal-diff-hint { margin: 0; font-size: var(--wb-text-xs); color: var(--wb-ink-faint); }
 .session-proposal-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
 .session-proposal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.session-proposal-head h3 { margin: 0; font-size: 15px; letter-spacing: -0.01em; }
-.session-proposal-version { flex: none; font-size: 11px; color: var(--wb-ink-faint); font-weight: 700; }
-.session-proposal-summary { margin: 0; color: var(--wb-ink-muted); font-size: 12px; }
+.session-proposal-head h3 { margin: 0; font-size: var(--wb-text-lg); letter-spacing: -0.01em; }
+.session-proposal-version { flex: none; font-size: var(--wb-text-xs); color: var(--wb-ink-faint); font-weight: 700; }
+.session-proposal-summary { margin: 0; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); }
 .session-proposal-parts {
   list-style: none; margin: 0; padding: 0;
   border-top: 1px solid var(--wb-hairline);
 }
 .session-proposal-parts li {
   display: grid; grid-template-columns: 56px 1fr auto; gap: 10px;
-  padding: 4px 0; border-bottom: 1px solid var(--wb-hairline); font-size: 12px;
+  padding: 4px 0; border-bottom: 1px solid var(--wb-hairline); font-size: var(--wb-text-sm);
   align-items: baseline;
 }
 .session-proposal-parts li:last-child { border-bottom: 0; }
-.session-part-category { color: var(--wb-ink-faint); font-size: 11px; }
+.session-part-category { color: var(--wb-ink-faint); font-size: var(--wb-text-xs); }
 .session-part-label { font-weight: 600; }
 .session-part-price { color: var(--wb-ink-muted); }
-.session-proposal-compat { margin: 0; font-size: 12px; }
+.session-proposal-compat { margin: 0; font-size: var(--wb-text-sm); }
 .session-proposal-compat em { font-style: normal; font-weight: 700; }
 .session-proposal-compat em.pass { color: var(--wb-pass); }
 .session-proposal-compat em.warn { color: var(--wb-warn); }
 .session-proposal-compat em.block { color: var(--wb-block); }
-.session-proposal-compat-message { display: block; color: var(--wb-ink-muted); font-size: 11px; margin-top: 1px; }
+.session-proposal-compat-message { display: block; color: var(--wb-ink-muted); font-size: var(--wb-text-xs); margin-top: 1px; }
 .session-proposal-actions {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   border-top: 1px solid var(--wb-hairline); padding-top: 10px;
 }
-.session-proposal-history-note { color: var(--wb-ink-faint); font-size: 12px; }
+.session-proposal-history-note { color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
 .session-workbench-link {
-  margin-left: auto; font-size: 12px; color: var(--wb-accent); font-weight: 700;
+  margin-left: auto; font-size: var(--wb-text-sm); color: var(--wb-accent); font-weight: 700;
   text-decoration: none;
 }
 .session-workbench-link:hover { color: var(--wb-accent-hover); }
@@ -178,31 +209,31 @@
   border: 1px dashed var(--wb-hairline);
   padding: 12px 14px;
 }
-.experience-advice h2 { margin: 0 0 4px; font-size: 13px; }
-.experience-advice-note { margin: 0 0 8px; color: var(--wb-ink-faint); font-size: 11px; }
+.experience-advice h2 { margin: 0 0 4px; font-size: var(--wb-text-caption); }
+.experience-advice-note { margin: 0 0 8px; color: var(--wb-ink-faint); font-size: var(--wb-text-xs); }
 .experience-advice-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .experience-advice-list li {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px;
-  font-size: 12px; color: var(--wb-ink-muted);
+  font-size: var(--wb-text-sm); color: var(--wb-ink-muted);
 }
 .experience-advice-list strong { font-weight: 600; color: var(--wb-ink); }
 .experience-advice-tag {
-  flex: none; font-size: 11px; font-weight: 700;
+  flex: none; font-size: var(--wb-text-xs); font-weight: 700;
   color: var(--wb-ink-muted); border: 1px solid var(--wb-hairline);
   padding: 0 6px; border-radius: 2px;
 }
 .experience-advice-tag.external { color: var(--wb-accent); border-color: var(--wb-accent); }
 .experience-advice-queue { display: inline-flex; align-items: center; gap: 6px; }
 .experience-advice-queue-button {
-  flex: none; font-size: 11px; font-weight: 700;
+  flex: none; font-size: var(--wb-text-xs); font-weight: 700;
   color: var(--wb-accent); background: transparent;
   border: 1px solid var(--wb-accent); border-radius: 2px;
   padding: 1px 8px; cursor: pointer;
 }
 .experience-advice-queue-button:hover { background: var(--wb-accent); color: #fff; }
 .experience-advice-queue-button:disabled { opacity: 0.6; cursor: default; }
-.experience-advice-queued { flex: none; font-size: 11px; color: var(--wb-ink-faint); }
-.experience-advice-queue-error { font-size: 11px; color: var(--wb-block); }
+.experience-advice-queued { flex: none; font-size: var(--wb-text-xs); color: var(--wb-ink-faint); }
+.experience-advice-queue-error { font-size: var(--wb-text-xs); color: var(--wb-block); }
 
 /* ---------- 追问态 / 输入框 ---------- */
 .session-needs-input {
@@ -217,12 +248,14 @@
 }
 .session-composer input {
   flex: 1; min-width: 0;
-  border: 1px solid var(--wb-hairline-strong); border-radius: 8px;
+  border: 1px solid var(--wb-hairline-strong); border-radius: var(--wb-radius-control);
   padding: 9px 12px; background: var(--wb-surface);
+  transition: border-color var(--wb-fast), background var(--wb-fast);
 }
-.session-composer input:focus { border-color: var(--wb-accent); outline: none; }
+.session-composer input:hover { border-color: var(--wb-hairline-input-hover); }
+.session-composer input:focus { border-color: var(--wb-accent); background: var(--wb-input-focused); outline: none; }
 .session-composer-submit { flex: none; }
-.session-composer-feedback { flex-basis: 100%; margin: 0; color: var(--wb-ink-muted); font-size: 12px; }
+.session-composer-feedback { flex-basis: 100%; margin: 0; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); }
 
 /* ---------- 会话列表（P3 /design） ---------- */
 .session-list-page { width: min(760px, calc(100% - 40px)); }
@@ -235,13 +268,13 @@
 .session-list-item:hover { border-color: var(--wb-accent); }
 .session-list-item-main { min-width: 0; }
 .session-list-goal {
-  margin: 0; font-weight: 600; font-size: 13px;
+  margin: 0; font-weight: 600; font-size: var(--wb-text-base);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.session-list-meta { margin: 3px 0 0; color: var(--wb-ink-muted); font-size: 11px; display: flex; gap: 10px; align-items: baseline; }
+.session-list-meta { margin: 3px 0 0; color: var(--wb-ink-muted); font-size: var(--wb-text-xs); display: flex; gap: 10px; align-items: baseline; }
 .session-list-time { color: var(--wb-ink-faint); }
 .session-list-status {
-  flex: none; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  flex: none; font-size: var(--wb-text-xs); font-weight: 700; padding: 2px 8px; border-radius: 999px;
   background: var(--wb-unknown-soft); color: var(--wb-ink-muted);
 }
 .session-list-status.status-needs_input { background: var(--wb-warn-soft); color: var(--wb-warn); }

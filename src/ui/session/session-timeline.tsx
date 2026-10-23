@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { ChevronDown } from "lucide-react";
 import type { DesignProposal, ProposalChange } from "@/contracts/design";
 import type { SessionRunStatus, TimelineItem } from "./session-state";
 import { toolMetaOf, toolSummaryOf } from "./tool-renderers";
@@ -157,6 +158,7 @@ function renderSearchGroup(group: Extract<DisplayItem, { kind: "search-group" }>
         <span className="session-tool-state" aria-hidden />
         <span className="session-tool-label">检索目录</span>
         <span className="session-tool-summary">{group.categories} 类 · 命中 {group.hits} 个候选</span>
+        <ChevronDown size={14} className="session-tool-chevron" aria-hidden />
       </summary>
       <div className="session-tool-detail">
         <span className="session-tool-detail-label">逐类命中</span>
@@ -201,11 +203,16 @@ function renderItem(
       const duplicated = previous?.kind === "phase" && previous.message === item.detail;
       const summary = toolSummaryOf(item);
       return (
-        <details className={`session-tool state-${item.state}`} open={item.state === "running"}>
+        <details
+          className={`session-tool state-${item.state}`}
+          open={item.state === "running"}
+          title={item.state === "error" ? `工具执行失败：${summary}` : undefined}
+        >
           <summary>
             <span className="session-tool-state" aria-hidden />
             <span className="session-tool-label">{meta.label}</span>
             <span className="session-tool-summary">{duplicated ? "" : summary}</span>
+            <ChevronDown size={14} className="session-tool-chevron" aria-hidden />
           </summary>
           {item.resultIds.length > 0 && (
             <div className="session-tool-detail">

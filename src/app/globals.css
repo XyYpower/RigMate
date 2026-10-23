@@ -647,5 +647,3 @@ select {
 .home-recent-more a { display: inline-flex; align-items: center; gap: 4px; color: var(--wb-accent); font-weight: 700; }
 
 .home-composer-hint { color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
-.session-tool-lines { list-style: none; margin: 5px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.session-tool-lines li { font-size: 11px; color: var(--wb-ink-muted); }
