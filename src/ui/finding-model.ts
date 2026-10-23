@@ -14,11 +14,11 @@ export type StatusVisual = {
 };
 
 export const STATUS_META: Record<FindingStatus, StatusVisual> = {
-  pass: { label: "通过", icon: "✓", color: "var(--rm-pass)", soft: "var(--rm-pass-soft)", borderStyle: "solid" },
-  block: { label: "阻断", icon: "!", color: "var(--rm-block)", soft: "var(--rm-block-soft)", borderStyle: "solid" },
-  warn: { label: "警告", icon: "⚠", color: "var(--rm-warn)", soft: "var(--rm-warn-soft)", borderStyle: "solid" },
-  unknown: { label: "待补充", icon: "?", color: "var(--rm-unknown)", soft: "var(--rm-unknown-soft)", borderStyle: "dashed" },
-  not_applicable: { label: "不适用", icon: "–", color: "var(--rm-na)", soft: "var(--rm-na-soft)", borderStyle: "solid" },
+  pass: { label: "通过", icon: "✓", color: "var(--wb-pass)", soft: "var(--wb-pass-soft)", borderStyle: "solid" },
+  block: { label: "阻断", icon: "!", color: "var(--wb-block)", soft: "var(--wb-block-soft)", borderStyle: "solid" },
+  warn: { label: "警告", icon: "⚠", color: "var(--wb-warn)", soft: "var(--wb-warn-soft)", borderStyle: "solid" },
+  unknown: { label: "待补充", icon: "?", color: "var(--wb-unknown)", soft: "var(--wb-unknown-soft)", borderStyle: "dashed" },
+  not_applicable: { label: "不适用", icon: "–", color: "var(--wb-ink-faint)", soft: "var(--wb-unknown-soft)", borderStyle: "solid" },
 };
 
 /** 报告排序（业务规格 §9.4）：阻断 → 待补充 → 警告 → 通过 → 不适用 */

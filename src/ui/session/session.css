@@ -119,7 +119,7 @@
 /* ---------- 结构化回答卡（M6 信任层）：内容来自方案事实，区别于追问的警示黄 ---------- */
 .session-answer {
   padding: 10px 12px;
-  background: var(--wb-panel, #fff); border: 1px solid var(--wb-hairline);
+  background: var(--wb-surface); border: 1px solid var(--wb-hairline);
   border-radius: 10px;
 }
 .session-answer-label {

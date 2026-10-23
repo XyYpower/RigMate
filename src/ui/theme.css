@@ -1,15 +1,25 @@
 /*
- * RigMate 设计 tokens ——「三栏工作台」主题（DESIGN.md §2，2026-09-28 定稿）
+ * RigMate 设计 tokens ——「三栏工作台」主题（DESIGN.md §2，2026-09-28 定稿；2026-10-23 v2 增补）
  *
- * 视觉事实源：docs/design/reference/*.png；契约：根目录 DESIGN.md。
- * --wb-* 是新体系（浅灰白画布 + 纯白面板 + 蓝灰墨 + 仪器橙唯一强调）；
- * --rm-* 保留为兼容别名，逐页面切换到 --wb-* 后删除。
+ * 视觉事实源：docs/design/reference/*.png；契约：根目录 DESIGN.md（v2）。
+ * --wb-* 唯一体系（浅灰白画布 + 纯白面板 + 蓝灰墨 + 仪器橙唯一强调）；
+ * v2 新增：字号刻度（绑 --ui-font-size 单变量）、表面 hover 层、输入三态、嵌套圆角、浮层阴影。
  */
 :root {
-  /* 三栏工作台基底 */
+  /* 字号刻度（DESIGN.md §3）：接口文字一律走刻度，改界面字号只动 --ui-font-size */
+  --ui-font-size: 14px;
+  --wb-text-xl: calc(var(--ui-font-size) + 4px);
+  --wb-text-lg: calc(var(--ui-font-size) + 2px);
+  --wb-text-base: var(--ui-font-size);
+  --wb-text-caption: calc(var(--ui-font-size) - 1px);
+  --wb-text-sm: calc(var(--ui-font-size) - 2px);
+  --wb-text-xs: calc(var(--ui-font-size) - 4px);
+
+  /* 三栏工作台基底（表面分层，禁止跨层使用） */
   --wb-canvas: #f4f5f6;
   --wb-surface: #ffffff;
   --wb-surface-subtle: #f8f9fa;
+  --wb-hover: #f8f9fa;
   --wb-hairline: #e5e7eb;
   --wb-hairline-strong: #d1d5db;
   --wb-ink: #111827;
@@ -31,10 +41,16 @@
   --wb-unknown: #6b7280;
   --wb-unknown-soft: #f3f4f6;
 
-  /* 形状 / 阴影 / 动效 */
+  /* 输入三态（DESIGN.md §2 输入三态：冷静不发光） */
+  --wb-hairline-input-hover: #9aa3af;
+  --wb-input-focused: #fffdfa;
+
+  /* 形状 / 阴影 / 动效（圆角按嵌套深度衰减；浮层独享 overlay 阴影） */
   --wb-radius-panel: 12px;
   --wb-radius-control: 8px;
+  --wb-radius-nested: 6px;
   --wb-shadow-panel: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --wb-shadow-overlay: 0 8px 24px rgba(16, 24, 40, 0.12);
   --wb-fast: 150ms;
   --wb-slow: 250ms;
 
@@ -53,27 +69,4 @@
   /* 标尺线：预算标尺的轨道与刻度 */
   --wb-ruler-line: #c6ccd4;
   --wb-ruler-tick: #9aa3af;
-
-  /* ---- 旧「仪器白」兼容别名（消费方迁移到 --wb-* 后删除） ---- */
-  --rm-bg: var(--wb-canvas);
-  --rm-surface: var(--wb-surface);
-  --rm-surface-raised: var(--wb-surface);
-  --rm-line: var(--wb-hairline);
-  --rm-line-strong: var(--wb-hairline-strong);
-  --rm-ink: var(--wb-ink);
-  --rm-ink-muted: var(--wb-ink-muted);
-  --rm-ink-faint: var(--wb-ink-faint);
-  --rm-accent: var(--wb-accent);
-  --rm-pass: var(--wb-pass);
-  --rm-pass-soft: var(--wb-pass-soft);
-  --rm-block: var(--wb-block);
-  --rm-block-soft: var(--wb-block-soft);
-  --rm-warn: var(--wb-warn);
-  --rm-warn-soft: var(--wb-warn-soft);
-  --rm-unknown: var(--wb-unknown);
-  --rm-unknown-soft: var(--wb-unknown-soft);
-  --rm-na: var(--wb-ink-faint);
-  --rm-na-soft: var(--wb-unknown-soft);
-  --rm-fast: var(--wb-fast);
-  --rm-slow: var(--wb-slow);
 }

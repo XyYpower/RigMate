@@ -26,7 +26,7 @@ export function BuildCanvas({ items }: { items: CanvasItem[] }) {
           width={layout.interior.w}
           height={layout.interior.h}
           fill="rgba(53, 201, 163, 0.03)"
-          stroke={layout.interiorGhost ? "var(--rm-unknown)" : "var(--rm-line)"}
+          stroke={layout.interiorGhost ? "var(--wb-unknown)" : "var(--wb-hairline)"}
           strokeWidth={1.5}
           strokeDasharray={layout.interiorGhost ? "6 5" : undefined}
           rx={3}
@@ -35,19 +35,19 @@ export function BuildCanvas({ items }: { items: CanvasItem[] }) {
           x={layout.interior.x + 8}
           y={layout.interior.y + 16}
           fontSize={10}
-          fill="var(--rm-ink-faint)"
+          fill="var(--wb-ink-faint)"
         >
           {layout.interiorGhost ? "机箱 · 规格待补充" : "机箱内腔"}
         </text>
 
         {layout.parts.map((part) => {
           const stroke = part.violated
-            ? "var(--rm-block)"
+            ? "var(--wb-block)"
             : part.ghost
-              ? "var(--rm-unknown)"
+              ? "var(--wb-unknown)"
               : part.category === "motherboard"
-                ? "var(--rm-accent)"
-                : "var(--rm-line)";
+                ? "var(--wb-accent)"
+                : "var(--wb-hairline)";
           return (
             <g key={part.id}>
               <title>{part.sublabel ? `${part.label} · ${part.sublabel}` : part.label}</title>
@@ -56,7 +56,7 @@ export function BuildCanvas({ items }: { items: CanvasItem[] }) {
                 y={part.y}
                 width={part.w}
                 height={part.h}
-                fill={part.violated ? "var(--rm-block-soft)" : part.ghost ? "transparent" : "rgba(232, 236, 233, 0.05)"}
+                fill={part.violated ? "var(--wb-block-soft)" : part.ghost ? "transparent" : "rgba(232, 236, 233, 0.05)"}
                 stroke={stroke}
                 strokeWidth={part.violated ? 1.8 : 1.2}
                 strokeDasharray={part.ghost ? "5 4" : undefined}
@@ -69,7 +69,7 @@ export function BuildCanvas({ items }: { items: CanvasItem[] }) {
                   fontSize={11}
                   textAnchor="middle"
                   fontWeight={700}
-                  fill={part.violated ? "var(--rm-block)" : part.ghost ? "var(--rm-unknown)" : "var(--rm-ink-muted)"}
+                  fill={part.violated ? "var(--wb-block)" : part.ghost ? "var(--wb-unknown)" : "var(--wb-ink-muted)"}
                 >
                   {part.label}
                 </text>
@@ -80,10 +80,10 @@ export function BuildCanvas({ items }: { items: CanvasItem[] }) {
 
         {layout.rulers.map((ruler) => {
           const color = ruler.violated
-            ? "var(--rm-block)"
+            ? "var(--wb-block)"
             : ruler.ghost
-              ? "var(--rm-unknown)"
-              : "var(--rm-accent)";
+              ? "var(--wb-unknown)"
+              : "var(--wb-accent)";
           const horizontal = ruler.y1 === ruler.y2;
           const midX = (ruler.x1 + ruler.x2) / 2;
           const midY = (ruler.y1 + ruler.y2) / 2;
