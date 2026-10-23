@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CATEGORY_META, type ItemSpec } from "@/ui/category-form";
 import { productPageUrl } from "@/ui/product-link";
@@ -313,7 +314,7 @@ export default function HardwarePage() {
               <p className="hw-section-note">
                 入库 {quality.products.total.toLocaleString("zh-CN")} 条，每条的质量状态来自字段级证据链，人工复核后才会提升。
                 <Link href="/review" style={{ marginLeft: 8 }}>
-                  去审核台复核 →
+                  去审核台复核 <ArrowRight size={12} aria-hidden />
                 </Link>
               </p>
             </div>

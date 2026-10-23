@@ -7,7 +7,7 @@ async function waitUntilLoaded(page: import("@playwright/test").Page) {
 test("DIY 清单可以检查 CPU 与主板插槽冲突", async ({ page }) => {
   await page.goto("/diy");
   await waitUntilLoaded(page);
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
@@ -34,7 +34,7 @@ test("DIY 清单可以检查 CPU 与主板插槽冲突", async ({ page }) => {
 test("DIY 清单可以检查内存代际冲突", async ({ page }) => {
   await page.goto("/diy");
   await waitUntilLoaded(page);
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page.getByRole("tab", { name: "主板" }).click();
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("MSI B650M MORTAR WIFI");
@@ -58,7 +58,7 @@ test("DIY 清单可以检查内存代际冲突", async ({ page }) => {
 test("刷新页面后项目与配件自动恢复", async ({ page }) => {
   await page.goto("/diy");
   await waitUntilLoaded(page);
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
@@ -79,7 +79,7 @@ test("刷新页面后项目与配件自动恢复", async ({ page }) => {
 test("切换配件类别时草稿按类别隔离", async ({ page }) => {
   await page.goto("/diy");
   await waitUntilLoaded(page);
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
@@ -99,7 +99,7 @@ test("切换配件类别时草稿按类别隔离", async ({ page }) => {
 test("上一个配件加入后，下一个配件的表单从空白开始", async ({ page }) => {
   await page.goto("/diy");
   await waitUntilLoaded(page);
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
@@ -115,7 +115,7 @@ test("上一个配件加入后，下一个配件的表单从空白开始", async
 test("刷新后恢复检查结果，配件变化后提示过期，可删除项目", async ({ page }) => {
   await page.goto("/diy");
   await waitUntilLoaded(page);
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
@@ -152,8 +152,8 @@ test("刷新后恢复检查结果，配件变化后提示过期，可删除项�
   const historySelect = page.getByRole("combobox", { name: /历史项目/ });
   const beforeCount = await historySelect.locator("option").count();
 
-  await page.getByRole("button", { name: "删除当前项目 ✕" }).click();
-  await page.getByRole("button", { name: /确认删除「.+」？再点一次 ✕/ }).click();
+  await page.getByRole("button", { name: "删除当前项目" }).click();
+  await page.getByRole("button", { name: /确认删除「.+」？再点一次/ }).click();
   await expect(page.getByText(/项目已删除/)).toBeVisible();
 
   const afterCount = await historySelect.locator("option").count();
@@ -172,7 +172,7 @@ test("预算余量计：价格录入、未计价件与差额显示", async ({ pa
   await page.goto("/diy");
   await waitUntilLoaded(page);
   await page.getByRole("textbox", { name: "预算（元）· 可选，用于余量计" }).fill("8000");
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 9800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
@@ -198,7 +198,7 @@ test("预算余量计：价格录入、未计价件与差额显示", async ({ pa
 test("配件可编辑与删除，修改后旧结论标记过期", async ({ page }) => {
   await page.goto("/diy");
   await waitUntilLoaded(page);
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
@@ -220,7 +220,7 @@ test("配件可编辑与删除，修改后旧结论标记过期", async ({ page 
   await expect(page.getByRole("heading", { name: "编辑配件" })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "插槽 用于第一项规则" })).toHaveValue("LGA1700");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
-  await page.getByRole("button", { name: "保存修改 ✓" }).click();
+  await page.getByRole("button", { name: "保存修改" }).click();
   await expect(page.getByText(/清单在这次检查之后发生过变化/)).toBeVisible();
 
   await page.getByRole("button", { name: "重新检查" }).click();
@@ -242,7 +242,7 @@ test("配件可编辑与删除，修改后旧结论标记过期", async ({ page 
 test("从目录选择型号自动带出规格并标记来源", async ({ page }) => {
   await page.goto("/diy");
   await waitUntilLoaded(page);
-  await page.getByRole("button", { name: "新建项目 →" }).click();
+  await page.getByRole("button", { name: "新建项目" }).click();
 
   await page
     .getByLabel("从目录选择型号 自动带出已核规格")

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { AgentProgressCard, toTimelineSteps } from "@/ui/workbench/agent-progress-card";
 import { BuildPartsTable } from "@/ui/workbench/build-parts-table";
 import { BuildSummaryCard } from "@/ui/workbench/build-summary-card";
@@ -187,7 +188,7 @@ export function DesignWorkbenchView() {
         disabled={revising || isHistoryView}
       />
       <button className="button secondary revision-inline-submit" type="submit" disabled={revising || revision.trim().length < 2} aria-label="提交修改">
-        {revising ? "…" : <span aria-hidden>→</span>}
+        {revising ? "…" : <ArrowRight size={14} aria-hidden />}
       </button>
     </form>
   );
@@ -289,7 +290,7 @@ export function DesignWorkbenchView() {
                   <li key={change.category}>
                     <span className="diff-category">{CATEGORY_LABELS[change.category] ?? change.category}</span>
                     {change.fromLabel ? <s>{change.fromLabel}</s> : <em className="diff-tag">新增</em>}
-                    <span className="diff-arrow" aria-hidden>→</span>
+                    <span className="diff-arrow" aria-hidden><ArrowRight size={12} /></span>
                     {change.toLabel ? <strong>{change.toLabel}</strong> : <em className="diff-tag removed">不再购置</em>}
                   </li>
                 ))}
@@ -345,7 +346,7 @@ export function DesignWorkbenchView() {
                   onClick={() => void acceptProposal()}
                   disabled={accepting || compatibility?.status === "conflict"}
                 >
-                  {accepting ? "正在保存并检查…" : "接受这一版"}<span aria-hidden>→</span>
+                  {accepting ? "正在保存并检查…" : "接受这一版"}<ArrowRight size={14} aria-hidden />
                 </button>
                 <Link className="button secondary" href={`/diy`}>进入高级 DIY</Link>
               </>

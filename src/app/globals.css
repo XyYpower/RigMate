@@ -260,8 +260,12 @@ select {
   padding: 8px 0; border-top: 1px solid var(--wb-hairline);
   list-style: none;
 }
-.hw-audit summary::before { content: "▸ "; color: var(--wb-ink-faint); }
-.hw-audit[open] summary::before { content: "▾ "; }
+.hw-audit summary::before {
+  content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 7px;
+  border-right: 1.5px solid var(--wb-ink-faint); border-bottom: 1.5px solid var(--wb-ink-faint);
+  transform: rotate(-45deg); vertical-align: 2px; transition: transform var(--wb-fast);
+}
+.hw-audit[open] summary::before { transform: rotate(45deg); vertical-align: 0; }
 .hw-audit summary:hover { color: var(--wb-ink); }
 .hw-audit table { margin-top: 8px; }
 
@@ -535,8 +539,12 @@ select {
   cursor: pointer; color: var(--wb-ink-faint); font-size: var(--wb-text-sm); font-weight: 700;
   padding: 9px 0 4px; list-style: none;
 }
-.findings-passed summary::before { content: "▸ "; color: var(--wb-ink-faint); }
-.findings-passed[open] summary::before { content: "▾ "; }
+.findings-passed summary::before {
+  content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 7px;
+  border-right: 1.5px solid var(--wb-ink-faint); border-bottom: 1.5px solid var(--wb-ink-faint);
+  transform: rotate(-45deg); vertical-align: 2px; transition: transform var(--wb-fast);
+}
+.findings-passed[open] summary::before { transform: rotate(45deg); vertical-align: 0; }
 .findings-passed summary:hover { color: var(--wb-ink); }
 
 /* 检查历史时间线（M33） */
@@ -545,8 +553,12 @@ select {
   cursor: pointer; color: var(--wb-ink-faint); font-size: var(--wb-text-sm); font-weight: 700;
   padding: 9px 0 4px; list-style: none;
 }
-.check-history summary::before { content: "▸ "; color: var(--wb-ink-faint); }
-.check-history[open] summary::before { content: "▾ "; }
+.check-history summary::before {
+  content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 7px;
+  border-right: 1.5px solid var(--wb-ink-faint); border-bottom: 1.5px solid var(--wb-ink-faint);
+  transform: rotate(-45deg); vertical-align: 2px; transition: transform var(--wb-fast);
+}
+.check-history[open] summary::before { transform: rotate(45deg); vertical-align: 0; }
 .check-history summary:hover { color: var(--wb-ink); }
 .check-history ul { list-style: none; margin: 4px 0 0; padding: 0; }
 .check-history li {

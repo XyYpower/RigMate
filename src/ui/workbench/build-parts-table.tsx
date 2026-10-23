@@ -1,4 +1,5 @@
 import type { ProposalItem, SourceLevel } from "@/contracts/design";
+import { ChevronRight } from "lucide-react";
 import { productPageUrl } from "@/ui/product-link";
 import { formatYuanRange } from "./format";
 
@@ -107,7 +108,7 @@ export function BuildPartsTable({ items }: { items: ProposalItem[] }) {
                   ? formatYuanRange(item.priceEstimateLowCents, item.priceEstimateHighCents)
                   : "暂无已审核价格"}
               </span>
-              <span className="build-parts-arrow" aria-hidden>›</span>
+              <span className="build-parts-arrow" aria-hidden><ChevronRight size={14} /></span>
             </summary>
             <div className="build-parts-detail">
               <p>{item.rationale}</p>

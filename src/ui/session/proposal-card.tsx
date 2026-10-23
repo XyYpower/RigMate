@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import type { DesignProposal } from "@/contracts/design";
 import { BudgetRuler, budgetRulerFrom } from "@/ui/workbench/budget-ruler";
 import { formatYuanRange } from "@/ui/workbench/format";
@@ -56,7 +57,7 @@ export function ProposalCard({
         {isLatest ? (
           <>
             <button className="button primary" type="button" onClick={onAccept} disabled={accepting || conflictBlocked}>
-              {accepting ? "正在保存并检查…" : "接受这一版"}<span aria-hidden>→</span>
+              {accepting ? "正在保存并检查…" : "接受这一版"}<ArrowRight size={14} aria-hidden />
             </button>
             <Link className="button secondary" href="/diy">进入高级 DIY</Link>
           </>
@@ -64,7 +65,7 @@ export function ProposalCard({
           <span className="session-proposal-history-note">正在查看历史版本，切回最新版后可继续修改</span>
         )}
         <Link className="session-workbench-link" href={workbenchHref}>
-          完整工作台<span aria-hidden>→</span>
+          完整工作台<ArrowRight size={13} aria-hidden />
         </Link>
       </footer>
     </article>

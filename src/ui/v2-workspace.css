@@ -294,7 +294,7 @@
   border-radius: var(--wb-radius-panel);
 }
 .decision-banner-main { display: flex; gap: 12px; min-width: 0; }
-.decision-banner-icon { flex: none; font-size: var(--wb-text-xl); }
+.decision-banner-icon { flex: none; display: inline-flex; color: var(--wb-accent); }
 .decision-banner-kicker { display: block; color: var(--wb-accent); font-size: var(--wb-text-sm); font-weight: 700; }
 .decision-banner h3 { margin: 3px 0 2px; font-size: var(--wb-text-base); color: var(--wb-ink); }
 .decision-banner p { margin: 0; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); line-height: 1.6; }

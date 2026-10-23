@@ -106,7 +106,7 @@ export default function ReviewDeskPage() {
       <header className="hw-head">
         <h1>审核台</h1>
         <p className="hw-sub">
-          人工复核字段证据：核对来源页面与摘录一致后盖章，字段状态 supported → verified。所有操作记录复核人署名。
+          人工复核字段证据：核对来源页面与摘录一致后盖章，字段状态由 supported 升为 verified。所有操作记录复核人署名。
         </p>
       </header>
 

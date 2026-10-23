@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, Check, RefreshCw, X } from "lucide-react";
 import {
   buildSpecPayload,
   CATEGORY_META,
@@ -587,11 +588,11 @@ export default function Home() {
         </label>
         <div className="projbar-actions">
           <button className="button primary" onClick={createProject} disabled={busy || !name.trim()}>
-            {busy ? "处理中…" : "新建项目"}<span>→</span>
+            {busy ? "处理中…" : "新建项目"}<ArrowRight size={14} aria-hidden />
           </button>
           {build && (
             <button className={`button ${confirmDelete ? "danger-active" : "danger"}`} onClick={deleteProject} disabled={busy}>
-              {confirmDelete ? `确认删除「${build.name}」？再点一次` : "删除当前项目"}<span>✕</span>
+              {confirmDelete ? `确认删除「${build.name}」？再点一次` : "删除当前项目"}<X size={13} aria-hidden />
             </button>
           )}
         </div>
@@ -615,7 +616,7 @@ export default function Home() {
             onClick={runCheck}
             disabled={!build || build.items.length === 0 || busy}
           >
-            重新检查 <span aria-hidden>↻</span>
+            重新检查 <RefreshCw size={14} aria-hidden />
           </button>
         </div>
       </section>
@@ -844,7 +845,7 @@ export default function Home() {
                 <>
                   <button className="button ghost" onClick={cancelEdit} disabled={busy}>取消编辑</button>
                   <button className="button secondary" onClick={saveItem} disabled={!draft.label.trim() || busy}>
-                    保存修改 <span>✓</span>
+                    保存修改 <Check size={14} aria-hidden />
                   </button>
                 </>
               ) : (

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { useDesignSession } from "./use-design-session";
 import { SessionTimeline } from "./session-timeline";
 
@@ -130,7 +131,7 @@ export function DesignSessionView({ requestId }: { requestId: string }) {
           disabled={submittingRevision || revision.trim().length < 2}
           aria-label={latestProposal ? "提交修改" : "重新生成"}
         >
-          {submittingRevision ? "…" : <span aria-hidden>→</span>}
+          {submittingRevision ? "…" : <ArrowRight size={14} aria-hidden />}
         </button>
         {(revisionMessage || acceptError) && (
           <p className="session-composer-feedback" role="status">{revisionMessage ?? acceptError}</p>

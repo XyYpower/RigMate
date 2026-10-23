@@ -398,8 +398,12 @@ button.assembly-slot-body:hover { border-color: var(--wb-accent); }
   font-weight: 700;
 }
 .verification-log summary::-webkit-details-marker { display: none; }
-.verification-log summary::before { content: "▸ "; color: var(--wb-ink-faint); }
-.verification-log[open] summary::before { content: "▾ "; }
+.verification-log summary::before {
+  content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 7px;
+  border-right: 1.5px solid var(--wb-ink-faint); border-bottom: 1.5px solid var(--wb-ink-faint);
+  transform: rotate(-45deg); vertical-align: 2px; transition: transform var(--wb-fast);
+}
+.verification-log[open] summary::before { transform: rotate(45deg); vertical-align: 0; }
 
 /* ---- 四阶段轨道 ---- */
 .stage-track {

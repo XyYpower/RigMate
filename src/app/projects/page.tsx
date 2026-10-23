@@ -242,7 +242,7 @@ export default function ProjectsPage() {
       <section className="sec">
         <div className="hw-sec-head">
           <h2>整机复核</h2>
-          <span className="hw-total">粘贴主播/电商配置单 → 确认 → 查坑</span>
+          <span className="hw-total">粘贴配置单 · 逐行确认 · 自动查坑</span>
         </div>
         <textarea
           className="review-paste"

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Lightbulb } from "lucide-react";
 
 /**
  * 决策条（参考图：浅橙底"现在需要你决定"）。
@@ -16,7 +17,7 @@ export function DecisionBanner({
   return (
     <section className="decision-banner" aria-label="现在需要你决定">
       <div className="decision-banner-main">
-        <span className="decision-banner-icon" aria-hidden>💡</span>
+        <span className="decision-banner-icon" aria-hidden><Lightbulb size={18} /></span>
         <div>
           <span className="decision-banner-kicker">现在需要你决定</span>
           <h3>{title}</h3>
