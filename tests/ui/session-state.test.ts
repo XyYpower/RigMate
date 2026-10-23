@@ -69,6 +69,15 @@ describe("会话状态投影（session-state）", () => {
     expect(runItems.map((item) => (item.kind === "run_started" ? item.runNumber : -1))).toEqual([1, 2]);
   });
 
+  it("run_completed 之后的追加事件（如 advice 非阻塞到达）不得把状态翻回生成中", () => {
+    const state = replay([
+      { type: "run_started", runId: RUN_ID, model: "rule-engine", promptVersion: "v1" },
+      { type: "run_completed", runId: RUN_ID, status: "ok" },
+      { type: "advice", runId: RUN_ID, proposalId: "p1", advice: [{ tag: "散热", text: "风冷足够", source: "experience" }] },
+    ]);
+    expect(state.runStatus).toBe("completed");
+  });
+
   it("快照引导：重放快照事件并保留快照缺口之外的实时事件", () => {
     const before = replay([
       { type: "user_message", runId: RUN_ID, text: "两万预算" },

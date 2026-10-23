@@ -154,7 +154,14 @@ export function applyEnvelope(state: SessionState, envelope: RigEnvelope): Sessi
     log: [...state.log, envelope],
     lastSeq: envelope.seq,
     timeline: item ? [...state.timeline, item] : state.timeline,
-    runStatus: payload.type === "run_completed" ? "completed" : "running",
+    // 状态机语义：只有 run_started/run_completed 改变运行态——advice 等完成后的
+    // 追加事件（含快照重放）不得把已完成翻回"生成中"
+    runStatus:
+      payload.type === "run_started"
+        ? "running"
+        : payload.type === "run_completed"
+          ? "completed"
+          : state.runStatus,
     question: payload.type === "question" ? payload.message : state.question,
   };
 }

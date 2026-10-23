@@ -67,3 +67,6 @@ next-env.d.ts
 
 # 外部工具临时产物（PPT 构建等）
 .tmp-ppt/
+
+# 验收截图（本地生成，不入库）
+tmp-shots/
