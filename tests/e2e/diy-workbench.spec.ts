@@ -11,13 +11,13 @@ test("DIY 清单可以检查 CPU 与主板插槽冲突", async ({ page }) => {
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
 
   await page.getByRole("tab", { name: "主板" }).click();
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("MSI B650M MORTAR WIFI");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("LGA1700");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("2 / 8 类")).toBeVisible();
 
   await page.getByRole("button", { name: "重新检查" }).click();
@@ -40,13 +40,13 @@ test("DIY 清单可以检查内存代际冲突", async ({ page }) => {
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("MSI B650M MORTAR WIFI");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
   await page.getByLabel("内存代际").selectOption("DDR5");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
 
   await page.getByRole("tab", { name: "内存" }).click();
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("金士顿 Fury 32GB");
   await page.getByLabel("内存代际").selectOption("DDR4");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("2 / 8 类")).toBeVisible();
 
   await page.getByRole("button", { name: "重新检查" }).click();
@@ -62,7 +62,7 @@ test("刷新页面后项目与配件自动恢复", async ({ page }) => {
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
 
   await page.reload();
@@ -103,7 +103,7 @@ test("上一个配件加入后，下一个配件的表单从空白开始", async
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
 
   await page.getByRole("tab", { name: "主板" }).click();
@@ -119,13 +119,13 @@ test("刷新后恢复检查结果，配件变化后提示过期，可删除项�
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
 
   await page.getByRole("tab", { name: "主板" }).click();
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("ROG B650");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("2 / 8 类")).toBeVisible();
 
   await page.getByRole("button", { name: "重新检查" }).click();
@@ -142,7 +142,7 @@ test("刷新后恢复检查结果，配件变化后提示过期，可删除项�
 
   await page.getByRole("tab", { name: "内存" }).click();
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("金士顿 Fury 16G");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText(/清单在这次检查之后发生过变化/)).toBeVisible();
 
   await page.reload();
@@ -177,12 +177,12 @@ test("预算余量计：价格录入、未计价件与差额显示", async ({ pa
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 9800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
   await page.getByRole("textbox", { name: "价格（元）· 可选" }).fill("2899");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
 
   await page.getByRole("tab", { name: "机箱" }).click();
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("先马 平头哥 M2");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("2 / 8 类")).toBeVisible();
 
   await expect(page.getByText("¥2,899").first()).toBeVisible();
@@ -202,13 +202,13 @@ test("配件可编辑与删除，修改后旧结论标记过期", async ({ page 
 
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("AMD Ryzen 7 7800X3D");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("AM5");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
 
   await page.getByRole("tab", { name: "主板" }).click();
   await page.getByRole("textbox", { name: "型号或商品名称" }).fill("MSI B650M MORTAR WIFI");
   await page.getByRole("textbox", { name: "插槽 用于第一项规则" }).fill("LGA1700");
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("2 / 8 类")).toBeVisible();
 
   await page.getByRole("button", { name: "重新检查" }).click();
@@ -254,7 +254,7 @@ test("从目录选择型号自动带出规格并标记来源", async ({ page }) 
   await expect(page.getByRole("textbox", { name: "插槽 用于第一项规则" })).toHaveValue("AM5");
   await expect(page.getByRole("textbox", { name: "TDP 功耗（W）" })).toHaveValue("120");
 
-  await page.getByRole("button", { name: "加入清单 ＋" }).click();
+  await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
   await expect(page.getByText("· 目录型号")).toBeVisible();
 });
