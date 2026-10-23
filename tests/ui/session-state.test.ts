@@ -73,7 +73,9 @@ describe("会话状态投影（session-state）", () => {
     const state = replay([
       { type: "run_started", runId: RUN_ID, model: "rule-engine", promptVersion: "v1" },
       { type: "run_completed", runId: RUN_ID, status: "ok" },
-      { type: "advice", runId: RUN_ID, proposalId: "p1", advice: [{ tag: "散热", text: "风冷足够", source: "experience" }] },
+      { type: "advice", runId: RUN_ID, proposalId: "p1", advice: [
+        { kind: "experience_advice", category: "cooler", title: "散热", detail: "这个功耗风冷足够", requiresVerification: false },
+      ] },
     ]);
     expect(state.runStatus).toBe("completed");
   });
