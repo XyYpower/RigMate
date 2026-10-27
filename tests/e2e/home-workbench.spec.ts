@@ -42,7 +42,7 @@ test("首页：最近方案入口保留为次级入口", async ({ page }) => {
   const recent = page.locator(".home-recent");
   await expect(recent).toBeVisible();
   await expect(recent.getByText("白色").first()).toBeVisible();
-  // 会话列表入口可达
-  await page.getByRole("link", { name: /全部方案会话/ }).click();
-  await expect(page).toHaveURL(/\/design$/);
+  // 会话列表入口可达（归属我的方案 → AI 会话页签）
+  await page.getByRole("link", { name: /全部 AI 会话/ }).click();
+  await expect(page).toHaveURL(/\/projects\?tab=sessions$/);
 });
