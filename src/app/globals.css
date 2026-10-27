@@ -134,6 +134,15 @@ select {
 .ruler-fill { position: absolute; inset: 0 auto 0 0; background: var(--wb-ink); transition: width var(--wb-slow); }
 .ruler-fill.over { background: var(--wb-block); }
 .ruler-scale { display: flex; justify-content: space-between; margin-top: 3px; color: var(--wb-ink-faint); font-size: var(--wb-text-xs); }
+/* 余量尺内联图例：色样/斜纹与标尺视觉一一对应（DESIGN.md v3 原则 2） */
+.ruler-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 0; color: var(--wb-ink-muted); font-size: var(--wb-text-xs); }
+.ruler-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.ruler-legend-fill { width: 14px; height: 8px; background: var(--wb-ink); display: inline-block; }
+.ruler-legend-fill.over { background: var(--wb-block); }
+.ruler-legend-ghost {
+  width: 14px; height: 8px; display: inline-block; border: 1px solid var(--wb-hairline-strong);
+  background: repeating-linear-gradient(45deg, transparent 0 2px, rgba(124, 130, 136, 0.28) 2px 4px);
+}
 
 .note-line { padding: 6px 0 0; color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
 .note-line.ghost { color: var(--wb-unknown); }

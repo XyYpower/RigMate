@@ -63,7 +63,7 @@ export function ItemEntrySection({ diy }: { diy: DiyWorkspace }) {
       <div className="addgrid">
         <label className="field wide">
           <span className="field-label">
-            检索目录（输入型号关键词） <span className="field-hint">种子 + BuildCores 导入共万级条目</span>
+            检索目录（输入型号关键词）{catalogProvenance && <span className="field-hint">共 {catalogProvenance.entryCount.toLocaleString("zh-CN")} 条已核数据</span>}
           </span>
           <input
             value={catalogSearch}

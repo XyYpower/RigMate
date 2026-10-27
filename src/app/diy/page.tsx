@@ -37,7 +37,7 @@ export default function Home() {
           <p className="titleline-sub">
             {build
               ? `用途 ${build.useCase ?? "未设置"} · 更新于 ${formatTime(build.updatedAt)}`
-              : "在上方填写项目名称并新建，数据会实时保存到 SQLite"}
+              : "还没有项目，在上方新建即可开始"}
           </p>
           {build && findings.length > 0 && (
             <span className="diy-autocheck-badge"><i aria-hidden />自动检查已开启</span>
