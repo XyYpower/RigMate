@@ -298,16 +298,16 @@ export default function ReportPage() {
         ))}
       </section>
 
-      {/* 数据来源与说明 */}
+      {/* 数据来源与说明（诚实红线的消费者表达，v3 原则 1：允许保留的口径小字） */}
       <section className="report-sec report-notes">
         <h2>数据与说明</h2>
         <p className="report-line">
-          · 结论由确定性规则引擎生成，每个结论可追溯到规则编号与已录入字段；缺失字段不会用常见值代替事实。
+          · 每条结论都由固定规则核对得出，编号可追溯；缺数据的字段按「待补充」如实标注，不会用常见值猜。
         </p>
         <p className="report-line">
-          · 型号目录由人工种子目录与 BuildCores OpenDB（ODC-By 1.0）三层合并构成，署名随数据保留。
+          · 型号资料来自人工核验目录与开源硬件数据库（署名见硬件资料页）。
         </p>
-        <p className="report-line">· 本报告不构成价格建议；价格判断需要带来源的价格证据（V1-B）。</p>
+        <p className="report-line">· 本报告只核对兼容与配置，不构成价格建议；价格请以购买时的实际报价为准。</p>
       </section>
     </main>
   );

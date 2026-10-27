@@ -2,6 +2,7 @@ import { listDesignRequests } from "@/infra/db/repositories/design-repository";
 import { listAgentEventLog } from "@/infra/db/repositories/agent-event-log-repository";
 import { percentile, summarizeRequestEvents, type RunMetrics } from "@/application/agent/run-metrics";
 import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
+import { sessionStatusLabel } from "@/ui/status-vocabulary";
 
 /**
  * 运行诊断页（Phase 5，launch-readiness §10.3）：最近会话 × run 指标 + 聚合。
@@ -88,7 +89,7 @@ export default function DiagnosticsPage() {
             <li key={session.id}>
               <p className="diagnostics-session-head">
                 <strong>{session.rawInput.slice(0, 40)}</strong>
-                <span className="mono">{session.status} · {session.updatedAt.slice(0, 16).replace("T", " ")}</span>
+                <span className="mono">{sessionStatusLabel(session.status, null)} · {session.updatedAt.slice(0, 16).replace("T", " ")}</span>
               </p>
               {session.runs.length === 0 && <p className="diagnostics-empty">无运行记录。</p>}
               <ul>
