@@ -291,7 +291,7 @@ export function ProjectsPageInner() {
             aria-label="复核项目名称"
           />
           <button className="button secondary" onClick={() => void parsePasted()} disabled={!pasteText.trim()}>
-            解析配置单
+            <Search size={14} aria-hidden /> 解析配置单
           </button>
         </div>
         {reviewMessage && <p className="review-msg">{reviewMessage}</p>}
