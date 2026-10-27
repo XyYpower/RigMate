@@ -60,7 +60,7 @@ test("M31 自然语言修订：顶栏输入，预算跨档位生成第 2 版并�
   const headerEditor = page.getByRole("textbox", { name: "继续调整这套方案" });
   await expect(headerEditor).toBeVisible();
   await headerEditor.fill("预算压到 4000");
-  await page.getByRole("button", { name: "提交修改" }).click();
+  await page.getByRole("button", { name: "发送修改" }).click();
 
   // 处理记录（折叠）承载真实事件；展开后可读
   const visibleDesk = page.locator(".verification-desk").filter({ visible: true });
@@ -82,7 +82,7 @@ test("M35 可以切换查看历史方案并展开单件依据", async ({ page })
   // P2 默认视图为会话时间线；工作台断言切到 ?view=workbench
   await page.goto(page.url() + "?view=workbench");
   await page.getByRole("textbox", { name: "继续调整这套方案" }).fill("预算压到 4000");
-  await page.getByRole("button", { name: "提交修改" }).click();
+  await page.getByRole("button", { name: "发送修改" }).click();
   await expect(page.locator(".header-title-version")).toContainText("方案 v2");
 
   const versionPicker = page.getByRole("combobox", { name: "方案版本" });
@@ -105,7 +105,7 @@ test("M31 无法理解的调整：诚实追问而不是硬猜，保留原方案"
   await expect(page.locator(".header-title-version")).toContainText("方案 v1");
 
   await page.getByRole("textbox", { name: "继续调整这套方案" }).fill("帮我随便改改");
-  await page.getByRole("button", { name: "提交修改" }).click();
+  await page.getByRole("button", { name: "发送修改" }).click();
 
   // 追问出现在内联反馈与处理记录时间线（同一事件两处呈现）；内联反馈直接断言
   await expect(page.locator(".revision-feedback")).toContainText(/我没能理解这条调整/);

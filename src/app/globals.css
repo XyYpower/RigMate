@@ -611,7 +611,18 @@ select {
   box-shadow: 0 6px 18px rgba(244, 88, 28, 0.28);
 }
 .home-entry h1 { margin: 20px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
-.home-tagline { margin: 12px 0 0; color: var(--wb-ink-muted); font-size: var(--wb-text-base); line-height: 1.7; max-width: 470px; }
+/* 信任 chips：替代长 tagline，用真实数字与三条承诺自解释（DESIGN.md v3 原则 1） */
+.home-trust {
+  list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+  margin: 16px 0 0; padding: 0;
+}
+.home-trust li {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 999px;
+  background: var(--wb-surface); border: 1px solid var(--wb-hairline);
+  color: var(--wb-ink-muted); font-size: var(--wb-text-sm);
+}
+.home-trust li i { width: 5px; height: 5px; border-radius: 50%; background: var(--wb-pass); }
 
 /* 输入面板三态（DESIGN.md §2 输入三态：hover 边框加深 / focus 边框转橙 + 底色微升，不发光） */
 .home-composer {

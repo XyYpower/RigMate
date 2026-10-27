@@ -100,7 +100,7 @@ export function ExperienceAdviceSection({
     <section className="experience-advice" aria-label="模型建议">
       <h2>模型建议</h2>
       <p className="experience-advice-note">
-        以下内容由大模型按经验给出，仅供参考：不会参与当前兼容检查，也不计入价格合计。
+        以下建议仅供参考，不参与兼容检查与价格合计。
       </p>
       {view.experience.length > 0 && (
         <ul className="experience-advice-list" aria-label={EXPERIENCE_ADVICE_LABELS.experience}>

@@ -33,6 +33,7 @@ export default function Home() {
   const router = useRouter();
   const [goal, setGoal] = useState("");
   const [builds, setBuilds] = useState<BuildSummary[]>([]);
+  const [catalogCount, setCatalogCount] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -42,6 +43,12 @@ export default function Home() {
       if (!response.ok) return;
       const data = await response.json();
       if (!cancelled) setBuilds((data.builds ?? []).slice(0, 4));
+    }).catch(() => undefined);
+    // 信任 chip 的真实数字：拿不到就隐藏数字位，不用编造值
+    void fetch("/api/catalog/overview").then(async (response) => {
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!cancelled && data.overview) setCatalogCount(data.overview.totalEntries ?? null);
     }).catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
@@ -80,9 +87,11 @@ export default function Home() {
       <div className="home-entry">
         <span className="home-brandmark" aria-hidden>R</span>
         <h1>你想配一台什么样的电脑？</h1>
-        <p className="home-tagline">
-          一句话说说用途和偏好就行，缺什么我会问你——然后从已核目录里检索候选、跑兼容规则，给出可核验的方案。
-        </p>
+        <ul className="home-trust" aria-label="为什么这里的方案可信">
+          <li><i aria-hidden />{catalogCount !== null ? `${catalogCount.toLocaleString("zh-CN")} 条已核硬件目录` : "已核硬件目录"}</li>
+          <li><i aria-hidden />兼容规则逐条核验</li>
+          <li><i aria-hidden />价格有据可查</li>
+        </ul>
 
         <form className="home-composer" onSubmit={(event) => void startDesign(event)}>
           <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
@@ -99,7 +108,7 @@ export default function Home() {
             autoFocus
           />
           <div className="home-composer-toolbar">
-            <span className="home-composer-hint">回车或点击开始，缺的信息我会追问</span>
+            <span className="home-composer-hint">回车开始 · 缺什么我会问</span>
             <button className="button primary home-submit" type="submit" disabled={busy || goal.trim().length < 3}>
               {busy ? "正在开始…" : "开始搭配"}<ArrowRight size={14} aria-hidden />
             </button>
@@ -125,7 +134,7 @@ export default function Home() {
         )}
 
         <p className="home-footer-links">
-          已有配置单？<Link href="/projects?mode=review">粘贴整单逐行查坑</Link>
+          已有配置单？<Link href="/projects?mode=review">粘贴逐行查坑</Link>
           <span aria-hidden> · </span>
           很懂硬件？<Link href="/diy">直接进高级 DIY</Link>
         </p>

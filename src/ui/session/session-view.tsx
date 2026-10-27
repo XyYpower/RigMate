@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
-import { ArrowRight } from "lucide-react";
 import { useDesignSession } from "./use-design-session";
 import { SessionTimeline } from "./session-timeline";
 
@@ -129,9 +128,9 @@ export function DesignSessionView({ requestId }: { requestId: string }) {
           className="button primary session-composer-submit"
           type="submit"
           disabled={submittingRevision || revision.trim().length < 2}
-          aria-label={latestProposal ? "提交修改" : "重新生成"}
         >
-          {submittingRevision ? "…" : <ArrowRight size={14} aria-hidden />}
+          {/* 按钮文字随状态具象化（DESIGN.md v3 原则 1）：有方案是改方案，没方案是重新搭配 */}
+          {submittingRevision ? "发送中…" : latestProposal ? "发送修改" : "重新搭配"}
         </button>
         {(revisionMessage || acceptError) && (
           <p className="session-composer-feedback" role="status">{revisionMessage ?? acceptError}</p>

@@ -22,7 +22,7 @@ test("首页：会话起点居中呈现，提交直达会话页看 agent 全程"
   // 补一句预算，流程继续走到方案卡
   const composer = page.getByRole("textbox", { name: "补充你的装机目标" });
   await composer.fill("预算 8000");
-  await page.getByRole("button", { name: "重新生成" }).click();
+  await page.getByRole("button", { name: "重新搭配" }).click();
   await expect(page.locator(".session-proposal-card")).toBeVisible({ timeout: 30_000 });
 });
 

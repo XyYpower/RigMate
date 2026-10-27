@@ -187,8 +187,8 @@ export function DesignWorkbenchView() {
         maxLength={500}
         disabled={revising || isHistoryView}
       />
-      <button className="button secondary revision-inline-submit" type="submit" disabled={revising || revision.trim().length < 2} aria-label="提交修改">
-        {revising ? "…" : <ArrowRight size={14} aria-hidden />}
+      <button className="button secondary revision-inline-submit" type="submit" disabled={revising || revision.trim().length < 2}>
+        {revising ? "发送中…" : "发送修改"}
       </button>
     </form>
   );

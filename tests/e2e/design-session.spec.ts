@@ -55,7 +55,7 @@ test("会话时间线：追问后在会话页补充目标即可开始生成（P3
 
   const composer = page.getByRole("textbox", { name: "补充你的装机目标" });
   await composer.fill("预算 2 万，主要玩 3A 游戏和视频剪辑");
-  await page.getByRole("button", { name: "重新生成" }).click();
+  await page.getByRole("button", { name: "重新搭配" }).click();
 
   await expect(page.locator(".session-proposal-card").first()).toBeVisible({ timeout: 30_000 });
   // 补充指令作为用户消息进入时间线
@@ -81,7 +81,7 @@ test("会话时间线：修订输入提交后续流生成第 2 版方案卡", as
 
   const composer = page.getByRole("textbox", { name: "继续调整这套方案" });
   await composer.fill("预算压到 4000");
-  await page.getByRole("button", { name: "提交修改" }).click();
+  await page.getByRole("button", { name: "发送修改" }).click();
 
   // 第 2 轮 divider 出现 + 新方案卡 v2（预算跌破档位线）
   await expect(page.locator(".session-run-divider").filter({ hasText: "第 2 轮" })).toBeVisible({ timeout: 20_000 });
