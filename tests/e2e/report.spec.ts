@@ -26,7 +26,8 @@ test("M24 报告：运行检查后报告带图框标题栏、清单与诊断条�
   await expect(page.getByRole("heading", { name: "报告测试项目" })).toBeVisible();
   await expect(page.getByText("R-CPU-MB-001")).toBeVisible();
   await expect(page.getByRole("button", { name: /打印/ })).toBeVisible();
-  await expect(page.getByText("BuildCores OpenDB（ODC-By 1.0）")).toBeVisible();
+  // 数据与说明（v3 消费者语气：不再直出 ODC-By/内部规格引用，署名在硬件资料页）
+  await expect(page.getByText(/每条结论都由固定规则核对得出/)).toBeVisible();
 });
 
 test("M24 报告：未运行检查时给出诚实提示而非空报告", async ({ page, request }) => {
