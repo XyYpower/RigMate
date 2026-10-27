@@ -278,7 +278,29 @@ select {
 .result-report-link { color: var(--wb-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .result-report-link:hover { color: var(--wb-accent); }
 
-/* ---------- 方案库 ---------- */
+/* ---------- 方案库（我的方案，页签化） ---------- */
+.pj-tabs { display: flex; gap: 4px; margin-top: 18px; border-bottom: 1px solid var(--wb-hairline); }
+.pj-tab {
+  padding: 8px 14px 9px; font-size: var(--wb-text-base); font-weight: 600;
+  color: var(--wb-ink-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color var(--wb-fast), border-color var(--wb-fast);
+}
+.pj-tab:hover { color: var(--wb-ink); }
+.pj-tab.active { color: var(--wb-accent); border-bottom-color: var(--wb-accent); }
+.pj-review { margin-top: 16px; }
+.pj-review-toggle { display: inline-flex; align-items: center; gap: 6px; }
+.pj-review-panel { padding: 14px 16px; }
+.pj-review-panel > summary {
+  cursor: pointer; list-style: none; font-size: var(--wb-text-base); font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pj-review-panel > summary::-webkit-details-marker { display: none; }
+.pj-review-close {
+  font-size: var(--wb-text-sm); color: var(--wb-ink-muted); font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.pj-review-close:hover { color: var(--wb-accent); }
+.pj-review-panel .review-paste { margin-top: 12px; }
 .pj-new {
   font-size: var(--wb-text-sm); font-weight: 700; color: var(--wb-ink);
   border: 1px solid var(--wb-hairline-strong); padding: 4px 10px; text-decoration: none;

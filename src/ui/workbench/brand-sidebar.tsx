@@ -8,7 +8,6 @@ import {
   Cpu,
   FolderOpen,
   MessageSquarePlus,
-  MessagesSquare,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -20,18 +19,18 @@ type NavEntry = {
   match: (path: string) => boolean;
 };
 
-/** 四个主入口（DESIGN.md §6 BrandSidebar）：/design 为会话列表，/design/[id] 归属"方案会话" */
+/** 三个主入口（DESIGN.md v3 §6 BrandSidebar）：方案会话归属「我的方案 → AI 会话」页签，不再单列 */
 const NAV_ITEMS: NavEntry[] = [
   { href: "/", label: "开始配置", icon: MessageSquarePlus, match: (p) => p === "/" },
-  { href: "/design", label: "方案会话", icon: MessagesSquare, match: (p) => p === "/design" || p.startsWith("/design/") },
-  { href: "/projects", label: "我的方案", icon: FolderOpen, match: (p) => p === "/projects" },
+  { href: "/projects", label: "我的方案", icon: FolderOpen, match: (p) => p === "/projects" || p === "/design" || p.startsWith("/design/") },
   { href: "/hardware", label: "硬件资料", icon: Cpu, match: (p) => p.startsWith("/hardware") },
+  { href: "/diy", label: "高级 DIY", icon: Wrench, match: (p) => p.startsWith("/diy") || p.startsWith("/builds/") },
 ];
 
-/** 场景入口：高级流程与数据台账，从任何页面都可到达 */
-const SCENE_ITEMS: NavEntry[] = [
-  { href: "/diy", label: "高级 DIY", icon: Wrench, match: (p) => p.startsWith("/diy") || p.startsWith("/builds/") },
+/** 数据运营分组：面向自己的数据台账与后台工具，与消费者功能隔离 */
+const OPS_ITEMS: NavEntry[] = [
   { href: "/evidence", label: "证据台账", icon: ClipboardList, match: (p) => p.startsWith("/evidence") },
+  { href: "/review", label: "审核台", icon: ClipboardList, match: (p) => p.startsWith("/review") },
   { href: "/diagnostics", label: "运行诊断", icon: Activity, match: (p) => p.startsWith("/diagnostics") },
 ];
 
@@ -69,9 +68,9 @@ export function BrandSidebar() {
           <NavLink key={item.label} item={item} pathname={pathname} />
         ))}
       </nav>
-      <nav className="brand-nav brand-nav-scene" aria-label="场景入口">
-        <p className="brand-nav-caption">场景入口</p>
-        {SCENE_ITEMS.map((item) => (
+      <nav className="brand-nav brand-nav-scene" aria-label="数据运营">
+        <p className="brand-nav-caption">数据运营</p>
+        {OPS_ITEMS.map((item) => (
           <NavLink key={item.label} item={item} pathname={pathname} />
         ))}
       </nav>

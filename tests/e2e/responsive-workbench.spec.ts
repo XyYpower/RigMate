@@ -155,8 +155,9 @@ test("决策台品牌一致：/projects 与报告页的导航、标题、状态�
   const nav = page.getByRole("navigation", { name: "主导航" });
   await expect(nav.getByRole("link", { name: "我的方案" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "开始配置" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "方案库" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "整机复核" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "我的方案" })).toBeVisible();
+  await page.getByRole("button", { name: "粘贴配置单录入" }).click();
+  await expect(page.locator(".pj-review-panel")).toBeVisible();
 
   // 经真实 API 建一个正式方案 + 报告
   const design = await page.request.post("/api/design", {
@@ -177,6 +178,7 @@ test("决策台品牌一致：/projects 与报告页的导航、标题、状态�
 
   // /projects 复核主流程：解析后主按钮出现且可聚焦
   await page.goto("/projects");
+  await page.getByRole("button", { name: "粘贴配置单录入" }).click();
   await page.getByRole("textbox", { name: "复核配置单" }).fill("CPU：AMD 锐龙7 9800X3D 8核16线程 散片");
   await page.getByRole("button", { name: "解析配置单" }).click();
   const createButton = page.getByRole("button", { name: /创建项目并运行检查/ });

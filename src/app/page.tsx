@@ -152,7 +152,7 @@ export default function Home() {
                 </li>
               ))}
               <li className="home-recent-more">
-                <Link href="/design">全部方案会话 <ChevronRight size={12} aria-hidden /></Link>
+                <Link href="/projects?tab=sessions">全部 AI 会话 <ChevronRight size={12} aria-hidden /></Link>
               </li>
             </ul>
           </section>

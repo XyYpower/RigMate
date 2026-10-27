@@ -31,7 +31,7 @@ test("决策台导航：首页与方案页的 active 状态可辨识", async ({ 
   const nav = page.getByRole("navigation", { name: "主导航" });
   await expect(nav.getByRole("link", { name: "开始配置" })).toHaveAttribute("aria-current", "page");
 
-  // 经真实 API 建一个方案，进入 /design/[id] 后"方案会话"应处于 active（P3：会话归属）
+  // 经真实 API 建一个方案，进入 /design/[id] 后"我的方案"应处于 active（会话归属我的方案 → AI 会话）
   const response = await page.request.post("/api/design", {
     data: { rawInput: "8 千预算，主要玩 2K 游戏，想要安静一点" },
   });
@@ -41,7 +41,7 @@ test("决策台导航：首页与方案页的 active 状态可辨识", async ({ 
 
   await page.goto(`/design/${designId}?view=workbench`);
   await page.waitForLoadState("domcontentloaded");
-  await expect(nav.getByRole("link", { name: "方案会话" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "我的方案" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "开始配置" })).not.toHaveAttribute("aria-current");
 });
 
@@ -65,6 +65,8 @@ test("M25 整机复核：粘贴配置单解析成行，创建项目并出报告"
     "主板：技嘉 B650M 迫击炮",
     "总价 19999",
   ].join("\n");
+  // 整机复核已收纳为展开式录入面板：先展开再粘贴
+  await page.getByRole("button", { name: "粘贴配置单录入" }).click();
   await page.getByRole("textbox", { name: "复核配置单" }).fill(pasteText);
   await page.getByRole("textbox", { name: "复核项目名称" }).fill("M25 复核测试");
   await page.getByRole("button", { name: "解析配置单" }).click();
