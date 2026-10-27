@@ -89,7 +89,8 @@ const CATEGORY_PURPOSE: Record<string, string> = {
   case: "机箱决定部件能否放下，也影响风道、扩展和外观。",
 };
 
-const SOURCE_SHORT: Record<string, string> = { seed: "种子", manual: "人工", buildcores: "BC" };
+/** 来源列（检索结果）：消费者可懂的三个词 */
+const SOURCE_SHORT: Record<string, string> = { seed: "内置精选", manual: "人工核验", buildcores: "已核数据" };
 
 function formatTime(iso: string | null): string {
   if (!iso) return "—";
@@ -154,17 +155,17 @@ export default function HardwarePage() {
     <main className="hw-page">
       <WorkspaceHeader
         title="硬件资料"
-        meta={overview ? `目录 ${overview.totalEntries.toLocaleString("zh-CN")} 条 · 三层来源` : "先了解，再选择"}
+        meta={overview ? `${overview.totalEntries.toLocaleString("zh-CN")} 条型号资料，均可溯源` : "先了解，再选择"}
         actions={
           <Link className="button secondary" href="/">
-            去描述你的目标 <span aria-hidden>↗</span>
+            去描述你的目标
           </Link>
         }
       />
 
       {loadError && <LoadError label="目录总览没有加载出来" onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />}
 
-      {/* 探索目录：类别 + 说明 + 检索 + 结果，一个面板讲完 */}
+      {/* 探索目录：类别 + 说明 + 检索 + 结果，一个面板讲完（消费者主任务） */}
       <section className="wb-panel hw-explore" aria-labelledby="hardware-explore-title">
         <div className="hw-explore-tabs" role="tablist" aria-label="硬件类别">
           {Object.entries(CATEGORY_LABELS).map(([category, label]) => (
@@ -208,7 +209,7 @@ export default function HardwarePage() {
             <thead>
               <tr>
                 <th>型号</th>
-                <th>来源</th>
+                <th>资料来源</th>
                 <th>规格</th>
               </tr>
             </thead>
@@ -222,8 +223,8 @@ export default function HardwarePage() {
                       target="_blank"
                       rel="noreferrer"
                       title={hit.displayNameOriginal && hit.displayNameOriginal !== hit.displayName
-                        ? `商品页搜索：${hit.displayName}（英文原名 ${hit.displayNameOriginal}）`
-                        : "查看商品页（京东搜索）"}
+                        ? `打开 ${hit.displayName} 的商品页（英文原名 ${hit.displayNameOriginal}）`
+                        : `打开 ${hit.displayName ?? hit.name} 的商品页`}
                     >
                       {hit.displayName ?? hit.name}
                     </a>
@@ -242,177 +243,176 @@ export default function HardwarePage() {
         )}
       </section>
 
-      {/* 数据底座：来源数字 + 类别覆盖，一个面板 */}
+      {/* 数据底座与质量报表：面向运营/信任核查，折叠收起（v3 原则 2：消费者主任务之外的结构按需展开） */}
       {overview && (
-        <section className="wb-panel hw-panel-block" aria-labelledby="hardware-source-title">
-          <div className="hw-panel-head">
-            <h2 id="hardware-source-title">目录来源与覆盖</h2>
-            <span>来源构成 = 种子 / 人工 / BuildCores</span>
+        <details className="hw-audit" open={false}>
+          <summary>这 {overview.totalEntries.toLocaleString("zh-CN")} 条数据是怎么来的 · {overview.sources.length} 个来源</summary>
+          <div className="hw-panel-block" style={{ marginTop: 12 }}>
+            <div className="hw-stats">
+              {overview.sources.map((source) => (
+                <div className="hw-stat" key={source.key}>
+                  <span className="hw-stat-num">{source.count.toLocaleString("zh-CN")}</span>
+                  <span className="hw-stat-label">{source.label}</span>
+                  <span className="hw-stat-meta">
+                    {source.key === "buildcores" && source.attribution ? (
+                      <>
+                        <a href={source.attribution.upstreamUrl} target="_blank" rel="noreferrer">
+                          {source.attribution.license}
+                        </a>
+                        {" · "}
+                        {formatTime(source.importedAt)}
+                      </>
+                    ) : source.key === "manual" ? (
+                      `导入于 ${formatTime(source.importedAt)}`
+                    ) : (
+                      "随系统版本维护"
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <table className="hw-table">
+              <thead>
+                <tr>
+                  <th>类别</th>
+                  <th className="num">条目</th>
+                  <th>规格覆盖</th>
+                  <th className="num">内置精选 / 人工核验 / 已核数据</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overview.categories.map((row) => {
+                  const pct = row.total > 0 ? Math.round((row.withSpec / row.total) * 100) : 0;
+                  return (
+                    <tr key={row.category}>
+                      <td>{CATEGORY_LABELS[row.category] ?? row.category}</td>
+                      <td className="num">{row.total.toLocaleString("zh-CN")}</td>
+                      <td>
+                        <span className="cov">
+                          <span className="cov-track" aria-hidden="true">
+                            <span className="cov-fill" style={{ width: `${pct}%` }} />
+                          </span>
+                          <span className="cov-pct">{pct}%</span>
+                        </span>
+                      </td>
+                      <td className="num hw-mix">
+                        {row.bySource.seed} · {row.bySource.manual} · {row.bySource.buildcores.toLocaleString("zh-CN")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <div className="hw-stats">
-            {overview.sources.map((source) => (
-              <div className="hw-stat" key={source.key}>
-                <span className="hw-stat-num">{source.count.toLocaleString("zh-CN")}</span>
-                <span className="hw-stat-label">{source.label}</span>
-                <span className="hw-stat-meta">
-                  {source.key === "buildcores" && source.attribution ? (
-                    <>
-                      <a href={source.attribution.upstreamUrl} target="_blank" rel="noreferrer">
-                        {source.attribution.license}
-                      </a>
-                      {" · "}
-                      {source.attribution.upstreamCommit.slice(0, 7)} · {formatTime(source.importedAt)}
-                    </>
-                  ) : source.key === "manual" ? (
-                    `导入于 ${formatTime(source.importedAt)}`
-                  ) : (
-                    "随代码维护"
-                  )}
+
+          {/* 数据质量（只读报表） */}
+          {quality && (
+            <div className="hw-panel-block" aria-labelledby="catalog-quality-title">
+              <div className="hw-panel-head">
+                <div>
+                  <h2 id="catalog-quality-title">数据质量</h2>
+                  <p className="hw-section-note">
+                    共 {quality.products.total.toLocaleString("zh-CN")} 条，每条的规格都有出处，经人工复核后标记为已核验。
+                    <Link href="/review" style={{ marginLeft: 8 }}>
+                      去审核台复核 <ArrowRight size={12} aria-hidden />
+                    </Link>
+                  </p>
+                </div>
+                <span className="hw-total">
+                  证据 {quality.evidence.total.toLocaleString("zh-CN")} 条（已复核 {quality.evidence.verified.toLocaleString("zh-CN")}，覆盖 {quality.evidence.productCoverageRate}% 产品）
                 </span>
               </div>
-            ))}
-          </div>
-          <table className="hw-table">
-            <thead>
-              <tr>
-                <th>类别</th>
-                <th className="num">条目</th>
-                <th>规格覆盖</th>
-                <th className="num">种子 / 人工 / BuildCores</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overview.categories.map((row) => {
-                const pct = row.total > 0 ? Math.round((row.withSpec / row.total) * 100) : 0;
-                return (
-                  <tr key={row.category}>
-                    <td>{CATEGORY_LABELS[row.category] ?? row.category}</td>
-                    <td className="num">{row.total.toLocaleString("zh-CN")}</td>
-                    <td>
-                      <span className="cov">
-                        <span className="cov-track" aria-hidden="true">
-                          <span className="cov-fill" style={{ width: `${pct}%` }} />
+              <div className="hw-stats">
+                <div className="hw-stat">
+                  <span className="hw-stat-num">{quality.products.byQualityStatus.verified?.toLocaleString("zh-CN") ?? 0}</span>
+                  <span className="hw-stat-label">已核验</span>
+                </div>
+                <div className="hw-stat">
+                  <span className="hw-stat-num">{quality.products.byQualityStatus.supported?.toLocaleString("zh-CN") ?? 0}</span>
+                  <span className="hw-stat-label">有参考资料</span>
+                </div>
+                <div className="hw-stat">
+                  <span className="hw-stat-num">{quality.conflicts.products.toLocaleString("zh-CN")}</span>
+                  <span className="hw-stat-label">来源冲突（{quality.conflicts.rate}%）</span>
+                </div>
+                <div className="hw-stat">
+                  <span className="hw-stat-num">{quality.stale.products.toLocaleString("zh-CN")}</span>
+                  <span className="hw-stat-label">来源过期（{quality.stale.rate}%）</span>
+                </div>
+                <div className="hw-stat">
+                  <span className="hw-stat-num">{quality.queue.open.toLocaleString("zh-CN")}</span>
+                  <span className="hw-stat-label">待审核（新品 {quality.queue.byType.new_product ?? 0} · 缺字段 {quality.queue.byType.missing_field ?? 0} · 冲突 {quality.queue.byType.conflict ?? 0} · 过期 {quality.queue.byType.stale ?? 0}）</span>
+                </div>
+              </div>
+              <table className="hw-table">
+                <thead>
+                  <tr>
+                    <th>类别</th>
+                    <th className="num">条目</th>
+                    <th>关键字段完整率</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quality.categories.map((row) => (
+                    <tr key={row.category}>
+                      <td>{CATEGORY_LABELS[row.category] ?? row.category}</td>
+                      <td className="num">{row.total.toLocaleString("zh-CN")}</td>
+                      <td>
+                        <span className="cov">
+                          <span className="cov-track" aria-hidden="true">
+                            <span className="cov-fill" style={{ width: `${row.fillRate}%` }} />
+                          </span>
+                          <span className="cov-pct">{row.fillRate}%</span>
                         </span>
-                        <span className="cov-pct">{pct}%</span>
-                      </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {quality.queue.topBlockingFields.length > 0 && (
+                <p className="hw-section-note">
+                  阻塞最多的字段：
+                  {quality.queue.topBlockingFields.map((item) => ` ${item.field}（${item.count}）`).join(" ·")}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* 导入审计 */}
+          <div className="hw-panel-block">
+            <table className="hw-table">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>来源</th>
+                  <th>版本</th>
+                  <th className="num">结果</th>
+                </tr>
+              </thead>
+              <tbody>
+                {imports.map((run) => (
+                  <tr key={run.id}>
+                    <td>{formatTime(run.importedAt)}</td>
+                    <td className="hw-spec">{run.sourcePath.split(/[\\/]/).pop()}</td>
+                    <td className="hw-spec">
+                      {run.upstreamCommit === "manual" ? "人工整理" : run.upstreamCommit.slice(0, 7)}
                     </td>
-                    <td className="num hw-mix">
-                      {row.bySource.seed} · {row.bySource.manual} · {row.bySource.buildcores.toLocaleString("zh-CN")}
+                    <td className="num">
+                      导入 {run.importedCount.toLocaleString("zh-CN")}
+                      {run.errorCount > 0 ? ` · 错 ${run.errorCount}` : ""}
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </section>
-      )}
-
-      {/* 数据质量（只读报表） */}
-      {quality && (
-        <section className="wb-panel hw-panel-block" aria-labelledby="catalog-quality-title">
-          <div className="hw-panel-head">
-            <div>
-              <h2 id="catalog-quality-title">数据质量</h2>
-              <p className="hw-section-note">
-                入库 {quality.products.total.toLocaleString("zh-CN")} 条，每条的质量状态来自字段级证据链，人工复核后才会提升。
-                <Link href="/review" style={{ marginLeft: 8 }}>
-                  去审核台复核 <ArrowRight size={12} aria-hidden />
-                </Link>
-              </p>
-            </div>
-            <span className="hw-total">
-              证据 {quality.evidence.total.toLocaleString("zh-CN")} 条（已复核 {quality.evidence.verified.toLocaleString("zh-CN")}，覆盖 {quality.evidence.productCoverageRate}% 产品）
-            </span>
+                ))}
+                {imports.length === 0 && (
+                  <tr>
+                    <td colSpan={4}>暂无导入记录。</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-          <div className="hw-stats">
-            <div className="hw-stat">
-              <span className="hw-stat-num">{quality.products.byQualityStatus.verified?.toLocaleString("zh-CN") ?? 0}</span>
-              <span className="hw-stat-label">已核验</span>
-            </div>
-            <div className="hw-stat">
-              <span className="hw-stat-num">{quality.products.byQualityStatus.supported?.toLocaleString("zh-CN") ?? 0}</span>
-              <span className="hw-stat-label">有参考资料</span>
-            </div>
-            <div className="hw-stat">
-              <span className="hw-stat-num">{quality.conflicts.products.toLocaleString("zh-CN")}</span>
-              <span className="hw-stat-label">来源冲突（{quality.conflicts.rate}%）</span>
-            </div>
-            <div className="hw-stat">
-              <span className="hw-stat-num">{quality.stale.products.toLocaleString("zh-CN")}</span>
-              <span className="hw-stat-label">来源过期（{quality.stale.rate}%）</span>
-            </div>
-            <div className="hw-stat">
-              <span className="hw-stat-num">{quality.queue.open.toLocaleString("zh-CN")}</span>
-              <span className="hw-stat-label">待审核（新品 {quality.queue.byType.new_product ?? 0} · 缺字段 {quality.queue.byType.missing_field ?? 0} · 冲突 {quality.queue.byType.conflict ?? 0} · 过期 {quality.queue.byType.stale ?? 0}）</span>
-            </div>
-          </div>
-          <table className="hw-table">
-            <thead>
-              <tr>
-                <th>类别</th>
-                <th className="num">条目</th>
-                <th>关键字段完整率</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quality.categories.map((row) => (
-                <tr key={row.category}>
-                  <td>{CATEGORY_LABELS[row.category] ?? row.category}</td>
-                  <td className="num">{row.total.toLocaleString("zh-CN")}</td>
-                  <td>
-                    <span className="cov">
-                      <span className="cov-track" aria-hidden="true">
-                        <span className="cov-fill" style={{ width: `${row.fillRate}%` }} />
-                      </span>
-                      <span className="cov-pct">{row.fillRate}%</span>
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {quality.queue.topBlockingFields.length > 0 && (
-            <p className="hw-section-note">
-              阻塞最多的字段：
-              {quality.queue.topBlockingFields.map((item) => ` ${item.field}（${item.count}）`).join(" ·")}
-            </p>
-          )}
-        </section>
+        </details>
       )}
-
-      <details className="hw-audit">
-        <summary>导入审计 · {imports.length} 条</summary>
-        <table className="hw-table">
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>来源</th>
-              <th>版本</th>
-              <th className="num">结果</th>
-            </tr>
-          </thead>
-          <tbody>
-            {imports.map((run) => (
-              <tr key={run.id}>
-                <td>{formatTime(run.importedAt)}</td>
-                <td className="hw-spec">{run.sourcePath.split(/[\\/]/).pop()}</td>
-                <td className="hw-spec">
-                  {run.upstreamCommit === "manual" ? "人工整理" : run.upstreamCommit.slice(0, 7)}
-                </td>
-                <td className="num">
-                  导入 {run.importedCount.toLocaleString("zh-CN")}
-                  {run.errorCount > 0 ? ` · 错 ${run.errorCount}` : ""}
-                </td>
-              </tr>
-            ))}
-            {imports.length === 0 && (
-              <tr>
-                <td colSpan={4}>暂无导入记录。</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </details>
     </main>
   );
 }

@@ -3,6 +3,8 @@ import { test, expect } from "@playwright/test";
 test("M36 数据质量只读报表：质量状态、队列计数与关键字段完整率可见", async ({ page }) => {
   await page.goto("/hardware");
 
+  // 数据底座与质量报表已折叠为"数据是怎么来的"（v3：消费者主任务是检索），展开后可见
+  await page.getByText(/这 [\d,]+ 条数据是怎么来的/).click();
   await expect(page.getByRole("heading", { name: "数据质量" })).toBeVisible();
   await expect(page.getByText("已核验", { exact: true })).toBeVisible();
   await expect(page.getByText("有参考资料", { exact: true })).toBeVisible();
@@ -13,5 +15,5 @@ test("M36 数据质量只读报表：质量状态、队列计数与关键字段�
   const qualityTable = page.getByRole("table").nth(1);
   await expect(qualityTable.getByRole("columnheader", { name: "关键字段完整率" })).toBeVisible();
   await expect(qualityTable.getByRole("columnheader", { name: "条目" })).toBeVisible();
-  await expect(page.getByText(/质量状态来自字段级证据链/)).toBeVisible();
+  await expect(page.getByText(/每条的规格都有出处/)).toBeVisible();
 });
