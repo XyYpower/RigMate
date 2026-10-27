@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LoadError } from "@/ui/components/load-error";
 import type { Build, Finding } from "@/domain/build/types";
 import { CATEGORY_META, type ItemSpec } from "@/ui/category-form";
 import { STATUS_ORDER, toFindingCardModel } from "@/ui/finding-model";
@@ -62,6 +63,7 @@ export default function ReportPage() {
   const [check, setCheck] = useState<CheckPayload>(null);
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +91,7 @@ export default function ReportPage() {
     return () => {
       cancelled = true;
     };
-  }, [buildId]);
+  }, [buildId, reloadKey]);
 
   if (notFound) {
     return (
@@ -105,7 +107,7 @@ export default function ReportPage() {
   if (loadError) {
     return (
       <main className="report-page">
-        <p className="helper">报告加载失败，请确认开发服务器正在运行。</p>
+        <LoadError label="报告没有加载出来" onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />
       </main>
     );
   }

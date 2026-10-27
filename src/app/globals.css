@@ -204,6 +204,12 @@ select {
 .addgrid .field.wide { grid-column: 1 / -1; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 16px; }
 .helper { margin: 10px 0 0; color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
+/* 统一加载失败反馈：短句 + 就近重试（DESIGN.md v3 自解释原则 2） */
+.load-error { margin: 10px 0 0; color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
+.load-error-retry {
+  margin-left: 8px; color: var(--wb-accent); font-weight: 700; font-size: var(--wb-text-sm);
+  text-decoration: underline; text-underline-offset: 3px;
+}
 
 /* ---------- 硬件中心（数据运营视图） ---------- */
 .hw-page { max-width: 980px; margin: 0 auto; padding: 26px 40px 60px; }

@@ -14,13 +14,13 @@ export type ToolMeta = {
 };
 
 const TOOL_META: Record<string, ToolMeta> = {
-  searchCatalog: { label: "检索目录", detailLabel: "候选 ID" },
+  searchCatalog: { label: "检索目录", detailLabel: "命中型号" },
   searchEvidence: { label: "证据链核对", detailLabel: "证据来源" },
   runCompatibilityCheck: { label: "兼容性检查", detailLabel: "涉及规则" },
-  parse_intent: { label: "模型理解目标", detailLabel: "涉及候选" },
-  select_catalog_candidates: { label: "模型选件", detailLabel: "选中型号" },
-  propose_swap: { label: "模型换件", detailLabel: "候选" },
-  revise_intent: { label: "模型理解修订" },
+  parse_intent: { label: "AI 理解目标", detailLabel: "涉及型号" },
+  select_catalog_candidates: { label: "AI 挑选型号", detailLabel: "选中型号" },
+  propose_swap: { label: "AI 更换型号", detailLabel: "候选" },
+  revise_intent: { label: "AI 理解修改" },
 };
 
 const FALLBACK_META: ToolMeta = { label: "工具调用", detailLabel: "命中" };

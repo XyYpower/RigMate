@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { sessionStatusLabel } from "@/ui/status-vocabulary";
 
 /**
  * 方案会话列表（agent-ui-design §5.3，P3）：/design。
  * 每个设计请求是一个会话——点开继续调整；新建目标回首页。
+ * 状态词来自全站统一词表（status-vocabulary）。
  */
 
 type SessionListItem = {
@@ -16,13 +18,6 @@ type SessionListItem = {
   updatedAt: string;
   latest: { id: string; version: number; title: string; proposalStatus: string } | null;
   acceptedBuildId: string | null;
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  generating: "生成中",
-  needs_input: "待补充",
-  ready_to_review: "待确认",
-  accepted: "已接受",
 };
 
 function formatTime(value: string): string {
@@ -74,12 +69,12 @@ export default function DesignSessionsPage() {
                   <p className="session-list-meta">
                     {session.latest
                       ? `${session.latest.title} · 方案 v${session.latest.version}`
-                      : STATUS_LABELS[session.status] ?? session.status}
+                      : sessionStatusLabel(session.status, session.acceptedBuildId)}
                     <span className="session-list-time mono">{formatTime(session.updatedAt)}</span>
                   </p>
                 </div>
                 <span className={`session-list-status status-${session.status}`}>
-                  {session.acceptedBuildId ? "已接受" : STATUS_LABELS[session.status] ?? session.status}
+                  {sessionStatusLabel(session.status, session.acceptedBuildId)}
                 </span>
               </Link>
             </li>

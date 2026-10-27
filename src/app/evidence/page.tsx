@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadError } from "@/ui/components/load-error";
 import { parseBulkEvidenceLines } from "@/ui/evidence-bulk";
 
 type EvidenceRecord = {
@@ -366,7 +367,7 @@ export default function EvidencePage() {
             </button>
           ))}
         </div>
-        {loadError && <p className="helper">台账加载失败，请确认开发服务器正在运行。</p>}
+        {loadError && <LoadError label="台账没有加载出来" onRetry={() => { setLoadError(false); void loadList(filterCategory); }} />}
         {records && records.length === 0 && <p className="helper">还没有证据记录。</p>}
         {records && records.length > 0 && (
           <table className="hw-table">

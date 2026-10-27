@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LoadError } from "@/ui/components/load-error";
 import { CATEGORY_META, type ItemSpec } from "@/ui/category-form";
 import { productPageUrl } from "@/ui/product-link";
 import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
@@ -112,6 +113,7 @@ export default function HardwarePage() {
   const [hits, setHits] = useState<CatalogHit[] | null>(null);
   const [searching, setSearching] = useState(false);
 
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -131,7 +133,7 @@ export default function HardwarePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   async function runSearch() {
     setSearching(true);
@@ -160,7 +162,7 @@ export default function HardwarePage() {
         }
       />
 
-      {loadError && <p className="helper">目录总览加载失败，请确认开发服务器正在运行。</p>}
+      {loadError && <LoadError label="目录总览没有加载出来" onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />}
 
       {/* 探索目录：类别 + 说明 + 检索 + 结果，一个面板讲完 */}
       <section className="wb-panel hw-explore" aria-labelledby="hardware-explore-title">

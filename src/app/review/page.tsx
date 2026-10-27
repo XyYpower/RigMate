@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LoadError } from "@/ui/components/load-error";
 
 type PendingItem = {
   evidenceId: string;
@@ -127,7 +128,7 @@ export default function ReviewDeskPage() {
             />
           </span>
         </div>
-        {loadError && <p className="helper">加载失败，请确认开发服务器正在运行。</p>}
+        {loadError && <LoadError onRetry={() => { setLoadError(false); void loadList(); }} />}
         {message && <p className="review-msg">{message}</p>}
         {products !== null && products.length === 0 && !loadError && (
           <p className="helper">没有待复核的证据。新查证数据录入后会出现在这里。</p>

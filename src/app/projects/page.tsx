@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { WorkspaceHeader } from "@/ui/workbench/workspace-header";
+import { LoadError } from "@/ui/components/load-error";
+import { sessionStatusLabel } from "@/ui/status-vocabulary";
 
 type Build = {
   id: string;
@@ -92,6 +94,7 @@ export default function ProjectsPage() {
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
 
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -115,7 +118,7 @@ export default function ProjectsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   async function parsePasted() {
     const { parseReviewText, modelTokenOf } = await import("@/domain/review/parse");
@@ -352,7 +355,7 @@ export default function ProjectsPage() {
             ＋ 从目标开始
           </Link>
         </div>
-        {loadError && <p className="helper">加载失败，请确认开发服务器正在运行。</p>}
+        {loadError && <LoadError onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />}
         {drafts && drafts.length === 0 && (
           <p className="helper">
             还没有草稿。回<Link href="/"> 开始配置 </Link>用一句话生成第一套方案。
@@ -375,7 +378,7 @@ export default function ProjectsPage() {
                   <td>{draft.latest?.title ?? `“${draft.rawInput.length > 28 ? `${draft.rawInput.slice(0, 28)}…` : draft.rawInput}”`}</td>
                   <td>
                     <span className={`pj-status pj-status-${draft.status === "accepted" ? "accepted" : draft.status === "needs_input" ? "input" : "review"}`}>
-                      {draft.status === "accepted" ? "已生成正式方案" : draft.status === "needs_input" ? "待补充目标" : "待确认"}
+                      {sessionStatusLabel(draft.status, draft.acceptedBuildId ?? null)}
                     </span>
                   </td>
                   <td className="num">{draft.latest ? `v${draft.latest.version}` : "—"}</td>
@@ -399,7 +402,7 @@ export default function ProjectsPage() {
             ＋ 进入高级 DIY
           </Link>
         </div>
-        {loadError && <p className="helper">项目列表加载失败，请确认开发服务器正在运行。</p>}
+        {loadError && <LoadError label="项目列表没有加载出来" onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />}
         {builds && builds.length === 0 && (
           <p className="helper">
             还没有正式方案。接受一套草稿，或去<Link href="/diy"> 高级 DIY </Link>逐件搭建。

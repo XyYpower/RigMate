@@ -186,7 +186,7 @@ function renderItem(
 ) {
   switch (item.kind) {
     case "run_started":
-      return <p className="session-run-divider">第 {item.runNumber} 轮 · {item.model === "rule-engine" ? "本地规则" : `模型 ${item.model}`}</p>;
+      return <p className="session-run-divider">第 {item.runNumber} 轮 · {item.model === "rule-engine" ? "规则搭配" : "AI 搭配"}</p>;
     case "user":
       return <p className="session-user-text">{item.text}</p>;
     case "phase": {
@@ -232,7 +232,7 @@ function renderItem(
         <p className="session-anomaly-text">
           {item.message}
           {item.fallback && (
-            <span className="session-anomaly-fallback">已从 {item.fallback.from} 回退到 {item.fallback.to}。</span>
+            <span className="session-anomaly-fallback">已自动改用备用方式继续，结果不受影响。</span>
           )}
         </p>
       );
