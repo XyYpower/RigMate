@@ -1,29 +1,30 @@
 import { test, expect } from "@playwright/test";
 
-test("决策台导航：三个主入口 + 场景入口可达", async ({ page }) => {
+test("决策台导航：主入口 + 数据运营分组可达", async ({ page }) => {
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "主导航" });
   await expect(nav.getByRole("link", { name: "开始配置" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "我的方案" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "硬件资料" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "高级 DIY" })).toBeVisible();
 
-  // 场景入口分组仍可达
-  const sceneNav = page.getByRole("navigation", { name: "场景入口" });
-  await expect(sceneNav.getByRole("link", { name: "高级 DIY" })).toBeVisible();
-  await expect(sceneNav.getByRole("link", { name: "证据台账" })).toBeVisible();
+  // 数据运营分组仍可达（含审核台直达入口）
+  const opsNav = page.getByRole("navigation", { name: "数据运营" });
+  await expect(opsNav.getByRole("link", { name: "证据台账" })).toBeVisible();
+  await expect(opsNav.getByRole("link", { name: "审核台" })).toBeVisible();
 
   await expect(page.getByRole("heading", { name: /你想配一台\s*什么样的电脑？/ })).toBeVisible();
-  await sceneNav.getByRole("link", { name: "高级 DIY" }).click();
+  await nav.getByRole("link", { name: "高级 DIY" }).click();
   await expect(page.getByRole("heading", { name: /配件录入|编辑配件/ })).toBeVisible();
 
   await page.getByRole("link", { name: "硬件资料" }).click();
   await expect(page.getByRole("heading", { name: "硬件资料" })).toBeVisible();
 
-  await sceneNav.getByRole("link", { name: "证据台账" }).click();
+  await opsNav.getByRole("link", { name: "证据台账" }).click();
   await expect(page.getByRole("heading", { name: "证据台账" })).toBeVisible();
 
   await page.getByRole("link", { name: "我的方案" }).click();
-  await expect(page.getByRole("heading", { name: "方案库" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "我的方案" })).toBeVisible();
 });
 
 test("决策台导航：首页与方案页的 active 状态可辨识", async ({ page }) => {
