@@ -1,15 +1,32 @@
+import { ClipboardCopy, Pencil } from "lucide-react";
 import { CATEGORY_META, hasAnySpec } from "@/ui/category-form";
 import { formatYuan, type Build } from "./types";
 import type { DiyWorkspace } from "./use-diy-projects";
 
-/** 规格表清单：类型徽章 + 型号摘要 + 价格（未计价如实为空）+ 录入状态 + 行内改/删 */
+/** 规格表清单：类型徽章 + 型号摘要 + 价格（未计价如实为空）+ 录入状态 + 行内改/删；快填模式行内直接改价 */
 export function PartsListSection({ build, diy }: { build: Build | null; diy: DiyWorkspace }) {
-  const { editingItemId, confirmItemId, busy } = diy;
+  const { editingItemId, confirmItemId, busy, quickPriceMode, quickPrices, toggleQuickPriceMode, setQuickPrice, saveQuickPrices, copyPendingPriceList } = diy;
+  const hasItems = Boolean(build?.items.length);
+  const missingPriceCount = build?.items.filter((item) => typeof item.priceCents !== "number").length ?? 0;
   return (
     <section className="sec">
       <div className="sec-head">
         <h3 className="sec-title">清单</h3>
-        <span className="count-badge">{build?.items.length ?? 0} / 8 类</span>
+        {hasItems ? (
+          <span className="item-price-actions">
+            <span className="count-badge">{build?.items.length ?? 0} / 8 类</span>
+            {missingPriceCount > 0 && !quickPriceMode && (
+              <button className="item-action" onClick={copyPendingPriceList} disabled={busy}>
+                <ClipboardCopy size={13} aria-hidden /> 复制待录清单
+              </button>
+            )}
+            <button className={`item-action ${quickPriceMode ? "active" : ""}`} onClick={toggleQuickPriceMode} disabled={busy}>
+              <Pencil size={13} aria-hidden /> {quickPriceMode ? "退出快填" : "快填价格"}
+            </button>
+          </span>
+        ) : (
+          <span className="count-badge">0 / 8 类</span>
+        )}
       </div>
       {build?.items.length ? (
         <div className="table">
@@ -32,24 +49,46 @@ export function PartsListSection({ build, diy }: { build: Build | null; diy: Diy
                   {item.source?.startsWith("catalog:") ? " · 目录型号" : ""}
                 </span>
               </div>
-              <span className={`item-price ${typeof item.priceCents === "number" ? "" : "empty"}`}>
-                {typeof item.priceCents === "number" ? formatYuan(item.priceCents) : "—"}
-              </span>
+              {quickPriceMode ? (
+                <input
+                  className="item-price-input"
+                  value={quickPrices[item.id] ?? ""}
+                  onChange={(event) => setQuickPrice(item.id, event.target.value)}
+                  inputMode="decimal"
+                  placeholder="元"
+                  aria-label={`${item.displayName ?? item.label} 的价格（元）`}
+                  disabled={busy}
+                />
+              ) : (
+                <span className={`item-price ${typeof item.priceCents === "number" ? "" : "empty"}`}>
+                  {typeof item.priceCents === "number" ? formatYuan(item.priceCents) : "—"}
+                </span>
+              )}
               <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
                 {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
               </span>
               <div className="item-actions">
-                <button className={`item-action ${editingItemId === item.id ? "active" : ""}`} onClick={() => diy.startEdit(item)} disabled={busy}>改</button>
-                <button
-                  className={`item-action danger ${confirmItemId === item.id ? "active" : ""}`}
-                  onClick={() => diy.removeItem(item.id)}
-                  disabled={busy}
-                >
-                  {confirmItemId === item.id ? "确认删" : "删"}
-                </button>
+                {quickPriceMode ? null : (
+                  <>
+                    <button className={`item-action ${editingItemId === item.id ? "active" : ""}`} onClick={() => diy.startEdit(item)} disabled={busy}>改</button>
+                    <button
+                      className={`item-action danger ${confirmItemId === item.id ? "active" : ""}`}
+                      onClick={() => diy.removeItem(item.id)}
+                      disabled={busy}
+                    >
+                      {confirmItemId === item.id ? "确认删" : "删"}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
+          {quickPriceMode && (
+            <div className="form-actions">
+              <button className="button ghost" onClick={toggleQuickPriceMode} disabled={busy}>取消</button>
+              <button className="button primary" onClick={() => void saveQuickPrices()} disabled={busy}>保存全部价格</button>
+            </div>
+          )}
         </div>
       ) : (
         <p className="empty-line">清单为空</p>

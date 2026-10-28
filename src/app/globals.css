@@ -182,6 +182,13 @@ select {
 .item-main strong { display: block; font-size: var(--wb-text-base); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item-main span { display: block; margin-top: 1px; color: var(--wb-ink-faint); font-size: var(--wb-text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item-price { text-align: right; font-size: var(--wb-text-base); font-weight: 700; }
+.item-price-input {
+  width: 100%; max-width: 110px; text-align: right;
+  border: 1px solid var(--wb-hairline-strong); border-radius: var(--wb-radius-nested);
+  padding: 4px 8px; background: var(--wb-surface); font-size: var(--wb-text-base); font-weight: 600;
+}
+.item-price-input:focus { border-color: var(--wb-accent); background: var(--wb-input-focused); outline: none; }
+.item-price-actions { display: inline-flex; align-items: center; gap: 12px; }
 .item-price.empty { color: var(--wb-ink-faint); font-weight: 400; }
 .item-state { text-align: right; font-size: var(--wb-text-sm); font-weight: 700; }
 .item-state.confirmed { color: var(--wb-pass); }

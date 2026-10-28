@@ -42,6 +42,9 @@ export function useDiyProjects() {
   const [message, setMessage] = useState("正在加载你的历史项目…");
   const [busy, setBusy] = useState(false);
   const [checkHistory, setCheckHistory] = useState<CheckRunSummary[]>([]);
+  // 价格快填模式：清单行内直接填价，一次批量保存（省去逐件走编辑表单）
+  const [quickPriceMode, setQuickPriceMode] = useState(false);
+  const [quickPrices, setQuickPrices] = useState<Record<string, string>>({});
 
   function loadCheckHistory(buildId: string) {
     void fetch(`/api/builds/${buildId}/check/history`)
@@ -420,6 +423,77 @@ export function useDiyProjects() {
     }
   }
 
+  function toggleQuickPriceMode() {
+    if (!quickPriceMode) {
+      const initial: Record<string, string> = {};
+      for (const item of build?.items ?? []) {
+        initial[item.id] = typeof item.priceCents === "number" ? String(item.priceCents / 100) : "";
+      }
+      setQuickPrices(initial);
+    }
+    setQuickPriceMode((prev) => !prev);
+  }
+
+  function setQuickPrice(itemId: string, value: string) {
+    setQuickPrices((prev) => ({ ...prev, [itemId]: value }));
+  }
+
+  async function saveQuickPrices() {
+    if (!build) return;
+    const updates = build.items
+      .map((item) => ({ item, raw: (quickPrices[item.id] ?? "").trim() }))
+      .filter(({ item, raw }) => {
+        if (raw === "") return false; // 快填只填/改价，不支持清价（空行跳过）
+        const yuan = Number(raw);
+        if (!Number.isFinite(yuan) || yuan <= 0) return false;
+        return Math.round(yuan * 100) !== item.priceCents;
+      });
+    if (updates.length === 0) {
+      setQuickPriceMode(false);
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      let latest: Build | null = build;
+      for (const { item, raw } of updates) {
+        const response = await fetch(`/api/builds/${build.id}/items/${item.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ label: item.label, spec: item.spec ?? {}, priceCents: Math.round(Number(raw) * 100) }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? `保存「${item.label}」价格失败`);
+        latest = data.build;
+      }
+      if (latest) {
+        setBuild(latest);
+        setProjects((prev) => prev.map((project) => (project.id === latest!.id ? latest! : project)));
+      }
+      setQuickPriceMode(false);
+      setMessage(`已保存 ${updates.length} 件价格，检查结论已标记待更新，建议重新检查。`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "保存价格失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** 复制待录清单（粘贴格式）：没价格的件生成「类别 型号」行，用户查价后可直接粘进证据台账批量录入 */
+  function copyPendingPriceList() {
+    if (!build) return;
+    const lines = build.items
+      .filter((item) => typeof item.priceCents !== "number")
+      .map((item) => `${item.category} ${item.displayName ?? item.label}`);
+    if (lines.length === 0) {
+      setMessage("清单里所有配件都已有价格。");
+      return;
+    }
+    void navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setMessage(`已复制 ${lines.length} 行待录清单（无价格）。查好价后在行尾补上数字，即可粘进证据台账批量录入。`);
+    });
+  }
+
   async function runCheck() {
     if (!build) return;
     setBusy(true);
@@ -464,6 +538,7 @@ export function useDiyProjects() {
     setName, setUseCase, setBudgetYuan, setItemCategory, setDrafts, setCatalogSearch,
     switchProject, deleteProject, createProject, addItem, startEdit, cancelEdit,
     saveItem, removeItem, runCheck, exitEditOnCategorySwitch,
+    quickPriceMode, quickPrices, toggleQuickPriceMode, setQuickPrice, saveQuickPrices, copyPendingPriceList,
   };
 }
 
