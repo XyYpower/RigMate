@@ -106,16 +106,13 @@ export default function ReviewDeskPage() {
     <main className="hw-page">
       <header className="hw-head">
         <h1>审核台</h1>
-        <p className="hw-sub">
-          人工复核字段证据：核对来源页面与摘录一致后盖章，该字段即标记为「已核验」。所有操作记录复核人署名。
-        </p>
       </header>
 
       <section className="sec">
         <div className="hw-sec-head">
           <div>
             <h2>待复核证据</h2>
-            <p className="hw-section-note">{total > 0 ? `共 ${total} 条，按产品分组。` : "全部处理完毕。"}</p>
+            <p className="hw-section-note">{total > 0 ? `共 ${total} 条` : "全部处理完毕"}</p>
           </div>
           <span className="hw-total">
             复核人：

@@ -55,16 +55,10 @@ export function ItemEntrySection({ diy }: { diy: DiyWorkspace }) {
     <section className="sec">
       <div className="sec-head">
         <h3 className="sec-title">{editingItemId ? "编辑配件" : "配件录入"}</h3>
-        <span className="sec-meta">数据由你确认，不自动猜测型号</span>
       </div>
-      {editingItemId && (
-        <p className="edit-note">正在编辑清单中的配件：类别保持不变，改完点「保存修改」。</p>
-      )}
       <div className="addgrid">
         <label className="field wide">
-          <span className="field-label">
-            检索目录（输入型号关键词）{catalogProvenance && <span className="field-hint">共 {catalogProvenance.entryCount.toLocaleString("zh-CN")} 条已核数据</span>}
-          </span>
+          <span className="field-label">检索目录</span>
           <input
             value={catalogSearch}
             onChange={(event) => setCatalogSearch(event.target.value)}
@@ -73,7 +67,7 @@ export function ItemEntrySection({ diy }: { diy: DiyWorkspace }) {
           />
         </label>
         <label className="field wide">
-          <span className="field-label">从目录选择型号 <span className="field-hint">自动带出已核规格</span></span>
+          <span className="field-label">从目录选择</span>
           <select
             value={draft.catalogId ?? ""}
             onChange={(event) => {
@@ -103,21 +97,15 @@ export function ItemEntrySection({ diy }: { diy: DiyWorkspace }) {
         </label>
         {catalogProvenance && (
           <p className="catalog-provenance field wide">
-            目录含{" "}
-            <a
-              href={catalogProvenance.upstreamUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              BuildCores OpenDB
+            型号数据含{" "}
+            <a href={catalogProvenance.upstreamUrl} target="_blank" rel="noreferrer">
+              {catalogProvenance.license}
             </a>{" "}
-            导入 {catalogProvenance.entryCount} 条 · commit{" "}
-            {catalogProvenance.upstreamCommit.slice(0, 7)} ·{" "}
-            {catalogProvenance.license}（须保留署名）
+            开源目录 {catalogProvenance.entryCount.toLocaleString("zh-CN")} 条
           </p>
         )}
         <label className="field wide">
-          <span className="field-label">型号或商品名称</span>
+          <span className="field-label">型号</span>
           <input
             value={draft.label}
             onChange={(event) =>
@@ -131,7 +119,7 @@ export function ItemEntrySection({ diy }: { diy: DiyWorkspace }) {
           />
         </label>
         <label className="field">
-          <span className="field-label">价格（元）· 可选</span>
+          <span className="field-label">价格</span>
           <input
             value={draft.price}
             onChange={(event) =>

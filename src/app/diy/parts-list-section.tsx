@@ -52,7 +52,7 @@ export function PartsListSection({ build, diy }: { build: Build | null; diy: Diy
           ))}
         </div>
       ) : (
-        <p className="empty-line">清单为空。在下方选择类别、填写型号即可加入。</p>
+        <p className="empty-line">清单为空</p>
       )}
     </section>
   );

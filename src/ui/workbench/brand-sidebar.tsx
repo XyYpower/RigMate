@@ -74,7 +74,6 @@ export function BrandSidebar() {
           <NavLink key={item.label} item={item} pathname={pathname} />
         ))}
       </nav>
-      <p className="brand-footnote">说清预算和用途，得到可核验的装机方案</p>
     </aside>
   );
 }

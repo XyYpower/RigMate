@@ -26,7 +26,7 @@ export default function Home() {
     <main className="shell">
       <WorkspaceHeader
         title="高级 DIY"
-        meta={build ? `${build.name} · ${build.items.length} 配件 · 更新于 ${formatTime(build.updatedAt)}` : "逐件录入，规则逐条核验"}
+        meta={build ? `${build.name} · ${build.items.length} 配件` : undefined}
         summary={findings.length > 0 ? <span className="header-budget-summary">{findings.length} 条检查结论</span> : undefined}
       />
       <ProjectBar diy={diy} />
@@ -109,7 +109,7 @@ export default function Home() {
       )}
 
       <footer className="footer">
-        <span className="footer-brand">RIGMATE / 先确认能装，再决定买什么</span>
+        <span className="footer-brand">RIGMATE</span>
         {/* 操作反馈移至表单按钮旁（form-feedback）：footer 在页面底端，用户看不见 */}
       </footer>
     </main>

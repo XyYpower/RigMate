@@ -195,15 +195,12 @@ export default function EvidencePage() {
     <main className="hw-page">
       <header className="hw-head">
         <h1>证据台账</h1>
-        <p className="hw-sub">
-          价格证据台账：只增不改，每条注明渠道、口径与时间，供方案预算引用。
-        </p>
       </header>
 
       <section className="sec">
         <div className="hw-sec-head">
           <h2>批量粘贴录入</h2>
-          <span className="hw-total">逛京东时随手记录：每行一条「类别 型号 价格」，类别可省略（用默认类别）</span>
+          <span className="hw-total">每行一条：类别 型号 价格</span>
         </div>
         <textarea
           className="review-paste"
@@ -258,7 +255,7 @@ export default function EvidencePage() {
               </table>
             )}
             <div className="review-bar">
-              <span className="helper">解析 {bulkPreview.results.length} 条有效，{bulkPreview.errors.length} 条错误。录入后为「待复核」，人工复核通过后才会用于方案预算。</span>
+              <span className="helper">有效 {bulkPreview.results.length} · 错误 {bulkPreview.errors.length} · 录入后人工复核，通过才用于预算</span>
               <button
                 className="button primary"
                 onClick={() => void submitBulk()}

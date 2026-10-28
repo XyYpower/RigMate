@@ -47,7 +47,7 @@ export default function DiagnosticsPage() {
     <main className="diagnostics-page">
       <WorkspaceHeader
         title="运行诊断"
-        summary="最近 20 个会话的模型运行指标：延迟、回退、分项耗时（数据来自事件日志，只读）"
+        summary="最近 20 个会话"
       />
 
       <section className="wb-panel diagnostics-aggregate" aria-label="聚合指标">

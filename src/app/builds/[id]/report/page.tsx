@@ -302,10 +302,7 @@ export default function ReportPage() {
       <section className="report-sec report-notes">
         <h2>数据与说明</h2>
         <p className="report-line">
-          · 每条结论都由固定规则核对得出，编号可追溯；缺数据的字段按「待补充」如实标注，不会用常见值猜。
-        </p>
-        <p className="report-line">
-          · 型号资料来自人工核验目录与开源硬件数据库（署名见硬件资料页）。
+          · 每条结论都由固定规则核对得出，编号可追溯；缺数据的字段按「待补充」如实标注，不会用常见值猜。型号资料来自人工核验目录与开源硬件数据库。
         </p>
         <p className="report-line">· 本报告只核对兼容与配置，不构成价格建议；价格请以购买时的实际报价为准。</p>
       </section>

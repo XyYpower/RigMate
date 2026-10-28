@@ -9,7 +9,7 @@ export function ProjectBar({ diy }: { diy: DiyWorkspace }) {
     <section className="projbar">
       {projects.length > 0 && (
         <label className="field">
-          <span className="field-label">历史项目 <span className="field-hint">切换后自动加载</span></span>
+          <span className="field-label">历史项目</span>
           <select value={build?.id ?? ""} onChange={(event) => diy.switchProject(event.target.value)} disabled={busy}>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
@@ -20,15 +20,15 @@ export function ProjectBar({ diy }: { diy: DiyWorkspace }) {
         </label>
       )}
       <label className="field">
-        <span className="field-label">新项目名称</span>
+        <span className="field-label">项目名称</span>
         <input value={name} onChange={(event) => diy.setName(event.target.value)} placeholder="例如：我的第一台 DIY 主机" disabled={busy} />
       </label>
       <label className="field">
-        <span className="field-label">主要用途</span>
+        <span className="field-label">用途</span>
         <input value={useCase} onChange={(event) => diy.setUseCase(event.target.value)} placeholder="例如：2K 游戏 / 开发" disabled={busy} />
       </label>
       <label className="field">
-        <span className="field-label">预算（元）· 可选，用于余量计</span>
+        <span className="field-label">预算</span>
         <input value={budgetYuan} onChange={(event) => diy.setBudgetYuan(event.target.value)} placeholder="例如：8000" inputMode="numeric" disabled={busy} />
       </label>
       <div className="projbar-actions">

@@ -142,8 +142,8 @@ export function ProjectsPageInner() {
     const skippedCount = parsed.filter((line) => line.skipped).length;
     setReviewMessage(
       rows.length === 0
-        ? "没有解析出配置行。请检查粘贴内容。"
-        : `解析出 ${rows.length} 行${skippedCount > 0 ? `（另跳过 ${skippedCount} 行赠品/服务/标题）` : ""}。逐行确认类别与目录候选后，点「创建项目并运行检查」。`,
+        ? "没有解析出配置行"
+        : `解析出 ${rows.length} 行${skippedCount > 0 ? `（跳过 ${skippedCount}）` : ""}`,
     );
   }
 
@@ -218,7 +218,6 @@ export function ProjectsPageInner() {
     <main className="hw-page projects-page">
       <WorkspaceHeader
         title="我的方案"
-        meta="正式方案在这里编辑和出报告；AI 会话在这里继续调整。"
         actions={
           <Link className="button secondary" href="/">
             从目标开始
@@ -364,9 +363,6 @@ export function ProjectsPageInner() {
               </tbody>
             </table>
             <div className="review-bar">
-              <span className="helper">
-                选「目录候选」自动带出规格；不带候选的行按待补充检查。
-              </span>
               <button className="button primary" onClick={() => void createAndCheck()} disabled={reviewBusy}>
                 {reviewBusy ? "创建中…" : "创建项目并运行检查"}
               </button>
@@ -387,7 +383,7 @@ export function ProjectsPageInner() {
         {loadError && <LoadError label="项目列表没有加载出来" onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />}
         {builds && builds.length === 0 && (
           <p className="helper">
-            还没有正式方案。接受一套 AI 会话里的草稿，或去<Link href="/diy"> 高级 DIY </Link>逐件搭建。
+            还没有正式方案，去<Link href="/diy"> 高级 DIY </Link>搭一套，或接受 AI 会话里的草稿
           </p>
         )}
         {builds && builds.length > 0 && (
