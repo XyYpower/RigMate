@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { experienceAdviceItemSchema } from "./design";
+import { experienceAdviceItemSchema, referencePriceItemSchema } from "./design";
 
 /**
  * 会话事件流契约（agent-ui-design §4，P1）。
@@ -36,6 +36,7 @@ export const rigEventTypeSchema = z.enum([
   "revision_merged",
   "answer",
   "advice",
+  "reference_prices",
 ]);
 export type RigEventType = z.infer<typeof rigEventTypeSchema>;
 
@@ -118,6 +119,14 @@ export const rigPayloadSchema = z.discriminatedUnion("type", [
     runId: z.string(),
     proposalId: z.string(),
     advice: z.array(experienceAdviceItemSchema).max(8),
+  }),
+  z.object({
+    // 非阻塞参考价到达（独立估算层）：与 advice 同一批后台任务，跑完经此事件推送。
+    // 参考价只供展示"参考 ~¥"，绝不写入 items.priceCents；展示必须带估算标注。
+    type: z.literal("reference_prices"),
+    runId: z.string(),
+    proposalId: z.string(),
+    prices: z.array(referencePriceItemSchema).max(8),
   }),
 ]);
 export type RigEvent = z.infer<typeof rigPayloadSchema>;

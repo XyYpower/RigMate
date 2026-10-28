@@ -187,6 +187,12 @@
 .session-part-category { color: var(--wb-ink-faint); font-size: var(--wb-text-xs); }
 .session-part-label { font-weight: 600; }
 .session-part-price { color: var(--wb-ink-muted); }
+/* 模型参考价（独立估算层）：虚线弱化，与真实价格视觉区分 */
+.session-part-reference, .build-parts-reference {
+  display: inline-block; margin-left: 8px;
+  color: var(--wb-slate); font-weight: 600;
+  border-bottom: 1px dashed var(--wb-slate);
+}
 .session-proposal-compat { margin: 0; font-size: var(--wb-text-sm); }
 .session-proposal-compat em { font-style: normal; font-weight: 700; }
 .session-proposal-compat em.pass { color: var(--wb-pass); }

@@ -208,12 +208,46 @@ describe("v14：design_proposals.experience_advice 列（混合建议层）", ()
     const result = migrateSchema(db);
 
     expect(result.to).toBe(LATEST_SCHEMA_VERSION);
-    expect(result.applied.map((m) => m.version)).toEqual([14]);
+    expect(result.applied.map((m) => m.version)).toEqual([14, 15]);
     expect(columnNames(db, "design_proposals")).toContain("experience_advice");
     const legacy = db.all<{ experience_advice: string }>(
       sql`SELECT experience_advice FROM design_proposals WHERE id = 'p-legacy'`,
     );
     expect(JSON.parse(legacy[0]!.experience_advice)).toEqual([]);
+
+    const second = migrateSchema(db);
+    expect(second.applied).toEqual([]);
+  });
+});
+
+describe("v15：design_proposals.reference_prices 列（独立估算层）", () => {
+  it("v14 库升级后旧方案行获得空数组缺省，幂等重跑无新步骤", () => {
+    const db = openFreshDb();
+    for (const migration of MIGRATIONS) {
+      if (migration.version <= 14) migration.up(db);
+    }
+    forceSchemaVersion(db, 14);
+    db.run(sql`INSERT INTO design_proposals (
+      id, request_id, version, status, title, summary,
+      budget_cents, estimated_low_cents, estimated_high_cents,
+      fit_notes, tradeoffs, unknowns, experience_advice, compatibility, created_at, updated_at
+    ) VALUES (
+      'p-legacy15', 'r-legacy15', 1, 'ready', '旧方案', '旧摘要',
+      2000000, 1500000, 1900000,
+      '[]', '[]', '[]', '[]',
+      '{"status":"ok","message":"通过","blockCount":0,"warnCount":0,"unknownCount":0,"passCount":0}',
+      '2026-10-28T00:00:00.000Z', '2026-10-28T00:00:00.000Z'
+    )`);
+
+    const result = migrateSchema(db);
+
+    expect(result.to).toBe(LATEST_SCHEMA_VERSION);
+    expect(result.applied.map((m) => m.version)).toEqual([15]);
+    expect(columnNames(db, "design_proposals")).toContain("reference_prices");
+    const legacy = db.all<{ reference_prices: string }>(
+      sql`SELECT reference_prices FROM design_proposals WHERE id = 'p-legacy15'`,
+    );
+    expect(JSON.parse(legacy[0]!.reference_prices)).toEqual([]);
 
     const second = migrateSchema(db);
     expect(second.applied).toEqual([]);

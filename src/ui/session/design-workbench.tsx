@@ -277,7 +277,7 @@ export function DesignWorkbenchView() {
               <h2 id="parts-title">配置清单</h2>
               
             </div>
-            <BuildPartsTable items={viewedProposal.items} />
+            <BuildPartsTable items={viewedProposal.items} referencePrices={viewedProposal.referencePrices} />
           </section>
 
           <div className="design-desk-inline">{deskPanel}</div>

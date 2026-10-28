@@ -49,6 +49,7 @@ function proposalOf(items: ProposalItem[]): DesignProposal {
     tradeoffs: [],
     unknowns: [],
     experienceAdvice: [],
+    referencePrices: [],
     compatibility: { status: "ok", message: "ok", blockCount: 0, warnCount: 0, unknownCount: 0, passCount: 1 },
     createdAt: "2026-10-09T00:00:00.000Z",
     updatedAt: "2026-10-09T00:00:00.000Z",

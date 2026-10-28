@@ -199,6 +199,7 @@ describe("advice 非阻塞到达（M6 异步化）", () => {
           budgetCents: 2000000, estimatedLowCents: 1, estimatedHighCents: 2,
           items: [{ category: "gpu", label: "4070S", spec: {}, sourceLevel: "supported_catalog", qualityStatus: "supported", fieldQuality: {}, evidenceSourceIds: [], priceEstimateLowCents: null, priceEstimateHighCents: null, priceBasis: "unknown", rationale: "r", confirmationRequired: false }],
           fitNotes: [], tradeoffs: [], unknowns: [], experienceAdvice: [],
+    referencePrices: [],
           compatibility: { status: "ok", message: "m", blockCount: 0, warnCount: 0, unknownCount: 0, passCount: 0 },
           createdAt: "t", updatedAt: "t",
         }],

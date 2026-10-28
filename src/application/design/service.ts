@@ -3,6 +3,7 @@ import { designRequestInputSchema, designRevisionInputSchema, type AgentEvent, t
 import { loadSourcedCatalog } from "@/infra/catalog-import/load";
 import { resolveLlmConfigFromEnv, type LlmConfig } from "@/infra/llm/client";
 import { generateExperienceAdvice } from "./advice-llm";
+import { generateReferencePrices } from "./reference-price-llm";
 import { parseIntentWithLlm, proposeSwapWithLlm, reviseIntentWithLlm, selectCatalogCandidatesWithLlm } from "./intent-llm";
 import { loadPriceContext } from "./price-context";
 import { parseDesignIntent, intentNeedsInput, followupQuestionFor } from "@/domain/design/intent";
@@ -33,6 +34,7 @@ import {
   findPreviousProposal,
   countAgentRuns,
   updateDesignProposalAdvice,
+  updateDesignProposalReferencePrices,
 } from "@/infra/db/repositories/design-repository";
 import { createBuild, addBuildItem, checkBuild, getBuild } from "@/application/builds/service";
 import { decorateProposalItems } from "@/infra/catalog-import/display-names";
@@ -355,6 +357,53 @@ async function requestExperienceAdvice(input: {
 }
 
 /**
+ * 非阻塞参考价任务（规格 v1 §价格，独立估算层）：按类别估算参考价 → 落库 → 事件推送。
+ * 只写入 proposal.referencePrices，绝不触碰 items.priceCents；失败静默（用户只看到无参考价）。
+ */
+async function requestAndPushReferencePrices(input: {
+  requestId: string;
+  runId: string;
+  proposal: DesignProposal;
+  config: LlmConfig;
+  emit: (payload: RigEvent) => void;
+}): Promise<void> {
+  const startedAt = now();
+  input.emit({
+    type: "tool_call", runId: input.runId, tool: "generate_reference_prices", state: "running",
+    detail: "大模型估算参考价（标注估算，不替代真实报价）。", resultIds: [], startedAt, finishedAt: null,
+  });
+  const result = await generateReferencePrices({
+    items: input.proposal.items.map((item) => ({ category: item.category, label: item.label })),
+    budgetCents: input.proposal.budgetCents,
+    config: input.config,
+    maxTokens: 800,
+  });
+  if (!result.ok || result.data.length === 0) {
+    input.emit({
+      type: "tool_call", runId: input.runId, tool: "generate_reference_prices",
+      state: result.ok ? "done" : "error",
+      detail: result.ok ? "模型认为没有可估算的类别。" : `参考价估算不可用（${result.reason}），不影响方案。`,
+      resultIds: [], startedAt, finishedAt: now(),
+    });
+    return;
+  }
+  // 类别去重：同类只保留第一条（估算不需要同类多价）
+  const seen = new Set<string>();
+  const prices = result.data.filter((price) => {
+    if (seen.has(price.category)) return false;
+    seen.add(price.category);
+    return true;
+  });
+  updateDesignProposalReferencePrices(input.proposal.id, prices);
+  input.emit({
+    type: "reference_prices",
+    runId: input.runId,
+    proposalId: input.proposal.id,
+    prices,
+  });
+}
+
+/**
  * 非阻塞建议任务（M6 异步化）：后台跑 advice → 落库 → 经 advice 事件推送。
  * 看门狗保证必然 settle；失败只留事件（正式方案与接受路径零感知）。
  */
@@ -376,14 +425,16 @@ function startAsyncAdvice(input: {
       config: input.config,
       emit: input.emit,
     });
-    if (advice.length === 0) return;
-    updateDesignProposalAdvice(input.proposal.id, advice);
-    input.emit({
-      type: "advice",
-      runId: input.runId,
-      proposalId: input.proposal.id,
-      advice,
-    });
+    if (advice.length > 0) {
+      updateDesignProposalAdvice(input.proposal.id, advice);
+      input.emit({
+        type: "advice",
+        runId: input.runId,
+        proposalId: input.proposal.id,
+        advice,
+      });
+    }
+    await requestAndPushReferencePrices(input);
   })().catch((error) => {
     // 后台建议的任何意外都不允许波及主流程
     console.error("[api/design] 后台建议失败：", error);

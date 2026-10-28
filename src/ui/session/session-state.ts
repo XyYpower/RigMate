@@ -133,6 +133,18 @@ export function applyEnvelope(state: SessionState, envelope: RigEnvelope): Sessi
       // 结构化回答卡（M6）：不进 question 状态——回答不是追问，不触发 needs-input 横幅
       item = { kind: "answer", seq: envelope.seq, summary: payload.summary, actions: payload.actions, at };
       break;
+    case "reference_prices": {
+      // 非阻塞参考价到达（独立估算层）：就地补进对应方案；不进时间线（方案卡价格列承载）
+      const proposalIndex = state.proposals.findIndex((entry) => entry.id === payload.proposalId);
+      const proposals =
+        proposalIndex >= 0
+          ? state.proposals.map((entry, index) =>
+              index === proposalIndex ? { ...entry, referencePrices: [...payload.prices] } : entry,
+            )
+          : state.proposals;
+      state = { ...state, proposals };
+      break;
+    }
     case "proposal":
       item = {
         kind: "proposal",

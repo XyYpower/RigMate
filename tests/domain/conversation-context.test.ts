@@ -56,6 +56,7 @@ function proposalOf(overrides: Partial<DesignProposal> = {}): DesignProposal {
     tradeoffs: ["预算内优先静音", "显卡让位 CPU"],
     unknowns: ["机箱显卡限长未知", "主板 M.2 数量未知"],
     experienceAdvice: [],
+    referencePrices: [],
     compatibility: {
       status: "attention",
       message: "有 2 项待留意",

@@ -10,13 +10,13 @@ import {
   REVISION_SYSTEM_PROMPT as REVISION_EXPORT,
 } from "@/application/design/intent-llm";
 
-// M3 Prompt Registry 完整化：五类模型调用全部入册，版本号 ↔ 原文一一对应。
+// M3 Prompt Registry 完整化：六类模型调用全部入册，版本号 ↔ 原文一一对应。
 // intent-llm 的导出必须与 registry 同源——防"注册表与实际提示词两处漂移"。
 
 describe("Prompt Registry（M3 完整化）", () => {
-  it("五类调用全部注册且字段完整", () => {
+  it("六类调用全部注册且字段完整", () => {
     const kinds = Object.keys(AGENT_PROMPTS).sort();
-    expect(kinds).toEqual(["advice", "catalog-selection", "intent", "revision", "swap"]);
+    expect(kinds).toEqual(["advice", "catalog-selection", "intent", "reference-price", "revision", "swap"]);
     for (const [kind, registration] of Object.entries(AGENT_PROMPTS)) {
       expect(registration.version, kind).toMatch(/-v\d+$/);
       expect(registration.system.length, kind).toBeGreaterThan(50);

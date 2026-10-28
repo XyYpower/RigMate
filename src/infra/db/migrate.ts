@@ -29,7 +29,7 @@ export type MigrationResult = {
   refusedDowngrade: boolean;
 };
 
-export const LATEST_SCHEMA_VERSION = 14;
+export const LATEST_SCHEMA_VERSION = 15;
 
 export const MIGRATIONS: Migration[] = [
   {
@@ -414,6 +414,17 @@ export const MIGRATIONS: Migration[] = [
       // 模型建议整体 JSON 数组；DEFAULT '[]' 让存量行升格后即为"无建议"，不冒充模型输出过建议
       if (!columns.map((column) => column.name).includes("experience_advice")) {
         db.run(sql`ALTER TABLE design_proposals ADD COLUMN experience_advice text NOT NULL DEFAULT '[]'`);
+      }
+    },
+  },
+  {
+    version: 15,
+    name: "design_proposals 模型参考价列 reference_prices（独立估算层：只供展示，绝不进 items.priceCents）",
+    up: (db) => {
+      const columns = db.all<{ name: string }>(sql`PRAGMA table_info(design_proposals)`);
+      // DEFAULT '[]' 让存量行升格后即为"无参考价"，不冒充模型输出过估算
+      if (!columns.map((column) => column.name).includes("reference_prices")) {
+        db.run(sql`ALTER TABLE design_proposals ADD COLUMN reference_prices text NOT NULL DEFAULT '[]'`);
       }
     },
   },

@@ -49,6 +49,7 @@ function makeProposal(overrides: Partial<DesignProposal> = {}): DesignProposal {
     tradeoffs: [],
     unknowns: [],
     experienceAdvice: [],
+    referencePrices: [],
     compatibility: {
       status: "ok",
       message: "兼容性检查全部通过",

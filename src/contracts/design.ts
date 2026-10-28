@@ -100,8 +100,7 @@ export const experienceAdviceKindSchema = z.enum(["experience_advice", "external
  * 模型建议项（混合建议层）：经验取舍或数据库外产品线索。
  * 红线：不携带价格、规格、接口、功耗、兼容结论——strict schema 下的未知字段一律拒绝；
  * external_product_hint 必须带产品名且 requiresVerification=true，只能进待验证队列，绝不映射为正式配置。
- */
-export const experienceAdviceItemSchema = z
+ */export const experienceAdviceItemSchema = z
   .object({
     kind: experienceAdviceKindSchema,
     category: buildItemCategorySchema,
@@ -129,6 +128,20 @@ export const experienceAdviceItemSchema = z
     }
   });
 
+/**
+ * 模型参考价项（独立估算层，规格 v1 §价格"方案内使用标注经验估算的参考价"）。
+ * 红线：只存在于 proposal 级的 referencePrices，绝不写入 proposal_item.priceCents——
+ * 购买级价格只有人工证据（manual_entry）一条路；模型估算永远只是"参考"。
+ */
+export const referencePriceItemSchema = z
+  .object({
+    category: buildItemCategorySchema,
+    productName: z.string().trim().min(1).max(160).optional(),
+    priceCents: z.number().int().positive().max(2_000_000_00),
+    note: z.string().trim().min(1).max(200).optional(),
+  })
+  .strict();
+
 export const designProposalSchema = z.object({
   id: z.string().uuid(),
   requestId: z.string().uuid(),
@@ -146,6 +159,8 @@ export const designProposalSchema = z.object({
   unknowns: z.array(z.string().trim().min(1).max(300)).max(12),
   /** 模型建议（独立通道）：不参与价格合计、兼容检查与接受写路径 */
   experienceAdvice: z.array(experienceAdviceItemSchema).max(8).default([]),
+  /** 模型参考价（独立估算层）：只供展示"参考 ~¥"，绝不写进 items 的 priceCents */
+  referencePrices: z.array(referencePriceItemSchema).max(8).default([]),
   compatibility: compatibilitySummarySchema,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -196,6 +211,7 @@ export type ProposalChange = z.infer<typeof proposalChangeSchema>;
 export type CompatibilitySummary = z.infer<typeof compatibilitySummarySchema>;
 export type ExperienceAdviceKind = z.infer<typeof experienceAdviceKindSchema>;
 export type ExperienceAdviceItem = z.infer<typeof experienceAdviceItemSchema>;
+export type ReferencePriceItem = z.infer<typeof referencePriceItemSchema>;
 
 export type DesignRequest = {
   id: string;

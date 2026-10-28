@@ -13,11 +13,13 @@ import {
   designProposalSchema,
   designRequestStatusSchema,
   experienceAdviceItemSchema,
+  referencePriceItemSchema,
   type AgentEvent,
   type AgentRun,
   type DesignProposal,
   type DesignRequest,
   type ExperienceAdviceItem,
+  ReferencePriceItem,
   type StructuredIntent,
 } from "@/contracts/design";
 import { decorateProposalItems } from "@/infra/catalog-import/display-names";
@@ -81,6 +83,7 @@ function mapProposal(row: typeof designProposals.$inferSelect, rows: (typeof pro
     tradeoffs: parseJson<string[]>(row.tradeoffs),
     unknowns: parseJson<string[]>(row.unknowns),
     experienceAdvice: parseJson(row.experienceAdvice),
+    referencePrices: parseJson(row.referencePrices),
     compatibility: parseJson(row.compatibility),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -126,6 +129,7 @@ export function saveDesignProposal(proposal: DesignProposal): void {
     tradeoffs: JSON.stringify(proposal.tradeoffs),
     unknowns: JSON.stringify(proposal.unknowns),
     experienceAdvice: JSON.stringify(proposal.experienceAdvice ?? []),
+    referencePrices: JSON.stringify(proposal.referencePrices ?? []),
     compatibility: JSON.stringify(proposal.compatibility),
     createdAt: proposal.createdAt,
     updatedAt: proposal.updatedAt,
@@ -362,6 +366,16 @@ export function updateDesignProposalAdvice(proposalId: string, advice: Experienc
   ensureDatabase()
     .update(designProposals)
     .set({ experienceAdvice: JSON.stringify(parsed), updatedAt: new Date().toISOString() })
+    .where(eq(designProposals.id, proposalId))
+    .run();
+}
+
+/** 非阻塞参考价落库（独立估算层）：后台估算跑完后回写方案行；空数组即"无参考价" */
+export function updateDesignProposalReferencePrices(proposalId: string, prices: ReferencePriceItem[]): void {
+  const parsed = referencePriceItemSchema.array().max(8).parse(prices);
+  ensureDatabase()
+    .update(designProposals)
+    .set({ referencePrices: JSON.stringify(parsed), updatedAt: new Date().toISOString() })
     .where(eq(designProposals.id, proposalId))
     .run();
 }

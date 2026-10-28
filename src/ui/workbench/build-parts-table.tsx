@@ -1,4 +1,5 @@
-import type { ProposalItem, SourceLevel } from "@/contracts/design";
+import type { ProposalItem, ReferencePriceItem, SourceLevel } from "@/contracts/design";
+import { formatReferencePrice, referencePriceForItem } from "./reference-price";
 import { ChevronRight } from "lucide-react";
 import { productPageUrl } from "@/ui/product-link";
 import { formatYuanRange } from "./format";
@@ -67,7 +68,14 @@ function priceBasisLabel(basis: ProposalItem["priceBasis"]): string {
  * 列：部件 | 型号 | 核验 | 数量 | 参考价格 | 详情。数量列桌面保留，窄屏并入型号行内。
  * 每行显示真实 sourceLevel 文案；待确认与资料不足可读。
  */
-export function BuildPartsTable({ items }: { items: ProposalItem[] }) {
+export function BuildPartsTable({
+  items,
+  referencePrices = [],
+}: {
+  items: ProposalItem[];
+  /** 模型参考价（独立估算层）：仅在行无真实价格区间时展示"参考 ~¥"，绝不写进 priceCents */
+  referencePrices?: ReferencePriceItem[];
+}) {
   return (
     <div className="build-parts" role="table" aria-label="配置清单">
       <div className="build-parts-head" role="row">
@@ -106,7 +114,19 @@ export function BuildPartsTable({ items }: { items: ProposalItem[] }) {
               <span className="num build-parts-price">
                 {item.priceEstimateLowCents !== null && item.priceEstimateHighCents !== null
                   ? formatYuanRange(item.priceEstimateLowCents, item.priceEstimateHighCents)
-                  : "暂无已审核价格"}
+                  : (() => {
+                      const reference = referencePriceForItem(item, referencePrices);
+                      return reference ? (
+                        <span
+                          className="build-parts-reference"
+                          title="AI 估算参考价，购买前请核实。不参与价格合计。"
+                        >
+                          {formatReferencePrice(reference)}
+                        </span>
+                      ) : (
+                        "暂无已审核价格"
+                      );
+                    })()}
               </span>
               <span className="build-parts-arrow" aria-hidden><ChevronRight size={14} /></span>
             </summary>

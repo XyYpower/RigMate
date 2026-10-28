@@ -6,6 +6,7 @@ import type { DesignProposal } from "@/contracts/design";
 import { BudgetRuler, budgetRulerFrom } from "@/ui/workbench/budget-ruler";
 import { formatYuanRange } from "@/ui/workbench/format";
 import { ASSEMBLY_CATEGORY_LABELS } from "@/ui/workbench/assembly-rail";
+import { formatReferencePrice, referencePriceForItem } from "@/ui/workbench/reference-price";
 import { ExperienceAdviceSection } from "@/ui/session/experience-advice";
 
 /**
@@ -37,15 +38,25 @@ export function ProposalCard({
       <p className="session-proposal-summary">{proposal.summary}</p>
       <BudgetRuler view={budgetRulerFrom(proposal)} />
       <ul className="session-proposal-parts" aria-label="配置摘要">
-        {proposal.items.map((item) => (
-          <li key={item.category}>
-            <span className="session-part-category">{ASSEMBLY_CATEGORY_LABELS[item.category]}</span>
-            <span className="session-part-label" title={item.displayNameOriginal ?? item.label}>
-              {item.displayName ?? item.label}
-            </span>
-            <span className="session-part-price mono">{formatYuanRange(item.priceEstimateLowCents, item.priceEstimateHighCents)}</span>
-          </li>
-        ))}
+        {proposal.items.map((item) => {
+          const reference = item.priceEstimateLowCents === null ? referencePriceForItem(item, proposal.referencePrices) : null;
+          return (
+            <li key={item.category}>
+              <span className="session-part-category">{ASSEMBLY_CATEGORY_LABELS[item.category]}</span>
+              <span className="session-part-label" title={item.displayNameOriginal ?? item.label}>
+                {item.displayName ?? item.label}
+              </span>
+              <span className="session-part-price mono">
+                {formatYuanRange(item.priceEstimateLowCents, item.priceEstimateHighCents)}
+                {reference && (
+                  <span className="session-part-reference" title="AI 估算参考价，购买前请核实。不参与价格合计。">
+                    {formatReferencePrice(reference)}
+                  </span>
+                )}
+              </span>
+            </li>
+          );
+        })}
       </ul>
       <p className="session-proposal-compat">
         <em className="pass">{compatibility.passCount} 通过</em> · <em className="warn">{compatibility.warnCount + compatibility.unknownCount} 待留意</em> ·{" "}

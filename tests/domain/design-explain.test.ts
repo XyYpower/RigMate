@@ -61,6 +61,7 @@ function proposalOf(): DesignProposal {
         requiresVerification: false,
       },
     ],
+    referencePrices: [],
     compatibility: {
       status: "ok",
       message: "兼容性检查全部通过",
