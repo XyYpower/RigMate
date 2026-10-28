@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatReferencePrice, referencePriceForItem } from "@/ui/workbench/reference-price";
+import { formatReferencePrice, guardReferencePrices, referencePriceForItem } from "@/domain/design/reference-price";
 import type { ReferencePriceItem } from "@/contracts/design";
 
 const prices: ReferencePriceItem[] = [
@@ -21,6 +21,22 @@ describe("referencePriceForItem", () => {
   it("类别不存在返回 null；空参考价列表返回 null", () => {
     expect(referencePriceForItem({ category: "case", label: "海景房" }, prices)).toBeNull();
     expect(referencePriceForItem({ category: "gpu", label: "任何" }, [])).toBeNull();
+  });
+});
+
+describe("guardReferencePrices", () => {
+  it("有预算时丢弃高于整机预算的单件参考价", () => {
+    const input: ReferencePriceItem[] = [
+      { category: "cpu", priceCents: 369900 },
+      { category: "gpu", priceCents: 1699900 },
+    ];
+    const guarded = guardReferencePrices(input, 1000000);
+    expect(guarded.map((p) => p.category)).toEqual(["cpu"]);
+  });
+
+  it("无预算时全部保留", () => {
+    const input: ReferencePriceItem[] = [{ category: "gpu", priceCents: 1699900 }];
+    expect(guardReferencePrices(input, null)).toHaveLength(1);
   });
 });
 

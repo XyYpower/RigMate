@@ -18,6 +18,19 @@ export function referencePriceForItem(
   return prices.find((price) => price.category === item.category) ?? null;
 }
 
+/**
+ * 参考价守卫（数据纪律：错值比缺字段危险）：有预算时，单件参考价高于整机预算
+ * 说明模型估算与方案明显矛盾（也可能是选件失衡的信号——那由核验台负责），
+ * 这类参考价没有展示价值，直接丢弃。
+ */
+export function guardReferencePrices(
+  prices: readonly ReferencePriceItem[],
+  budgetCents: number | null,
+): ReferencePriceItem[] {
+  if (budgetCents === null || budgetCents <= 0) return [...prices];
+  return prices.filter((price) => price.priceCents <= budgetCents);
+}
+
 /** 估算展示文案：永远带"参考/估算"字样，绝不伪装成已审核价格 */
 export function formatReferencePrice(price: ReferencePriceItem): string {
   return `参考 ~¥${(price.priceCents / 100).toLocaleString("zh-CN", { maximumFractionDigits: 0 })}`;

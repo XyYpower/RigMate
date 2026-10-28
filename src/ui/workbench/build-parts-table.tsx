@@ -1,5 +1,5 @@
 import type { ProposalItem, ReferencePriceItem, SourceLevel } from "@/contracts/design";
-import { formatReferencePrice, referencePriceForItem } from "./reference-price";
+import { formatReferencePrice, referencePriceForItem } from "@/domain/design/reference-price";
 import { ChevronRight } from "lucide-react";
 import { productPageUrl } from "@/ui/product-link";
 import { formatYuanRange } from "./format";

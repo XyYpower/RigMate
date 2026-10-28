@@ -6,7 +6,7 @@ import type { DesignProposal } from "@/contracts/design";
 import { BudgetRuler, budgetRulerFrom } from "@/ui/workbench/budget-ruler";
 import { formatYuanRange } from "@/ui/workbench/format";
 import { ASSEMBLY_CATEGORY_LABELS } from "@/ui/workbench/assembly-rail";
-import { formatReferencePrice, referencePriceForItem } from "@/ui/workbench/reference-price";
+import { formatReferencePrice, referencePriceForItem } from "@/domain/design/reference-price";
 import { ExperienceAdviceSection } from "@/ui/session/experience-advice";
 
 /**

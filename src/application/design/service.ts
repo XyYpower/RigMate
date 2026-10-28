@@ -4,6 +4,7 @@ import { loadSourcedCatalog } from "@/infra/catalog-import/load";
 import { resolveLlmConfigFromEnv, type LlmConfig } from "@/infra/llm/client";
 import { generateExperienceAdvice } from "./advice-llm";
 import { generateReferencePrices } from "./reference-price-llm";
+import { guardReferencePrices } from "@/domain/design/reference-price";
 import { parseIntentWithLlm, proposeSwapWithLlm, reviseIntentWithLlm, selectCatalogCandidatesWithLlm } from "./intent-llm";
 import { loadPriceContext } from "./price-context";
 import { parseDesignIntent, intentNeedsInput, followupQuestionFor } from "@/domain/design/intent";
@@ -387,13 +388,17 @@ async function requestAndPushReferencePrices(input: {
     });
     return;
   }
-  // 类别去重：同类只保留第一条（估算不需要同类多价）
+  // 类别去重 + 预算守卫：同类只留第一条；单件参考价高于整机预算的丢弃
+  // （错值比缺字段危险——与预算明显矛盾的估算没有展示价值）
   const seen = new Set<string>();
-  const prices = result.data.filter((price) => {
-    if (seen.has(price.category)) return false;
-    seen.add(price.category);
-    return true;
-  });
+  const prices = guardReferencePrices(
+    result.data.filter((price) => {
+      if (seen.has(price.category)) return false;
+      seen.add(price.category);
+      return true;
+    }),
+    input.proposal.budgetCents,
+  );
   updateDesignProposalReferencePrices(input.proposal.id, prices);
   input.emit({
     type: "reference_prices",
