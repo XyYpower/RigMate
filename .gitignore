@@ -70,3 +70,5 @@ next-env.d.ts
 
 # 验收截图（本地生成，不入库）
 tmp-shots/
+
+tmp-*.log

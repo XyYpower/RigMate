@@ -74,7 +74,7 @@ test("M25 整机复核：粘贴配置单解析成行，创建项目并出报告"
 
   await expect(page.getByRole("row", { name: /9800X3D/ })).toBeVisible();
   await expect(page.getByRole("row", { name: /B650M 迫击炮/ })).toBeVisible();
-  await expect(page.getByText(/跳过 1（行）?/)).toBeVisible();
+  await expect(page.getByText(/跳过 1/)).toBeVisible();
 
   await page.getByRole("button", { name: /创建项目并运行检查/ }).click();
   await expect(page.getByText("装机方案检查报告")).toBeVisible();
