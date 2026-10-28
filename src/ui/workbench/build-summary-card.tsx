@@ -1,7 +1,7 @@
 import type { DesignProposal } from "@/contracts/design";
 import { formatYuanParts } from "./format";
 
-const FALLBACK_TAGS = ["平台兼容优先", "预算内取舍", "可继续调整"];
+
 
 /** 特性标签：从真实 fitNotes 提取短语，不足时用中性兜底（不编造卖点） */
 function extractTags(fitNotes: string[]): string[] {
@@ -37,11 +37,13 @@ export function BuildSummaryCard({ proposal }: { proposal: DesignProposal }) {
         <span className="build-summary-badge">推荐</span>
         <h2>{proposal.title}</h2>
         <p>{proposal.summary}</p>
-        <div className="build-summary-tags">
-          {(tags.length > 0 ? tags : FALLBACK_TAGS).map((tag) => (
-            <span key={tag}>{tag}</span>
-          ))}
-        </div>
+        {tags.length > 0 && (
+          <div className="build-summary-tags">
+            {tags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="build-summary-price">
         <span className="build-summary-price-label">预计总价</span>

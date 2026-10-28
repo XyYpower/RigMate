@@ -206,7 +206,7 @@ export function DesignWorkbenchView() {
     },
     {
       label: "特殊要求",
-      value: [...result.request.intent.existingParts, ...result.request.intent.constraints].join(" / ") || "兼容性好，稳定耐用",
+      value: [...result.request.intent.existingParts, ...result.request.intent.constraints].join(" / ") || "未指定",
     },
   ];
 
@@ -257,7 +257,7 @@ export function DesignWorkbenchView() {
               </select>
             </label>
           ) : (
-            <span className="history-banner">正在查看历史版本，切回最新版后可继续修改</span>
+            <span className="history-banner">正在查看历史版本</span>
           )
         }
       />
@@ -275,7 +275,7 @@ export function DesignWorkbenchView() {
           <section className="wb-panel build-parts-section" aria-labelledby="parts-title">
             <div className="build-parts-section-head">
               <h2 id="parts-title">配置清单</h2>
-              <span>核验状态逐行可见，可展开调整</span>
+              
             </div>
             <BuildPartsTable items={viewedProposal.items} />
           </section>
@@ -301,7 +301,7 @@ export function DesignWorkbenchView() {
           {!isHistoryView && pendingItems.length > 0 && (
             <DecisionBanner
               title={pendingItems[0]!.confirmationReason ?? "有配置项需要你确认"}
-              description={`涉及：${pendingItems.map((item) => CATEGORY_LABELS[item.category] ?? item.category).join("、")}。确认后即可接受方案，或在高级 DIY 中更换。`}
+              description={`涉及：${pendingItems.map((item) => CATEGORY_LABELS[item.category] ?? item.category).join("、")}`}
               actions={
                 <>
                   <button className="button primary" onClick={() => void acceptProposal()} disabled={accepting || compatibility?.status === "conflict"}>

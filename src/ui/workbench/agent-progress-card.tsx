@@ -20,9 +20,9 @@ export function toTimelineSteps(events: AgentEvent[]): AgentTimelineStep[] {
 /** Agent 处理记录（折叠插槽内容）：垂直时间线 + 真实时间戳，不伪造进行中动画 */
 export function AgentProgressCard({ steps }: { steps: AgentTimelineStep[] }) {
   return (
-    <section className="wb-panel agent-progress-card" aria-label="Agent 处理记录">
+    <section className="wb-panel agent-progress-card" aria-label="处理记录">
       <div className="agent-progress-card-head">
-        <h2>Agent 处理进度</h2>
+        <h2>处理记录</h2>
         <span className="agent-progress-card-state">
           {steps.some((step) => step.state === "waiting") ? "等待你确认" : "已完成"}
         </span>
