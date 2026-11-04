@@ -95,7 +95,7 @@ export function useDiyProjects() {
             }
           }
         } else {
-          setMessage("还没有历史项目。先创建一个项目，数据会实时保存到数据库。");
+          setMessage("还没有历史项目，在上方新建即可开始。");
         }
       } catch {
         if (!cancelled) setMessage("无法连接服务，请确认开发服务器正在运行。");
