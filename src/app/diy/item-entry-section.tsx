@@ -70,6 +70,9 @@ export function ItemEntrySection({ diy }: { diy: DiyWorkspace }) {
           <span className="field-label">从目录选择</span>
           <select
             value={draft.catalogId ?? ""}
+            title={catalogProvenance
+              ? `型号数据：${catalogProvenance.license} 开源目录（${catalogProvenance.entryCount.toLocaleString("zh-CN")} 条），署名见硬件资料页`
+              : undefined}
             onChange={(event) => {
               const entryId = event.target.value || undefined;
               const entry = entryId
@@ -95,15 +98,6 @@ export function ItemEntrySection({ diy }: { diy: DiyWorkspace }) {
             ))}
           </select>
         </label>
-        {catalogProvenance && (
-          <p className="catalog-provenance field wide">
-            型号数据含{" "}
-            <a href={catalogProvenance.upstreamUrl} target="_blank" rel="noreferrer">
-              {catalogProvenance.license}
-            </a>{" "}
-            开源目录 {catalogProvenance.entryCount.toLocaleString("zh-CN")} 条
-          </p>
-        )}
         <label className="field wide">
           <span className="field-label">型号</span>
           <input

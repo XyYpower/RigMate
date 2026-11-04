@@ -61,24 +61,15 @@
 }
 
 .session-item-running .session-item-mark { background: var(--wb-accent); animation: session-pulse 1.2s ease-in-out infinite; }
-.session-running-hint { font-size: var(--wb-text-sm); font-weight: 600; color: transparent;
-  background: linear-gradient(90deg, var(--wb-accent) 0%, var(--wb-accent) 40%, var(--wb-ink) 50%, var(--wb-accent) 60%, var(--wb-accent) 100%);
-  background-size: 200% 100%;
-  background-clip: text; -webkit-background-clip: text;
-  animation: session-sweep 1.8s linear infinite;
-}
+.session-running-hint { color: var(--wb-accent); font-size: var(--wb-text-sm); font-weight: 600; }
 @keyframes session-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
-@keyframes session-sweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .session-running-hint { background: none; color: var(--wb-accent); }
-}
 
 .session-run-divider {
   margin: 4px 0 2px; font-size: var(--wb-text-xs); font-weight: 700; color: var(--wb-ink-faint);
-  border-top: 1px dashed var(--wb-hairline); padding-top: 8px;
+  border-top: 1px solid var(--wb-hairline); padding-top: 8px;
 }
 .session-item:first-child .session-run-divider { border-top: 0; padding-top: 0; }
 
@@ -98,17 +89,7 @@
 .session-tool.state-done .session-tool-state { background: var(--wb-pass); }
 .session-tool.state-error .session-tool-state { background: var(--wb-block); }
 .session-tool-label { flex: none; font-weight: 600; color: var(--wb-ink); }
-/* 运行中：类别词文字扫光（DESIGN.md §8），不用旋转 spinner */
-.session-tool.state-running .session-tool-label {
-  background: linear-gradient(90deg, var(--wb-ink) 0%, var(--wb-ink) 40%, var(--wb-accent) 50%, var(--wb-ink) 60%, var(--wb-ink) 100%);
-  background-size: 200% 100%;
-  background-clip: text; -webkit-background-clip: text;
-  color: transparent;
-  animation: session-sweep 1.8s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .session-tool.state-running .session-tool-label { background: none; color: var(--wb-ink); }
-}
+.session-tool.state-running .session-tool-label { color: var(--wb-accent); }
 .session-tool-summary {
   color: var(--wb-ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -162,7 +143,7 @@
 }
 .session-answer-body p:last-child { margin-bottom: 0; }
 .session-answer-actions {
-  margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed var(--wb-hairline);
+  margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--wb-hairline);
   font-size: var(--wb-text-sm); color: var(--wb-ink-muted);
 }
 
@@ -191,7 +172,6 @@
 .session-part-reference, .build-parts-reference {
   display: inline-block; margin-left: 8px;
   color: var(--wb-slate); font-weight: 600;
-  border-bottom: 1px dashed var(--wb-slate);
 }
 .session-proposal-compat { margin: 0; font-size: var(--wb-text-sm); }
 .session-proposal-compat em { font-style: normal; font-weight: 700; }

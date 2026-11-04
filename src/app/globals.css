@@ -47,7 +47,7 @@ button:disabled { cursor: not-allowed; opacity: 0.4; }
   grid-template-columns: minmax(190px, 1.1fr) minmax(150px, 1fr) minmax(120px, 0.8fr) minmax(120px, 0.7fr) auto;
   gap: 6px 22px; align-items: end;
   padding: 12px 0 13px;
-  border-top: 1px solid var(--wb-ink);
+  border-top: 1px solid var(--wb-hairline);
   border-bottom: 1px solid var(--wb-hairline);
 }
 .field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -57,15 +57,7 @@ button:disabled { cursor: not-allowed; opacity: 0.4; }
 }
 .field-label .field-hint { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; letter-spacing: 0; }
 
-/* 目录署名行（ODC-By 要求署名随数据展示）：发丝线之下的安静小字 */.catalog-provenance {
-  margin: 2px 0 0; padding: 5px 0 0;
-  border-top: 1px solid var(--wb-hairline);
-  color: var(--wb-ink-faint); font-size: var(--wb-text-sm); letter-spacing: 0;
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
-  font-variant-numeric: tabular-nums;
-}
-.catalog-provenance a { color: var(--wb-ink); text-decoration: underline; text-underline-offset: 2px; }
-.catalog-provenance a:hover { color: var(--wb-accent); }
+/* 目录署名：canonical 在硬件资料页「数据是怎么来的」（含 license 链接）；DIY 以 title 悬停展示 */
 
 input, select {
   width: 100%; padding: 4px 0 5px;
@@ -153,7 +145,7 @@ select {
 .sec + .sec { margin-top: 26px; }
 .sec-head {
   display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
-  padding-bottom: 7px; border-bottom: 1px solid var(--wb-ink);
+  padding-bottom: 7px; border-bottom: 1px solid var(--wb-hairline);
 }
 .sec-title { margin: 0; font-size: var(--wb-text-base); font-weight: 800; letter-spacing: 0.01em; }
 .sec-meta { color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
@@ -239,7 +231,7 @@ select {
 /* 来源数字条：像预算数据行一样把数字立起来 */
 .hw-stats {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
-  padding: 14px 0 4px; border-top: 1px solid var(--wb-ink);
+  padding: 14px 0 4px; border-top: 1px solid var(--wb-hairline);
 }
 .hw-stat { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .hw-stat-num {
@@ -254,7 +246,7 @@ select {
 .hw-table th {
   text-align: left; padding: 6px 10px 6px 0;
   color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.06em;
-  border-bottom: 1px solid var(--wb-ink);
+  border-bottom: 1px solid var(--wb-hairline);
   font-family: ui-monospace, Consolas, monospace;
   white-space: nowrap;
 }
@@ -456,10 +448,9 @@ select {
   border-top: 1px solid var(--wb-hairline);
   color: var(--wb-ink-muted); font-size: var(--wb-text-sm);
 }
-.form-feedback:first-letter { color: var(--wb-accent); }
 
 /* ---------- 诊断：报告式条款 ---------- */
-.results-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-bottom: 7px; border-bottom: 1px solid var(--wb-ink); }
+.results-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-bottom: 7px; border-bottom: 1px solid var(--wb-hairline); }
 .result-time { color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
 .tally { display: flex; flex-wrap: wrap; gap: 18px; padding: 11px 0 3px; }
 .status-chip { display: inline-flex; align-items: baseline; gap: 6px; font-size: var(--wb-text-sm); font-weight: 700; white-space: pre; }
@@ -550,7 +541,6 @@ select {
 .proposal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 34px; }
 .proposal-actions .form-feedback { flex-basis: 100%; }
 .revision-feedback { margin: 10px 0 0; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); line-height: 1.6; }
-.revision-feedback:first-letter { color: var(--wb-accent); }
 
 /* 版本差异（M32）：相对上一版改了哪些件 */
 .proposal-diff { margin-top: 28px; padding: 13px 0 2px; border-top: 1px solid var(--wb-hairline); }
@@ -639,7 +629,6 @@ select {
   display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: var(--wb-radius-panel);
   background: var(--wb-accent); color: #fff; font-size: var(--wb-text-xl); font-weight: 800;
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
-  box-shadow: 0 6px 18px rgba(244, 88, 28, 0.28);
 }
 .home-entry h1 { margin: 20px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
 /* 信任 chips：替代长 tagline，用真实数字与三条承诺自解释（DESIGN.md v3 原则 1） */
@@ -678,8 +667,6 @@ select {
   border-top: 1px solid var(--wb-hairline); padding-top: 10px;
 }
 .home-submit { flex: none; }
-.home-submit svg { transition: transform var(--wb-fast); }
-.home-submit:hover:not(:disabled) svg { transform: translateX(2px); }
 
 .home-suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
 .home-suggestion {
