@@ -10,7 +10,7 @@ test("M36 数据质量只读报表：质量状态、队列计数与关键字段�
   await expect(page.getByText("有参考资料", { exact: true })).toBeVisible();
   await expect(page.getByText(/来源冲突（[\d.]+%）/)).toBeVisible();
   await expect(page.getByText(/来源过期（[\d.]+%）/)).toBeVisible();
-  await expect(page.getByText(/待审核（新品 \d+ · 缺字段 \d+ · 冲突 \d+ · 过期 \d+）/)).toBeVisible();
+  await expect(page.getByText(/待审核（新品 \d+、缺字段 \d+、冲突 \d+、过期 \d+）/)).toBeVisible();
 
   const qualityTable = page.getByRole("table").nth(1);
   await expect(qualityTable.getByRole("columnheader", { name: "关键字段完整率" })).toBeVisible();

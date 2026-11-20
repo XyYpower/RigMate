@@ -53,7 +53,7 @@ export function DiagnosticsAside({ diy }: { diy: DiyWorkspace }) {
                 <li key={run.id}>
                   <time>{formatTime(run.createdAt)}</time>
                   <span>
-                    阻断 {run.counts.block} · 待补充 {run.counts.unknown} · 警告 {run.counts.warn} · 通过{" "}
+                    阻断 {run.counts.block}、待补充 {run.counts.unknown}、警告 {run.counts.warn}、通过{" "}
                     {run.counts.pass}
                   </span>
                 </li>

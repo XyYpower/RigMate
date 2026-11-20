@@ -51,7 +51,7 @@ export function BuildSummaryCard({ proposal }: { proposal: DesignProposal }) {
           <>
             <strong>{formatYuanParts(midpoint)}</strong>
             <span className="build-summary-price-range">
-              区间 {formatYuanParts(low!)} – {formatYuanParts(high!)}
+              区间 {formatYuanParts(low!)} ～ {formatYuanParts(high!)}
             </span>
           </>
         ) : (

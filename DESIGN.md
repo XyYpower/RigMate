@@ -184,6 +184,21 @@ Logo（26px 橙底圆角方块 + 白 "R"，与 icon.svg 同源）+ "RigMate" + �
 - **动效克制（v3.2）**：只允许状态类动效（运行中圆点呼吸、hover 底色过渡）；禁止装饰性动效——文字扫光、悬停位移、发光阴影、首字母变色这类"花活"一律不做，正经系统靠信息层级而非动效表达。
 - 全部动效尊重 `prefers-reduced-motion`（直接呈现终态）。
 
+## 8.5 外部设计审计（v3.2，基准：Together AI hallmark 的 Floor/Reflex 门）
+
+RigMate 不是 hallmark 构建，但其 sloplint 门作为**外部 AI-slope 审计标准**吸收：
+
+**已对齐的硬规则（永久生效）**：全 token 化（颜色/字体字面量不得出 token 块，`--wb-ink-inverse`/`--font-ui`/`--font-mono` 已建）；禁 `transition: all`（列明属性；width 过渡改 transform scaleX）；`html, body { overflow-x: clip }`；粘连箭头（"查看商品页 ↗"类）禁止——箭头用 lucide 组件或删除；范围符用 `～` 不用 en dash；计数并列用发丝线或顿号分隔，不用中点串；disabled 必须 `cursor: not-allowed` 三通道。
+
+**记录在案的豁免（逐条理由）**：
+- 首页橙色 "R" 与方案卡「推荐」徽章：是 wordmark / 状态芯片，不是 announce 型 eyebrow（hallmark 自己的豁免条款）；
+- 三栏 sticky：brand-sidebar / workbench-header / workbench-aside 分属不同 grid 列，滚动时互不重叠；
+- Hallmark 印章：本仓库非 hallmark 构建，CSS 头注释是自有出处体系；
+- REFLEX 24b 间距刻度（约 260 处 3/5/7px）：本系统用「语义间距」而非严格 4px 倍数，属已知取舍；
+- WARN 40 状态色浅底对比度（3.0–3.3:1）：语义色 token 是契约色板，调整留对比度专项。
+
+**运行方式**：`node ~/.agents/skills/hallmark/scripts/sloplint.mjs src --scope app --genre modern-minimal`（skill 已装本地）。
+
 ## 9. Voice（文案语气）
 
 - 用户视角短句："现在需要你决定"、"已完成候选检索"；禁止开发者口吻（"规则引擎在线"、"模块接线"）。

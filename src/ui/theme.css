@@ -44,6 +44,13 @@
   /* 输入三态（DESIGN.md §2 输入三态：冷静不发光） */
   --wb-hairline-input-hover: #9aa3af;
   --wb-input-focused: #fffdfa;
+  /* 反白墨色：橙底/深底上的文字（token 纪律：#fff 不许裸用） */
+  --wb-ink-inverse: #ffffff;
+  /* 斜纹色：余量尺未计价 hatch */
+  --wb-hatch: rgba(124, 130, 136, 0.28);
+  /* 字体 token（v3.2 对齐 hallmark Floor 1：字面量字体出 token 块即违例） */
+  --font-ui: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
 
   /* 形状 / 阴影 / 动效（圆角按嵌套深度衰减；浮层独享 overlay 阴影） */
   --wb-radius-panel: 12px;

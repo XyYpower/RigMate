@@ -196,7 +196,7 @@
 .build-summary-main { min-width: 0; }
 .build-summary-badge {
   display: inline-block; padding: 2px 10px; border-radius: 999px;
-  background: var(--wb-accent); color: #fff; font-size: var(--wb-text-sm); font-weight: 700;
+  background: var(--wb-accent); color: var(--wb-ink-inverse); font-size: var(--wb-text-sm); font-weight: 700;
 }
 .build-summary h2 { margin: 10px 0 4px; font-size: var(--wb-text-xl); letter-spacing: -0.01em; color: var(--wb-ink); }
 .build-summary p { margin: 0; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); line-height: 1.6; }
@@ -631,7 +631,7 @@
   background: var(--wb-surface);
   color: var(--wb-ink-muted);
   font-size: var(--wb-text-sm); font-weight: 600;
-  transition: all var(--wb-fast);
+  transition: background var(--wb-fast), color var(--wb-fast), border-color var(--wb-fast);
 }
 .hw-explore-tabs button:hover { color: var(--wb-accent); border-color: var(--wb-accent); }
 .hw-explore-tabs button.active {

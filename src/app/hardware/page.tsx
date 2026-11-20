@@ -341,7 +341,7 @@ export default function HardwarePage() {
                 </div>
                 <div className="hw-stat">
                   <span className="hw-stat-num">{quality.queue.open.toLocaleString("zh-CN")}</span>
-                  <span className="hw-stat-label">待审核（新品 {quality.queue.byType.new_product ?? 0} · 缺字段 {quality.queue.byType.missing_field ?? 0} · 冲突 {quality.queue.byType.conflict ?? 0} · 过期 {quality.queue.byType.stale ?? 0}）</span>
+                  <span className="hw-stat-label">待审核（新品 {quality.queue.byType.new_product ?? 0}、缺字段 {quality.queue.byType.missing_field ?? 0}、冲突 {quality.queue.byType.conflict ?? 0}、过期 {quality.queue.byType.stale ?? 0}）</span>
                 </div>
               </div>
               <table className="hw-table">

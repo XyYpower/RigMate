@@ -5,5 +5,5 @@ export function formatYuanParts(cents: number): string {
 
 export function formatYuanRange(lowCents: number | null, highCents: number | null): string {
   if (lowCents === null || highCents === null) return "价格待确认";
-  return `${formatYuanParts(lowCents)} – ${formatYuanParts(highCents)}`;
+  return `${formatYuanParts(lowCents)} ～ ${formatYuanParts(highCents)}`;
 }

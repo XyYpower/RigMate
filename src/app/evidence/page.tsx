@@ -255,7 +255,7 @@ export default function EvidencePage() {
               </table>
             )}
             <div className="review-bar">
-              <span className="helper">有效 {bulkPreview.results.length} · 错误 {bulkPreview.errors.length} · 录入后人工复核，通过才用于预算</span>
+              <span className="helper">有效 {bulkPreview.results.length} 条，错误 {bulkPreview.errors.length} 条；录入后人工复核，通过才用于预算</span>
               <button
                 className="button primary"
                 onClick={() => void submitBulk()}

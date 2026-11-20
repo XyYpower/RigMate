@@ -41,7 +41,7 @@ export function BudgetSummarySection({ summary, itemCount }: { summary: BudgetSu
         <section className="ruler">
           <div className="ruler-bar" role="img" aria-label={`预算 ${formatYuan(budget)}，已计价 ${formatYuan(summary.pricedTotalCents)}，未计价 ${summary.unpricedCount} 件`}>
             {summary.unpricedCount > 0 && <div className="ruler-ghost" aria-hidden />}
-            <div className={`ruler-fill ${over ? "over" : ""}`} style={{ width: `${ratio * 100}%` }} />
+            <div className={`ruler-fill ${over ? "over" : ""}`} style={{ transform: `scaleX(${ratio})` }} />
           </div>
           <div className="ruler-scale" aria-hidden>
             <span>0</span><span>25%</span><span>50%</span><span>75%</span><span>{formatYuan(budget)}</span>

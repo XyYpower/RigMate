@@ -30,8 +30,8 @@
 .brand-logo {
   display: grid; place-items: center;
   width: 26px; height: 26px; border-radius: var(--wb-radius-control);
-  background: var(--wb-accent); color: #fff;
-  font: 800 var(--wb-text-base)/1 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  background: var(--wb-accent); color: var(--wb-ink-inverse);
+  font: 800 var(--wb-text-base)/1 var(--font-ui);
 }
 .brand-copy { display: flex; flex-direction: column; min-width: 0; }
 .brand-copy strong { font-size: var(--wb-text-lg); font-weight: 800; color: var(--wb-ink); letter-spacing: -0.01em; }
@@ -250,7 +250,7 @@ button.assembly-slot-body:hover { border-color: var(--wb-accent); }
 .assembly-slot-model em {
   font-style: normal;
   color: var(--wb-ink-faint);
-  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-ui);
   font-weight: 500;
 }
 .assembly-slot-detail { color: var(--wb-ink-faint); font-size: var(--wb-text-sm); line-height: 1.45; }
@@ -366,10 +366,10 @@ button.assembly-slot-body:hover { border-color: var(--wb-accent); }
 .verification-item.item-pass { border-color: color-mix(in srgb, var(--wb-pass) 30%, transparent); background: var(--wb-pass-soft); }
 .verification-item-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .verification-item-state { align-self: flex-start; padding: 1px 8px; border-radius: 999px; font-size: var(--wb-text-xs); font-weight: 700; }
-.verification-item-state.state-conflict { background: var(--wb-block); color: #fff; }
-.verification-item-state.state-attention { background: var(--wb-warn); color: #fff; }
-.verification-item-state.state-unknown { background: var(--wb-unknown); color: #fff; }
-.verification-item-state.state-pass { background: var(--wb-pass); color: #fff; }
+.verification-item-state.state-conflict { background: var(--wb-block); color: var(--wb-ink-inverse); }
+.verification-item-state.state-attention { background: var(--wb-warn); color: var(--wb-ink-inverse); }
+.verification-item-state.state-unknown { background: var(--wb-unknown); color: var(--wb-ink-inverse); }
+.verification-item-state.state-pass { background: var(--wb-pass); color: var(--wb-ink-inverse); }
 .verification-item-title { margin: 0; color: var(--wb-ink); font-size: var(--wb-text-sm); font-weight: 600; line-height: 1.5; }
 .verification-item-impact { margin: 0; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); line-height: 1.55; }
 .verification-item-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }

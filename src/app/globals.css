@@ -11,13 +11,14 @@
 
 * { box-sizing: border-box; }
 
-html { background: var(--wb-canvas); }
+html { background: var(--wb-canvas); overflow-x: clip; }
+body { overflow-x: clip; }
 
 body {
   margin: 0;
   background: var(--wb-canvas);
   color: var(--wb-ink);
-  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: var(--wb-text-base);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -34,7 +35,7 @@ button:disabled { cursor: not-allowed; opacity: 0.4; }
 
 /* 等宽数据字体：价格 / 尺寸 / 规则号 / 计数 / 时间 */
 .mono, .item-price, .count-badge, .rule, .stamp, .stat-value, .ruler-scale, .result-time {
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
@@ -52,10 +53,10 @@ button:disabled { cursor: not-allowed; opacity: 0.4; }
 }
 .field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .field-label {
-  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.06em;
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.02em;
+  font-family: var(--font-mono);
 }
-.field-label .field-hint { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; letter-spacing: 0; }
+.field-label .field-hint { font-family: var(--font-ui); letter-spacing: 0; }
 
 /* 目录署名：canonical 在硬件资料页「数据是怎么来的」（含 license 链接）；DIY 以 title 悬停展示 */
 
@@ -84,17 +85,17 @@ select {
   transition: background var(--wb-fast), color var(--wb-fast), border-color var(--wb-fast);
 }
 .button span { font-size: var(--wb-text-base); line-height: 0; }
-.button.primary { background: var(--wb-accent); color: #fff; }
+.button.primary { background: var(--wb-accent); color: var(--wb-ink-inverse); }
 .button.primary:hover:not(:disabled) { background: var(--wb-accent-hover); }
 .button.secondary { border-color: var(--wb-ink); background: transparent; color: var(--wb-ink); }
 .button.secondary:hover:not(:disabled) { border-color: var(--wb-accent); color: var(--wb-accent); }
 .button.ghost { border-color: var(--wb-hairline-strong); color: var(--wb-ink-muted); }
 .button.ghost:hover:not(:disabled) { border-color: var(--wb-ink); color: var(--wb-ink); }
-.button.check-button { background: var(--wb-ink); color: #fff; padding: 8px 16px; font-size: var(--wb-text-sm); }
+.button.check-button { background: var(--wb-ink); color: var(--wb-ink-inverse); padding: 8px 16px; font-size: var(--wb-text-sm); }
 .button.check-button:hover:not(:disabled) { background: var(--wb-accent); }
 .button.danger { border-color: var(--wb-hairline-strong); color: var(--wb-block); padding: 7px 11px; font-size: var(--wb-text-sm); }
 .button.danger:hover:not(:disabled) { border-color: var(--wb-block); }
-.button.danger-active { border-color: var(--wb-block); background: var(--wb-block); color: #fff; padding: 7px 11px; font-size: var(--wb-text-sm); }
+.button.danger-active { border-color: var(--wb-block); background: var(--wb-block); color: var(--wb-ink-inverse); padding: 7px 11px; font-size: var(--wb-text-sm); }
 
 /* ---------- 项目标题行 ---------- */
 .titleline {
@@ -122,8 +123,8 @@ select {
 /* ---------- 余量尺（细，像标尺） ---------- */
 .ruler { padding: 12px 0 4px; }
 .ruler-bar { position: relative; height: 9px; border: 1px solid var(--wb-hairline-strong); background: var(--wb-surface); overflow: hidden; }
-.ruler-ghost { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent 0 3px, rgba(124, 130, 136, 0.28) 3px 5px); }
-.ruler-fill { position: absolute; inset: 0 auto 0 0; background: var(--wb-ink); transition: width var(--wb-slow); }
+.ruler-ghost { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent 0 3px, var(--wb-hatch) 3px 5px); }
+.ruler-fill { position: absolute; inset: 0; transform-origin: left; background: var(--wb-ink); transition: transform var(--wb-slow); }
 .ruler-fill.over { background: var(--wb-block); }
 .ruler-scale { display: flex; justify-content: space-between; margin-top: 3px; color: var(--wb-ink-faint); font-size: var(--wb-text-xs); }
 /* 余量尺内联图例：色样/斜纹与标尺视觉一一对应（DESIGN.md v3 原则 2） */
@@ -133,7 +134,7 @@ select {
 .ruler-legend-fill.over { background: var(--wb-block); }
 .ruler-legend-ghost {
   width: 14px; height: 8px; display: inline-block; border: 1px solid var(--wb-hairline-strong);
-  background: repeating-linear-gradient(45deg, transparent 0 2px, rgba(124, 130, 136, 0.28) 2px 4px);
+  background: repeating-linear-gradient(45deg, transparent 0 2px, var(--wb-hatch) 2px 4px);
 }
 
 .note-line { padding: 6px 0 0; color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
@@ -160,15 +161,15 @@ select {
 .thead {
   padding: 7px 0 6px; border-bottom: 1px solid var(--wb-hairline);
   color: var(--wb-ink-faint); font-size: var(--wb-text-xs);
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace; letter-spacing: 0.06em;
+  font-family: var(--font-mono); letter-spacing: 0.02em;
 }
 .thead .col-price, .thead .col-state { text-align: right; }
 .item-row { padding: 10px 0; border-bottom: 1px solid var(--wb-hairline); }
-.item-row:hover { background: rgba(25, 27, 25, 0.022); }
-.item-row.editing { background: rgba(244, 88, 28, 0.05); box-shadow: inset 2px 0 0 var(--wb-accent); }
+.item-row:hover { background: var(--wb-hover); }
+.item-row.editing { background: var(--wb-accent-soft); box-shadow: inset 2px 0 0 var(--wb-accent); }
 .cat-label {
-  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.06em;
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.02em;
+  font-family: var(--font-mono);
 }
 .item-main { min-width: 0; }
 .item-main strong { display: block; font-size: var(--wb-text-base); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -181,6 +182,14 @@ select {
 }
 .item-price-input:focus { border-color: var(--wb-accent); background: var(--wb-input-focused); outline: none; }
 .item-price-actions { display: inline-flex; align-items: center; gap: 12px; }
+/* 计数并列：发丝线分隔替代模板中点串（hallmark gate 63） */
+.session-proposal-compat em + em,
+.design-status-compat em + em,
+.diy-bottombar-counts em + em {
+  border-left: 1px solid var(--wb-hairline);
+  padding-left: 8px;
+  margin-left: 8px;
+}
 .item-price.empty { color: var(--wb-ink-faint); font-weight: 400; }
 .item-state { text-align: right; font-size: var(--wb-text-sm); font-weight: 700; }
 .item-state.confirmed { color: var(--wb-pass); }
@@ -226,7 +235,7 @@ select {
 .hw-sub a { color: var(--wb-ink); text-decoration: underline; text-underline-offset: 2px; }
 .hw-sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin: 4px 0 10px; }
 .hw-sec-head h2 { margin: 0; font-size: var(--wb-text-base); }
-.hw-total { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: var(--wb-text-sm); color: var(--wb-ink-faint); }
+.hw-total { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--wb-text-sm); color: var(--wb-ink-faint); }
 
 /* 来源数字条：像预算数据行一样把数字立起来 */
 .hw-stats {
@@ -235,7 +244,7 @@ select {
 }
 .hw-stat { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .hw-stat-num {
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 700; color: var(--wb-ink);
 }
 .hw-stat-label { font-size: var(--wb-text-sm); font-weight: 700; color: var(--wb-ink); }
@@ -245,24 +254,24 @@ select {
 .hw-table { width: 100%; border-collapse: collapse; font-size: var(--wb-text-sm); }
 .hw-table th {
   text-align: left; padding: 6px 10px 6px 0;
-  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.06em;
+  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.02em;
   border-bottom: 1px solid var(--wb-hairline);
-  font-family: ui-monospace, Consolas, monospace;
+  font-family: var(--font-mono);
   white-space: nowrap;
 }
 .hw-table th.num { text-align: right; }
 .hw-table td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--wb-hairline); vertical-align: baseline; }
 .hw-table .num {
-  text-align: right; font-family: ui-monospace, Consolas, monospace;
+  text-align: right; font-family: var(--font-mono);
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.hw-spec { font-family: ui-monospace, Consolas, monospace; font-size: var(--wb-text-sm); color: var(--wb-ink-muted); }
+.hw-spec { font-family: var(--font-mono); font-size: var(--wb-text-sm); color: var(--wb-ink-muted); }
 
 /* 规格覆盖：细条 + 百分比 */
 .cov { display: flex; align-items: center; gap: 8px; }
 .cov-track { width: 120px; height: 4px; background: var(--wb-hairline); display: inline-block; }
 .cov-fill { display: block; height: 100%; background: var(--wb-ink); }
-.cov-pct { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: var(--wb-text-sm); }
+.cov-pct { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--wb-text-sm); }
 .hw-mix { color: var(--wb-ink-muted); }
 
 .hw-searchbar { display: grid; grid-template-columns: 130px 1fr auto; gap: 14px; align-items: end; margin-bottom: 12px; }
@@ -339,7 +348,7 @@ select {
   color: var(--wb-ink); font-size: var(--wb-text-sm); padding: 3px 0; width: 100%;
 }
 .review-table select:focus, .review-table input:focus { outline: none; border-bottom-color: var(--wb-accent); }
-.review-table .review-price { text-align: right; font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.review-table .review-price { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .row-ignored td { opacity: 0.45; }
 
 /* ---------- 证据台账 ---------- */
@@ -350,8 +359,8 @@ select {
 .ev-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ev-field.ev-wide { grid-column: span 2; }
 .ev-field span {
-  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.06em;
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.02em;
+  font-family: var(--font-mono);
 }
 .ev-field input, .ev-field select {
   border: 0; border-bottom: 1px solid var(--wb-hairline-strong); background: transparent;
@@ -375,7 +384,7 @@ select {
 
 .report-frame { border: 1.5px solid var(--wb-ink); padding: 16px 20px 14px; background: var(--wb-surface); }
 .report-brand {
-  font-family: ui-monospace, Consolas, monospace; font-size: var(--wb-text-xs); font-weight: 700;
+  font-family: var(--font-mono); font-size: var(--wb-text-xs); font-weight: 700;
   letter-spacing: 0.14em; color: var(--wb-ink-faint);
   border-bottom: 1px solid var(--wb-hairline); padding-bottom: 8px;
 }
@@ -393,7 +402,7 @@ select {
   font-size: var(--wb-text-sm); color: var(--wb-ink-muted);
 }
 .report-dateline em {
-  font-style: normal; font-family: ui-monospace, Consolas, monospace;
+  font-style: normal; font-family: var(--font-mono);
   font-variant-numeric: tabular-nums; font-weight: 700; color: var(--wb-ink); font-size: var(--wb-text-base);
 }
 
@@ -405,18 +414,18 @@ select {
 .report-table { width: 100%; border-collapse: collapse; font-size: var(--wb-text-sm); }
 .report-table th {
   text-align: left; padding: 5px 10px 5px 0;
-  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.06em;
-  border-bottom: 1px solid var(--wb-ink); font-family: ui-monospace, Consolas, monospace;
+  color: var(--wb-ink-faint); font-size: var(--wb-text-xs); font-weight: 700; letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--wb-ink); font-family: var(--font-mono);
 }
 .report-table th.num { text-align: right; }
 .report-table td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--wb-hairline); }
-.report-table .num { text-align: right; font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.report-table .num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .report-group { margin: 14px 0 6px; font-size: var(--wb-text-sm); color: var(--wb-ink-muted); font-weight: 700; }
 .report-finding { padding: 8px 0 9px; border-bottom: 1px solid var(--wb-hairline); }
 .report-finding-head { display: flex; align-items: baseline; gap: 10px; }
 .report-finding-head strong { font-size: var(--wb-text-base); flex: 1; }
-.report-rule { font-family: ui-monospace, Consolas, monospace; font-size: var(--wb-text-sm); color: var(--wb-ink-faint); }
+.report-rule { font-family: var(--font-mono); font-size: var(--wb-text-sm); color: var(--wb-ink-faint); }
 .report-status { font-size: var(--wb-text-sm); font-weight: 800; white-space: nowrap; }
 .report-status-block { color: var(--wb-block); }
 .report-status-unknown { color: var(--wb-unknown); }
@@ -438,9 +447,9 @@ select {
   .report-actions,
   .brand-sidebar, .workbench-header, .workbench-aside { display: none !important; }
   .workbench-shell, .workbench-shell.has-aside { grid-template-columns: minmax(0, 1fr) !important; }
-  body { background: #fff; }
+  body { background: var(--wb-surface); }
   .report-page { padding: 0; max-width: none; }
-  .report-frame { background: #fff; }
+  .report-frame { background: var(--wb-surface); }
 }
 /* 表单操作反馈（成功/校验错误）：必须出现在按钮正下方，footer 用户看不见 */
 .form-feedback {
@@ -489,7 +498,7 @@ select {
   margin-top: 30px; padding-top: 10px; border-top: 1px solid var(--wb-hairline);
   color: var(--wb-ink-faint); font-size: var(--wb-text-sm);
 }
-.footer-brand { font-weight: 800; letter-spacing: 0.08em; font-size: var(--wb-text-xs); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+.footer-brand { font-weight: 800; letter-spacing: 0.08em; font-size: var(--wb-text-xs); font-family: var(--font-mono); }
 
 /* 休眠组件 ambient-background 保留（.ambient-canvas 单类） */
 .ambient-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
@@ -552,7 +561,7 @@ select {
 }
 .diff-category {
   flex: none; width: 56px; color: var(--wb-ink-faint);
-  font: var(--wb-text-sm) ui-monospace, Consolas, monospace;
+  font: var(--wb-text-sm) var(--font-mono);
 }
 .proposal-diff s { color: var(--wb-ink-faint); }
 .proposal-diff strong { color: var(--wb-ink); font-weight: 700; }
@@ -593,7 +602,7 @@ select {
   padding: 6px 0; border-bottom: 1px solid var(--wb-hairline);
   color: var(--wb-ink-muted); font-size: var(--wb-text-sm);
 }
-.check-history time { flex: none; font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; color: var(--wb-ink-faint); }
+.check-history time { flex: none; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--wb-ink-faint); }
 
 /* 路由级加载 / 错误 / 404（M33） */
 .route-loading {
@@ -627,8 +636,8 @@ select {
 .home-entry { width: min(720px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; }
 .home-brandmark {
   display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: var(--wb-radius-panel);
-  background: var(--wb-accent); color: #fff; font-size: var(--wb-text-xl); font-weight: 800;
-  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  background: var(--wb-accent); color: var(--wb-ink-inverse); font-size: var(--wb-text-xl); font-weight: 800;
+  font-family: var(--font-ui);
 }
 .home-entry h1 { margin: 20px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
 /* 信任 chips：替代长 tagline，用真实数字与三条承诺自解释（DESIGN.md v3 原则 1） */
@@ -683,7 +692,7 @@ select {
 .home-footer-links a { color: var(--wb-ink-muted); text-underline-offset: 3px; }
 .home-footer-links a:hover { color: var(--wb-accent); }
 .home-recent { margin-top: 36px; width: 100%; border-top: 1px solid var(--wb-hairline); padding-top: 12px; text-align: left; }
-.home-recent h2 { margin: 0 0 4px; font-size: var(--wb-text-xs); font-weight: 700; color: var(--wb-ink-faint); letter-spacing: 0.06em; }
+.home-recent h2 { margin: 0 0 4px; font-size: var(--wb-text-xs); font-weight: 700; color: var(--wb-ink-faint); letter-spacing: 0.02em; }
 .home-recent ul { list-style: none; margin: 0; padding: 0; }
 .home-recent li a {
   display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0;

@@ -216,8 +216,8 @@
   border: 1px solid var(--wb-accent); border-radius: 2px;
   padding: 1px 8px; cursor: pointer;
 }
-.experience-advice-queue-button:hover { background: var(--wb-accent); color: #fff; }
-.experience-advice-queue-button:disabled { opacity: 0.6; cursor: default; }
+.experience-advice-queue-button:hover { background: var(--wb-accent); color: var(--wb-ink-inverse); }
+.experience-advice-queue-button:disabled { opacity: 0.6; cursor: not-allowed; }
 .experience-advice-queued { flex: none; font-size: var(--wb-text-xs); color: var(--wb-ink-faint); }
 .experience-advice-queue-error { font-size: var(--wb-text-xs); color: var(--wb-block); }
 

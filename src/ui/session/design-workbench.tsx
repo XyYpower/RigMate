@@ -373,7 +373,9 @@ export function DesignWorkbenchView() {
               <strong className="design-status-compat">
                 {compatibility ? (
                   <>
-                    <em className="pass">{compatibility.passCount} 通过</em> · <em className="warn">{compatibility.warnCount + compatibility.unknownCount} 待留意</em> · <em className="block">{compatibility.blockCount} 阻断</em>
+                    <em className="pass">{compatibility.passCount} 通过</em>
+                    <em className="warn">{compatibility.warnCount + compatibility.unknownCount} 待留意</em>
+                    <em className="block">{compatibility.blockCount} 阻断</em>
                   </>
                 ) : "—"}
               </strong>

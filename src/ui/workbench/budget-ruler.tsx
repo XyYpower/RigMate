@@ -103,7 +103,7 @@ export function BudgetRuler({ view }: { view: BudgetRulerView }) {
         )}
         {view.lowCents !== null && view.highCents !== null ? (
           <span className="budget-ruler-range">
-            估算 {formatYuanParts(view.lowCents)} – {formatYuanParts(view.highCents)}
+            估算 {formatYuanParts(view.lowCents)} ～ {formatYuanParts(view.highCents)}
           </span>
         ) : (
           <span className="budget-ruler-range">估算待生成</span>

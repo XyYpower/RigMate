@@ -19,7 +19,6 @@ export function DecisionBanner({
       <div className="decision-banner-main">
         <span className="decision-banner-icon" aria-hidden><Lightbulb size={18} /></span>
         <div>
-          <span className="decision-banner-kicker">现在需要你决定</span>
           <h3>{title}</h3>
           <p>{description}</p>
         </div>

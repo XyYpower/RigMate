@@ -98,7 +98,10 @@ export default function Home() {
             {resultMeta && <> · 最近 {resultMeta.time}</>}
           </span>
           <span className="diy-bottombar-counts">
-            <em className="block">{counts.block} 项阻断</em> · <em className="warn">{counts.unknown} 项待补充</em> · <em className="warn">{counts.warn} 项警告</em> · <em className="pass">{counts.pass} 项通过</em>
+            <em className="block">{counts.block} 项阻断</em>
+            <em className="warn">{counts.unknown} 项待补充</em>
+            <em className="warn">{counts.warn} 项警告</em>
+            <em className="pass">{counts.pass} 项通过</em>
           </span>
           <div className="diy-bottombar-actions">
             <a className="button secondary" href={`/builds/${build.id}/report`}>

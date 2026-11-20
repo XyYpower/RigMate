@@ -150,7 +150,7 @@ export function BuildPartsTable({
                     ? `商品页搜索：${item.displayName}（英文原名 ${item.displayNameOriginal}）`
                     : "查看商品页"}
                 >
-                  查看商品页 ↗
+                  查看商品页
                 </a>
               </p>
             </div>
