@@ -6,12 +6,18 @@
 
 FROM node:24-slim AS builder
 WORKDIR /app
+# 网络环境适配（2026-11-20）：deb.debian.org / registry.npmjs.org 在受限网络下挂起或
+# exit 100——apt 先换清华镜像源（无 debian.sources 文件时静默跳过），npm 换 npmmirror。
 # better-sqlite3 无预编译产物时需要本地编译
-RUN apt-get update \
+RUN set -eux; \
+  sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true; \
+  sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list 2>/dev/null || true; \
+  apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm config set registry https://registry.npmmirror.com \
+  && npm ci --fetch-retries=5 --fetch-retry-maxtimeout=60000
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
