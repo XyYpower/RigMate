@@ -72,3 +72,6 @@ next-env.d.ts
 tmp-shots/
 
 tmp-*.log
+
+# hallmark redesign 工件（本地对比记录）
+.hallmark/

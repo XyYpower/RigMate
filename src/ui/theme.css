@@ -6,14 +6,43 @@
  * v2 新增：字号刻度（绑 --ui-font-size 单变量）、表面 hover 层、输入三态、嵌套圆角、浮层阴影。
  */
 :root {
-  /* 字号刻度（DESIGN.md §3）：接口文字一律走刻度，改界面字号只动 --ui-font-size */
-  --ui-font-size: 14px;
-  --wb-text-xl: calc(var(--ui-font-size) + 4px);
-  --wb-text-lg: calc(var(--ui-font-size) + 2px);
-  --wb-text-base: var(--ui-font-size);
-  --wb-text-caption: calc(var(--ui-font-size) - 1px);
-  --wb-text-sm: calc(var(--ui-font-size) - 2px);
-  --wb-text-xs: calc(var(--ui-font-size) - 4px);
+  /* 字号刻度（DESIGN.md v4 §3）：固定 1.2 比率（hallmark app-screen 规则），
+     禁流式标题；标签/按钮/数据永不用展示字号。基准 14px。 */
+  --wb-text-xs: 11px;
+  --wb-text-sm: 12px;
+  --wb-text-caption: 13px;
+  --wb-text-base: 14px;
+  --wb-text-lg: 17px;
+  --wb-text-xl: 20px;
+  --wb-text-2xl: 24px;
+  --wb-text-kpi: 30px;
+
+  /* 间距比例尺（hallmark scaffold）：语义间距对齐 4px 比例尺，消灭 off-scale 值 */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+
+  /* 动效（hallmark）：状态动效专用 token + ease-out；装饰性动效零容忍（§8） */
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* 第二中性色（app-screen 规则）：承载侧栏/工具栏/面板，accent 只标动作与状态 */
+  --wb-chrome: #eef0f2;
+  --wb-chrome-hover: #e7e9ec;
+
+  /* 反白墨色：橙底/深底上的文字 */
+  --wb-ink-inverse: #ffffff;
+  /* 斜纹色：余量尺未计价 hatch */
+  --wb-hatch: rgba(124, 130, 136, 0.28);
+  /* 字体 token */
+  --font-ui: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
 
   /* 三栏工作台基底（表面分层，禁止跨层使用） */
   --wb-canvas: #f4f5f6;
@@ -44,13 +73,6 @@
   /* 输入三态（DESIGN.md §2 输入三态：冷静不发光） */
   --wb-hairline-input-hover: #9aa3af;
   --wb-input-focused: #fffdfa;
-  /* 反白墨色：橙底/深底上的文字（token 纪律：#fff 不许裸用） */
-  --wb-ink-inverse: #ffffff;
-  /* 斜纹色：余量尺未计价 hatch */
-  --wb-hatch: rgba(124, 130, 136, 0.28);
-  /* 字体 token（v3.2 对齐 hallmark Floor 1：字面量字体出 token 块即违例） */
-  --font-ui: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
 
   /* 形状 / 阴影 / 动效（圆角按嵌套深度衰减；浮层独享 overlay 阴影） */
   --wb-radius-panel: 12px;
@@ -58,8 +80,8 @@
   --wb-radius-nested: 6px;
   --wb-shadow-panel: 0 1px 2px rgba(16, 24, 40, 0.05);
   --wb-shadow-overlay: 0 8px 24px rgba(16, 24, 40, 0.12);
-  --wb-fast: 150ms;
-  --wb-slow: 250ms;
+  --wb-fast: var(--dur-micro);
+  --wb-slow: var(--dur-short);
 
   /* ---- 决策台扩展（2026-10-08 UI 重置）：固定十六进制，不用渐变/玻璃 ---- */
   /* 石墨结构色：轨道节点、标尺刻度文字等重结构元素 */

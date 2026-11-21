@@ -1,3 +1,7 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: brand (kept 仪器橙) · redesign: full
+ * paper: oklch(97% 0.003 240) · accent: oklch(65% 0.22 35) · display: --font-ui · body: --font-ui
+ * nav: kept (220px chrome sidebar) · signature: composer / timeline / ledger / ledger+diagnostics
+ * states: loading, empty, error, full · axes: light/grotesk-sans/warm · contrast: pass · v2.0.0 */
 @import "../ui/theme.css";
 @import "../ui/workbench/workbench.css";
 @import "../ui/session/session.css";
@@ -103,7 +107,7 @@ select {
   padding: 20px 0 0;
 }
 .titleline-main { min-width: 0; }
-.titleline h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+.titleline h2 { margin: 0; font-size: var(--wb-text-2xl); font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
 .titleline-sub { margin: 4px 0 0; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); }
 .titleline-actions { display: flex; align-items: center; gap: 10px; flex: none; }
 
@@ -115,7 +119,7 @@ select {
 .stat { display: flex; align-items: baseline; gap: 7px; }
 .stat-label { color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
 .stat-value { font-size: var(--wb-text-lg); font-weight: 700; }
-.stat-value.accent { color: var(--wb-accent); }
+.stat-value.accent { color: var(--wb-ink); font-weight: 800; }
 .stat-value.over { color: var(--wb-block); }
 .stat-value.muted { color: var(--wb-ink-faint); }
 .stat-sub { color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
@@ -245,7 +249,7 @@ select {
 .hw-stat { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .hw-stat-num {
   font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 700; color: var(--wb-ink);
+  font-variant-numeric: tabular-nums; font-size: var(--wb-text-kpi); font-weight: 700; color: var(--wb-ink);
 }
 .hw-stat-label { font-size: var(--wb-text-sm); font-weight: 700; color: var(--wb-ink); }
 .hw-stat-meta { color: var(--wb-ink-faint); font-size: var(--wb-text-sm); }
@@ -388,7 +392,7 @@ select {
   letter-spacing: 0.14em; color: var(--wb-ink-faint);
   border-bottom: 1px solid var(--wb-hairline); padding-bottom: 8px;
 }
-.report-title { font-size: 21px; font-weight: 800; margin: 10px 0 12px; }
+.report-title { font-size: var(--wb-text-2xl); font-weight: 800; margin: 10px 0 12px; }
 .report-metagrid {
   display: grid; grid-template-columns: 90px 1fr 90px 1.4fr; gap: 4px 18px;
   font-size: var(--wb-text-sm);
@@ -609,7 +613,7 @@ select {
   min-height: 62vh; display: grid; place-content: center; justify-items: center;
   gap: 14px; text-align: center; padding: 40px 24px;
 }
-.route-loading h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.route-loading h1 { margin: 0; font-size: var(--wb-text-2xl); letter-spacing: -0.02em; }
 .route-loading p { margin: 0; color: var(--wb-ink-muted); font-size: var(--wb-text-base); line-height: 1.7; }
 .route-loading .route-actions { display: flex; gap: 10px; }
 
@@ -639,7 +643,7 @@ select {
   background: var(--wb-accent); color: var(--wb-ink-inverse); font-size: var(--wb-text-xl); font-weight: 800;
   font-family: var(--font-ui);
 }
-.home-entry h1 { margin: 20px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
+.home-entry h1 { margin: 20px 0 0; font-size: var(--wb-text-2xl); font-weight: 700; letter-spacing: -0.03em; }
 /* 信任 chips：替代长 tagline，用真实数字与三条承诺自解释（DESIGN.md v3 原则 1） */
 .home-trust {
   list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;

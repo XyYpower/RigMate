@@ -210,7 +210,7 @@
 .build-summary-price-label { display: block; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); }
 .build-summary-price strong {
   display: block; margin-top: 2px;
-  font: 800 30px/1.15 ui-monospace, Consolas, monospace;
+  font: 800 var(--wb-text-kpi)/1.15 var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--wb-accent); letter-spacing: -0.02em;
 }
@@ -458,7 +458,7 @@
 .hw-page { max-width: 1080px; padding-top: 28px; }
 .hw-head h1 {
   position: relative; padding-left: 13px;
-  font-size: 22px; letter-spacing: -0.02em;
+  font-size: var(--wb-text-2xl); letter-spacing: -0.02em;
 }
 .hw-head h1::before {
   content: ""; position: absolute; left: 0; top: 50%;

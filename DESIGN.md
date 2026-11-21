@@ -5,6 +5,7 @@
 > 方法借鉴：[VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md)（MIT）；产品决策与红线见 `docs/superpowers/specs/2026-09-28-rigmate-ui-redesign.md`。
 > 2026-09-28 定稿：替代旧"技术规格单"视觉体系（boards/ 已删除）。
 > 2026-10-23 v2 增补：借鉴 ZCode（zai-org/ZCode）DESIGN.md 的**设计系统架构**——字号刻度、表面分层、输入三态、圆角衰减、图标体系、工具摘要行模式。仅借架构不移植代码；亮色基底与仪器橙不变（与 ADR §3.6"否决整体套用 ZCode"不冲突）。
+> 2026-11-21 v4（hallmark full redesign）：**系统重推导 + 主链路四页全深度重构**——按 hallmark redesign 流程（app screen 路径），保留品牌（仪器橙/R 标/红线）与全部内容接线，重推导系统（比率字号刻度/间距比例尺/第二中性色/accent 纪律/密度/签名物），逐屏重组构图。
 > 2026-10-23 v3 增补：**自解释化改造**——验收线是"删掉辅助小字后页面功能仍可理解"（见 §1.5 三原则）；信息架构收敛（我的方案页签化、数据运营分组）；全站统一状态词汇（§6.1）。
 
 ## 1. Overview
@@ -69,26 +70,27 @@ RigMate 是 PC 装机与升级决策的 Agent 工作台。视觉基调：**明�
 ## 3. Typography
 
 - **字体**：中文系统无衬线栈 `"Segoe UI", "Microsoft YaHei", system-ui, sans-serif`；数字/价格/型号用 `ui-monospace` 等宽 + `tabular-nums`。
-- **字号刻度（v2，绑单变量 `--ui-font-size`，默认 14px）**：接口文字一律用刻度，**禁止散装 px**（11.5px、12.5px、13.5px 这类半档一律归档）：
+- **字号刻度（v4，固定 1.2 比率，hallmark app-screen 规则）**：接口文字一律用刻度，禁止散装 px 与流式标题；标签/按钮/数据永不用展示字号。
 
-  | Token | 公式 | 默认值 | 角色 |
-  |---|---|---|---|
-  | `--wb-text-xl` | base + 4px | 18px | 一级阅读标题（方案名、报告大标题） |
-  | `--wb-text-lg` | base + 2px | 16px | 区块标题（配置清单、兼容性诊断），左侧配 3px 橙色竖条 |
-  | `--wb-text-base` | `--ui-font-size` | 14px | 正文、表格、按钮、工作区标题 |
-  | `--wb-text-caption` | base − 1px | 13px | 紧凑辅助文案（比正文稳定低一档的场合） |
-  | `--wb-text-sm` | base − 2px | 12px | 次要说明、表头、时间戳、摘要行 |
-  | `--wb-text-xs` | base − 4px | 10px | 徽章、计数器、快捷键、最弱元数据 |
+  | Token | 值 | 角色 |
+  |---|---|---|
+  | `--wb-text-kpi` | 30px | KPI 数字（唯一允许的大数字档） |
+  | `--wb-text-2xl` | 24px | 页面大标题（首页 h1、报告标题） |
+  | `--wb-text-xl` | 20px | 一级阅读标题（方案名） |
+  | `--wb-text-lg` | 17px | 区块标题（配置清单、兼容性诊断） |
+  | `--wb-text-base` | 14px | 正文、表格、按钮、工作区标题 |
+  | `--wb-text-caption` | 13px | 紧凑辅助文案 |
+  | `--wb-text-sm` | 12px | 次要说明、表头、时间戳、摘要行 |
+  | `--wb-text-xs` | 11px | 徽章、计数器、最弱元数据 |
 
-  - 层级靠**字重**分级（700/600/500/400），不靠改字号；改界面字号只许动 `--ui-font-size` 一个变量。
-  - **白名单例外（内容级标题与 KPI 数字，不随刻度缩放）**：页面标题 22px/700（`.titleline h2`、`.route-loading h1`、`.hw-head h1`）、首页大标题 26px/700（`.home-entry h1`）、报告标题 21px（`.report-title`）、KPI 数字（`.hw-stat-num` 26px、`.build-summary-price strong` 30px）。除白名单外不得出现刻度外的接口字号。
-  - 旧散值归档规则：11 / 11.5px → 按角色入 sm 或 xs；12.5px → sm；13.5px → base；15px → lg。
+  - 层级靠**字重**分级（700/600/500/400）；刻度外的字号一律违例（不再设白名单）。
 - 中文正文行高 1.6；表格单元格内不换行截断时用 ellipsis + title。
 
 ## 4. Layout
 
 ### 三栏工作台（≥1200px）
-- **左导航 220px**：白底右侧发丝线；Logo + 副标题置顶；导航项 40px 高。
+- **左导航 220px**：`--wb-chrome` 底（第二中性承载侧栏，v4）右侧发丝线；Logo + 副标题置顶；导航项 40px 高、44px 命中目标。
+- **签名物（v4，每屏一个被记住的对象）**：首页=composer；方案会话=事件时间线+方案卡；我的方案=台账表；高级 DIY=清单+兼容诊断。构图围绕签名物组织，其余让位。
 - **主区自适应**：页面内容面板化，面板间距 16px；面板内边距 20-24px。
 - **右上下文栏 340px**：顶部为语义标题「核验台」；内容按 四阶段轨道 + VerificationDesk（核验台）→ 处理记录（折叠）→ 需求摘要 排列；DIY 页下半为诊断，方案页下半为需求摘要 + 待确认。DOM 顺序主内容先于上下文栏，读屏与窄屏单列时主任务优先。
 
