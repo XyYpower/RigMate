@@ -13,13 +13,8 @@ import { toolMetaOf, toolSummaryOf } from "./tool-renderers";
  */
 
 const PHASE_LABELS: Record<string, string> = {
-  received: "接收目标",
-  screened: "安全筛查",
   understanding: "理解目标",
-  retrieved: "检索目录",
-  composed: "搭配方案",
   validated: "核验清单",
-  answered: "方案就绪",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -61,7 +56,7 @@ function toDisplayItems(items: TimelineItem[]): DisplayItem[] {
   };
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index]!;
-    if (item.kind === "phase" && (item.phase === "received" || item.phase === "screened")) continue;
+    if (item.kind === "phase" && (item.phase === "received" || item.phase === "screened" || item.phase === "retrieved" || item.phase === "composed" || item.phase === "answered")) continue;
     if (item.kind === "tool") {
       // 与最近相位同文案的汇总块不重复展示（同一次 mapper 输出里 phase 和 tool 相邻或隔一个同名块）
       if (lastPhaseMessage !== null && lastPhaseMessage === item.detail) continue;

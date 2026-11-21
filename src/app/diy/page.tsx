@@ -19,7 +19,7 @@ import { DiagnosticsAside } from "./diagnostics-aside";
  */
 export default function Home() {
   const diy = useDiyProjects();
-  const { build, findings, resultMeta, busy, itemCategory, setItemCategory, counts } = diy;
+  const { build, findings, busy, itemCategory, setItemCategory } = diy;
   const summary = build?.budgetSummary;
 
   return (
