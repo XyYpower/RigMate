@@ -162,7 +162,7 @@ select {
 /* ---------- 规格表 ---------- */
 .table { width: 100%; }
 .thead, .item-row {
-  display: grid; grid-template-columns: 42px minmax(0, 1fr) 96px 64px auto;
+  display: grid; grid-template-columns: 42px minmax(0, 1fr) 96px auto;
   gap: 12px; align-items: center;
 }
 .thead {
@@ -191,16 +191,12 @@ select {
 .item-price-actions { display: inline-flex; align-items: center; gap: 12px; }
 /* 计数并列：发丝线分隔替代模板中点串（hallmark gate 63） */
 .session-proposal-compat em + em,
-.design-status-compat em + em,
-.diy-bottombar-counts em + em {
+.design-status-compat em + em {
   border-left: 1px solid var(--wb-hairline);
   padding-left: 8px;
   margin-left: 8px;
 }
 .item-price.empty { color: var(--wb-ink-faint); font-weight: 400; }
-.item-state { text-align: right; font-size: var(--wb-text-sm); font-weight: 700; }
-.item-state.confirmed { color: var(--wb-pass); }
-.item-state.pending { color: var(--wb-warn); }
 .item-actions { display: flex; gap: 4px; justify-content: flex-end; }
 .item-action {
   padding: 2px 7px; color: var(--wb-ink-muted); font-size: var(--wb-text-sm); font-weight: 700;
@@ -545,7 +541,7 @@ select {
   .projbar { grid-template-columns: minmax(0, 1fr); }
   .thead { display: none; }
   .item-row { grid-template-columns: 38px minmax(0, 1fr) auto; }
-  .item-price, .item-state { display: none; }
+  .item-price { display: none; }
   .addgrid { grid-template-columns: minmax(0, 1fr); }
   .finding { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }

@@ -45,6 +45,11 @@ export default function Home() {
           )}
         </div>
         <div className="titleline-actions">
+          {build && (
+            <a className="button secondary" href={`/builds/${build.id}/report`}>
+              查看报告 <ArrowUpRight size={13} aria-hidden />
+            </a>
+          )}
           <button
             className="button primary check-button"
             onClick={diy.runCheck}
@@ -91,31 +96,6 @@ export default function Home() {
         <DiagnosticsAside diy={diy} />
       </div>
 
-      {/* 底部状态条（参考图）：检查历史摘要 + 计数 + 查看报告 */}
-      {build && (
-        <section className="diy-bottombar" aria-label="检查状态">
-          <span className="diy-bottombar-history">
-            检查历史 {diy.checkHistory.length > 0 ? `${diy.checkHistory.length} 次` : "· 暂无"}
-            {resultMeta && <> · 最近 {resultMeta.time}</>}
-          </span>
-          <span className="diy-bottombar-counts">
-            <em className="block">{counts.block} 项阻断</em>
-            <em className="warn">{counts.unknown} 项待补充</em>
-            <em className="warn">{counts.warn} 项警告</em>
-            <em className="pass">{counts.pass} 项通过</em>
-          </span>
-          <div className="diy-bottombar-actions">
-            <a className="button secondary" href={`/builds/${build.id}/report`}>
-              查看报告 <ArrowUpRight size={13} aria-hidden />
-            </a>
-          </div>
-        </section>
-      )}
-
-      <footer className="footer">
-        <span className="footer-brand">RIGMATE</span>
-        {/* 操作反馈移至表单按钮旁（form-feedback）：footer 在页面底端，用户看不见 */}
-      </footer>
     </main>
   );
 }

@@ -1,5 +1,5 @@
 import { ClipboardCopy, Pencil } from "lucide-react";
-import { CATEGORY_META, hasAnySpec } from "@/ui/category-form";
+import { CATEGORY_META } from "@/ui/category-form";
 import { formatYuan, type Build } from "./types";
 import type { DiyWorkspace } from "./use-diy-projects";
 
@@ -32,22 +32,17 @@ export function PartsListSection({ build, diy }: { build: Build | null; diy: Diy
         <div className="table">
           <div className="thead" aria-hidden>
             <span>类型</span>
-            <span>型号 / 关键规格</span>
+            <span>型号</span>
             <span className="col-price">价格</span>
-            <span className="col-state">状态</span>
             <span />
           </div>
           {build.items.map((item) => (
             <div className={`item-row ${editingItemId === item.id ? "editing" : ""}`} key={item.id}>
               <span className="cat-label">{CATEGORY_META[item.category].badge}</span>
               <div className="item-main">
-                <strong title={item.displayNameOriginal ?? item.label}>
+                <strong title={`${item.displayNameOriginal ?? item.label}｜${CATEGORY_META[item.category].summary(item.spec ?? {})}${item.source?.startsWith("catalog:") ? "｜目录型号" : ""}`}>
                   {item.displayName ?? item.label}
                 </strong>
-                <span>
-                  {CATEGORY_META[item.category].label} · {CATEGORY_META[item.category].summary(item.spec ?? {})}
-                  {item.source?.startsWith("catalog:") ? " · 目录型号" : ""}
-                </span>
               </div>
               {quickPriceMode ? (
                 <input
@@ -64,9 +59,6 @@ export function PartsListSection({ build, diy }: { build: Build | null; diy: Diy
                   {typeof item.priceCents === "number" ? formatYuan(item.priceCents) : "—"}
                 </span>
               )}
-              <span className={hasAnySpec(item.spec ?? {}) ? "item-state confirmed" : "item-state pending"}>
-                {hasAnySpec(item.spec ?? {}) ? "已录入" : "待补充"}
-              </span>
               <div className="item-actions">
                 {quickPriceMode ? null : (
                   <>
