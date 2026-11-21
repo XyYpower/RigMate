@@ -40,8 +40,9 @@ export function PartsListSection({ build, diy }: { build: Build | null; diy: Diy
             <div className={`item-row ${editingItemId === item.id ? "editing" : ""}`} key={item.id}>
               <span className="cat-label">{CATEGORY_META[item.category].badge}</span>
               <div className="item-main">
-                <strong title={`${item.displayNameOriginal ?? item.label}｜${CATEGORY_META[item.category].summary(item.spec ?? {})}${item.source?.startsWith("catalog:") ? "｜目录型号" : ""}`}>
+                <strong title={`${item.displayNameOriginal ?? item.label}｜${CATEGORY_META[item.category].summary(item.spec ?? {})}`}>
                   {item.displayName ?? item.label}
+                  {item.source?.startsWith("catalog:") && <em className="item-src-tag">目录型号</em>}
                 </strong>
               </div>
               {quickPriceMode ? (

@@ -424,10 +424,8 @@ export function ProjectsPageInner() {
                   <thead>
                     <tr>
                       <th>项目</th>
-                      <th>用途</th>
                       <th className="num">配件</th>
                       <th className="num">预算</th>
-                      <th className="num">已计价</th>
                       <th>更新</th>
                       <th />
                     </tr>
@@ -435,13 +433,10 @@ export function ProjectsPageInner() {
                   <tbody>
                     {group.builds.map((build) => (
                       <tr key={build.id}>
-                        <td>{build.name}</td>
-                        <td>{build.useCase ?? "—"}</td>
+                        <td title={build.useCase ?? undefined}>{build.name}</td>
                         <td className="num">{build.items.length}</td>
                         <td className="num">{build.budgetCents !== null ? formatYuan(build.budgetCents) : "—"}</td>
-                        <td className="num">
-                          {build.budgetSummary ? formatYuan(build.budgetSummary.pricedTotalCents) : "—"}
-                        </td>
+                        <td>{formatTime(build.updatedAt)}</td>
                         <td>{formatTime(build.updatedAt)}</td>
                         <td>
                           <Link className="pj-open" href={`/diy?project=${build.id}`}>
