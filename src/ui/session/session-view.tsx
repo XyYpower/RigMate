@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 import { useDesignSession } from "./use-design-session";
 import { SessionTimeline } from "./session-timeline";
+import { ProposalCard } from "./proposal-card";
 
 /**
  * 会话视图（agent-ui-design §5.3，P2/P3）：/design/[id] 的默认形态。
@@ -83,17 +84,34 @@ export function DesignSessionView({ requestId }: { requestId: string }) {
         </div>
       </header>
 
-      <div className="session-stream wb-panel">
-        <SessionTimeline
-          items={state.timeline}
-          proposals={state.proposals}
-          changes={state.changes}
-          runStatus={state.runStatus}
-          latestProposalId={latestProposal?.id ?? null}
-          accepting={accepting}
-          onAccept={(proposal) => void acceptProposal(proposal.id)}
-          workbenchHref={workbenchHref}
-        />
+      <div className="session-columns">
+        <div className="session-stream wb-panel">
+          <SessionTimeline
+            items={state.timeline}
+            proposals={state.proposals}
+            changes={state.changes}
+            runStatus={state.runStatus}
+            latestProposalId={latestProposal?.id ?? null}
+            accepting={accepting}
+            onAccept={(proposal) => void acceptProposal(proposal.id)}
+            workbenchHref={workbenchHref}
+          />
+        </div>
+        {state.proposals.length > 0 && (
+          <aside className="session-rail" aria-label="最新方案">
+            {state.proposals.slice(-1).map((proposal) => (
+              <ProposalCard
+                key={proposal.id}
+                proposal={proposal}
+                isLatest={proposal.id === latestProposal?.id}
+                accepting={accepting}
+                conflictBlocked={proposal.compatibility.status === "conflict"}
+                onAccept={() => void acceptProposal(proposal.id)}
+                workbenchHref={workbenchHref}
+              />
+            ))}
+          </aside>
+        )}
       </div>
 
       {needsInput && (

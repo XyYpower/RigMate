@@ -4,12 +4,24 @@
    ========================================================================== */
 
 .session-page {
-  width: min(880px, calc(100% - 40px));
+  width: min(1240px, calc(100% - 40px));
   margin: 0 auto;
   padding: 18px 0 60px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-sm);
+}
+/* hallmark redesign v4：时间线签名化——≥1200 双栏（时间线主区 + 方案卡右栏） */
+.session-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  align-items: start;
+}
+@media (min-width: 1200px) {
+  .session-page:has(.session-rail) { width: min(1240px, calc(100% - 40px)); }
+  .session-columns:has(.session-rail) { grid-template-columns: minmax(0, 1fr) 360px; }
+  .session-rail { position: sticky; top: 76px; }
 }
 .session-page h1 { margin: 0; font-size: var(--wb-text-xl); letter-spacing: -0.02em; }
 .session-loading { color: var(--wb-ink-muted); padding: 40px 0; text-align: center; }
