@@ -309,6 +309,29 @@ select {
 .pj-tab:hover { color: var(--wb-ink); }
 .pj-tab.active { color: var(--wb-accent); border-bottom-color: var(--wb-accent); }
 .pj-review { margin-top: 16px; }
+/* 台账化（hallmark v4）：URL 态筛选 + 加载骨架 */
+.pj-filter { margin-left: auto; }
+.pj-filter-input {
+  width: 200px; padding: 7px 12px;
+  border: 1px solid var(--wb-hairline-strong); border-radius: var(--wb-radius-nested);
+  background: var(--wb-surface); font-size: var(--wb-text-sm);
+  transition: border-color var(--dur-micro), background var(--dur-micro);
+}
+.pj-filter-input:hover { border-color: var(--wb-hairline-input-hover); }
+.pj-filter-input:focus { outline: none; border-color: var(--wb-accent); background: var(--wb-input-focused); }
+.pj-skeleton { display: grid; gap: 8px; padding: 12px 0; }
+.pj-skeleton span {
+  height: 34px; border-radius: var(--wb-radius-nested);
+  background: linear-gradient(90deg, var(--wb-surface-subtle) 25%, var(--wb-hover) 50%, var(--wb-surface-subtle) 75%);
+  background-size: 200% 100%;
+  animation: pj-shimmer 1.4s linear infinite;
+}
+.pj-skeleton span:nth-child(2) { width: 88%; }
+.pj-skeleton span:nth-child(3) { width: 76%; }
+@keyframes pj-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .pj-skeleton span { animation: none; }
+}
 .pj-review-toggle { display: inline-flex; align-items: center; gap: 6px; }
 .pj-review-panel { padding: 14px 16px; }
 .pj-review-panel > summary {

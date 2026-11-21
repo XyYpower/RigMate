@@ -83,6 +83,8 @@ export function ProjectsPageInner() {
   const [reviewOpen, setReviewOpen] = useState(reviewFromQuery);
   const [builds, setBuilds] = useState<Build[] | null>(null);
   const [loadError, setLoadError] = useState(false);
+  // 台账筛选（hallmark v4：状态住 URL）：?q= 关键字过滤正式方案
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
 
   // 整机复核流程状态
   const [pasteText, setPasteText] = useState("");
@@ -376,19 +378,46 @@ export function ProjectsPageInner() {
         <section className="sec">
           <div className="hw-sec-head">
             <h2>正式方案</h2>
+            <span className="pj-filter">
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="筛项目名 / 用途"
+                aria-label="筛选正式方案"
+                className="pj-filter-input"
+              />
+            </span>
             <Link href="/diy" className="pj-new">
               ＋ 进入高级 DIY
             </Link>
           </div>
         {loadError && <LoadError label="项目列表没有加载出来" onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />}
+        {builds === null && !loadError && (
+          <div className="pj-skeleton" aria-hidden>
+            <span /><span /><span />
+          </div>
+        )}
         {builds && builds.length === 0 && (
           <p className="helper">
             还没有正式方案，去<Link href="/diy"> 高级 DIY </Link>搭一套，或接受 AI 会话里的草稿
           </p>
         )}
+        {builds && builds.length > 0 && query.trim() !== "" && groupBuilds(
+          builds.filter((build) =>
+            `${build.name}${build.useCase ?? ""}`.toLowerCase().includes(query.trim().toLowerCase()),
+          ),
+        ).length === 0 && (
+          <p className="helper">没有匹配「{query.trim()}」的方案。</p>
+        )}
         {builds && builds.length > 0 && (
           <>
-            {groupBuilds(builds).map((group) => (
+            {groupBuilds(
+              query.trim()
+                ? builds.filter((build) =>
+                    `${build.name}${build.useCase ?? ""}`.toLowerCase().includes(query.trim().toLowerCase()),
+                  )
+                : builds,
+            ).map((group) => (
               <div key={group.key} className="pj-group">
                 <h3 className="pj-group-label">{group.label} · {group.builds.length}</h3>
                 <table className="hw-table">
