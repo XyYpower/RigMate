@@ -84,79 +84,90 @@ export default function Home() {
 
   return (
     <main className="home-page">
-      <div className="home-entry">
-        <span className="home-brandmark" aria-hidden>R</span>
-        <h1>你想配一台什么样的电脑？</h1>
-        <ul className="home-trust" aria-label="为什么这里的方案可信">
-          <li><i aria-hidden />{catalogCount !== null ? `${catalogCount.toLocaleString("zh-CN")} 条已核硬件目录` : "已核硬件目录"}</li>
-          <li><i aria-hidden />兼容规则逐条核验</li>
-          <li><i aria-hidden />价格有据可查</li>
-        </ul>
+      <div className="home-layout">
+        {/* 左主区：composer 是签名物 */}
+        <div className="home-entry">
+          <span className="home-brandmark" aria-hidden>R</span>
+          <h1>你想配一台什么样的电脑？</h1>
+          <ul className="home-trust" aria-label="为什么这里的方案可信">
+            <li><i aria-hidden />{catalogCount !== null ? `${catalogCount.toLocaleString("zh-CN")} 条已核硬件目录` : "已核硬件目录"}</li>
+            <li><i aria-hidden />兼容规则逐条核验</li>
+            <li><i aria-hidden />价格有据可查</li>
+          </ul>
 
-        <form className="home-composer" onSubmit={(event) => void startDesign(event)}>
-          <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
-          <textarea
-            id="design-goal"
-            name="goal"
-            value={goal}
-            onChange={(event) => setGoal(event.target.value)}
-            onInput={(event) => setGoal(event.currentTarget.value)}
-            rows={3}
-            maxLength={4000}
-            placeholder="比如：主要玩 3A 游戏，偶尔剪视频，想要白色的……"
-            disabled={busy}
-            autoFocus
-          />
-          <div className="home-composer-toolbar">
-            <span className="home-composer-hint">回车开始 · 缺什么我会问</span>
-            <button className="button primary home-submit" type="submit" disabled={busy || goal.trim().length < 3}>
-              {busy ? "正在开始…" : "开始搭配"}<ArrowRight size={14} aria-hidden />
-            </button>
-          </div>
-          {message && <p className="form-feedback" role="status">{message}</p>}
-        </form>
-
-        {!busy && (
-          <div className="home-suggestions" aria-label="示例目标">
-            {GOAL_SUGGESTIONS.map((suggestion) => (
-              <button
-                key={suggestion.tag}
-                type="button"
-                className="home-suggestion"
-                onClick={() => setGoal(suggestion.full)}
-                disabled={busy}
-              >
-                <ChevronRight size={12} aria-hidden />
-                {suggestion.tag}
+          <form className="home-composer" onSubmit={(event) => void startDesign(event)}>
+            <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
+            <textarea
+              id="design-goal"
+              name="goal"
+              value={goal}
+              onChange={(event) => setGoal(event.target.value)}
+              onInput={(event) => setGoal(event.currentTarget.value)}
+              rows={4}
+              maxLength={4000}
+              placeholder="比如：主要玩 3A 游戏，偶尔剪视频，想要白色的……"
+              disabled={busy}
+              autoFocus
+            />
+            <div className="home-composer-toolbar">
+              <span className="home-composer-hint">回车开始 · 缺什么我会问</span>
+              <button className="button primary home-submit" type="submit" disabled={busy || goal.trim().length < 3}>
+                {busy ? "正在开始…" : "开始搭配"}<ArrowRight size={14} aria-hidden />
               </button>
-            ))}
-          </div>
-        )}
+            </div>
+            {message && <p className="form-feedback" role="status">{message}</p>}
+          </form>
 
-        <p className="home-footer-links">
-          已有配置单？<Link href="/projects?mode=review">粘贴逐行查坑</Link>
-          <span aria-hidden> · </span>
-          很懂硬件？<Link href="/diy">直接进高级 DIY</Link>
-        </p>
-
-        {builds.length > 0 && (
-          <section className="home-recent" aria-labelledby="recent-title">
-            <h2 id="recent-title">最近的方案</h2>
-            <ul>
-              {builds.map((build) => (
-                <li key={build.id}>
-                  <Link href={`/diy?project=${build.id}`}>
-                    <span>{build.name}</span>
-                    <span className="home-recent-meta">{build.items.length} 件 · {formatTime(build.updatedAt)}</span>
-                  </Link>
-                </li>
+          {!busy && (
+            <div className="home-suggestions" aria-label="示例目标">
+              {GOAL_SUGGESTIONS.map((suggestion) => (
+                <button
+                  key={suggestion.tag}
+                  type="button"
+                  className="home-suggestion"
+                  onClick={() => setGoal(suggestion.full)}
+                  disabled={busy}
+                >
+                  <ChevronRight size={12} aria-hidden />
+                  {suggestion.tag}
+                </button>
               ))}
-              <li className="home-recent-more">
-                <Link href="/projects?tab=sessions">全部 AI 会话 <ChevronRight size={12} aria-hidden /></Link>
-              </li>
-            </ul>
-          </section>
-        )}
+            </div>
+          )}
+
+          <p className="home-footer-links">
+            已有配置单？<Link href="/projects?mode=review">粘贴逐行查坑</Link>
+            <span aria-hidden> · </span>
+            很懂硬件？<Link href="/diy">直接进高级 DIY</Link>
+          </p>
+        </div>
+
+        {/* 右栏：最近方案真实列表（≥1200 双区，<1200 折到下方） */}
+        <aside className="home-side" aria-label="最近方案">
+          {builds.length > 0 ? (
+            <section className="home-recent wb-panel" aria-labelledby="recent-title">
+              <h2 id="recent-title">最近的方案</h2>
+              <ul>
+                {builds.map((build) => (
+                  <li key={build.id}>
+                    <Link href={`/diy?project=${build.id}`}>
+                      <span>{build.name}</span>
+                      <span className="home-recent-meta">{build.items.length} 件 · {formatTime(build.updatedAt)}</span>
+                    </Link>
+                  </li>
+                ))}
+                <li className="home-recent-more">
+                  <Link href="/projects?tab=sessions">全部 AI 会话 <ChevronRight size={12} aria-hidden /></Link>
+                </li>
+              </ul>
+            </section>
+          ) : (
+            <section className="home-recent wb-panel" aria-labelledby="recent-title">
+              <h2 id="recent-title">最近的方案</h2>
+              <p className="home-recent-empty">还没有方案，第一套会出现在这里。</p>
+            </section>
+          )}
+        </aside>
       </div>
     </main>
   );
