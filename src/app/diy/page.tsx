@@ -31,12 +31,13 @@ export default function Home() {
       />
       <ProjectBar diy={diy} />
 
-      <section className="titleline">
+      {/* 紧凑状态带（hallmark v4）：签名物清单的状态一目一行 */}
+      <section className="titleline diy-statusline">
         <div className="titleline-main">
           <h2>{build ? build.name : "高级 DIY"}</h2>
           <p className="titleline-sub">
             {build
-              ? `用途 ${build.useCase ?? "未设置"} · 更新于 ${formatTime(build.updatedAt)}`
+              ? `${build.useCase ?? "未设置"} · 更新于 ${formatTime(build.updatedAt)}`
               : "还没有项目，在上方新建即可开始"}
           </p>
           {build && findings.length > 0 && (
