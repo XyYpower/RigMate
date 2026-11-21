@@ -256,5 +256,5 @@ test("从目录选择型号自动带出规格并标记来源", async ({ page }) 
 
   await page.getByRole("button", { name: "加入清单" }).click();
   await expect(page.getByText("1 / 8 类")).toBeVisible();
-  await expect(page.getByText("· 目录型号")).toBeVisible();
+  await expect(page.getByText("目录型号")).toBeVisible();
 });
