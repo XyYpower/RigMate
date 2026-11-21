@@ -5,7 +5,6 @@ import { ChevronDown } from "lucide-react";
 import type { DesignProposal, ProposalChange } from "@/contracts/design";
 import type { SessionRunStatus, TimelineItem } from "./session-state";
 import { toolMetaOf, toolSummaryOf } from "./tool-renderers";
-import { ProposalCard } from "./proposal-card";
 
 /**
  * 会话时间线（agent-ui-design §5.3，P2）：TimelineItem[] → 消息流。
@@ -260,29 +259,23 @@ function renderItem(
         </div>
       );
     case "proposal": {
+      // hallmark v4 双栏构图：方案卡只在右栏挂载一份（gate 69：一个事实说一次），
+      // 时间线只留轻量指针行；<1200 时右栏堆叠到时间线下方，卡片仍可达。
       const proposal = context.proposals.find((entry) => entry.id === item.proposalId);
-      if (!proposal) {
-        return <p className="session-phase-text"><span className="session-phase-label">方案就绪</span>{item.title}（v{item.version}）</p>;
-      }
-      const isLatest = item.proposalId === context.latestProposalId;
-      const changedCategories = isLatest && proposal.version > 1 ? context.changes : [];
+      const isLatest = proposal && item.proposalId === context.latestProposalId;
+      const changedCategories = proposal && isLatest && proposal.version > 1 ? context.changes : [];
       return (
-        <div className="session-proposal-wrap">
+        <p className="session-phase-text session-proposal-pointer">
+          <span className="session-phase-label">方案就绪</span>
+          {proposal ? `《${proposal.title}》v${item.version}` : `${item.title}（v${item.version}）`}
           {changedCategories.length > 0 && (
-            <p className="session-proposal-diff-hint">
+            <span className="session-proposal-diff-hint">
               较上一版调整了{" "}
               {changedCategories.map((change) => CATEGORY_LABELS[change.category] ?? change.category).join("、")}
-            </p>
+            </span>
           )}
-          <ProposalCard
-            proposal={proposal}
-            isLatest={isLatest}
-            accepting={context.accepting}
-            conflictBlocked={proposal.compatibility.status === "conflict"}
-            onAccept={() => context.onAccept(proposal)}
-            workbenchHref={context.workbenchHref}
-          />
-        </div>
+          —— 方案卡{isLatest ? "在右侧" : "在下方"}
+        </p>
       );
     }
     default:
