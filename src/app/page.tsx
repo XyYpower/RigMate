@@ -33,7 +33,6 @@ export default function Home() {
   const router = useRouter();
   const [goal, setGoal] = useState("");
   const [builds, setBuilds] = useState<BuildSummary[]>([]);
-  const [catalogCount, setCatalogCount] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -43,12 +42,6 @@ export default function Home() {
       if (!response.ok) return;
       const data = await response.json();
       if (!cancelled) setBuilds((data.builds ?? []).slice(0, 4));
-    }).catch(() => undefined);
-    // 信任 chip 的真实数字：拿不到就隐藏数字位，不用编造值
-    void fetch("/api/catalog/overview").then(async (response) => {
-      if (!response.ok) return;
-      const data = await response.json();
-      if (!cancelled && data.overview) setCatalogCount(data.overview.totalEntries ?? null);
     }).catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
@@ -89,12 +82,6 @@ export default function Home() {
         <div className="home-entry">
           <span className="home-brandmark" aria-hidden>R</span>
           <h1>你想配一台什么样的电脑？</h1>
-          <ul className="home-trust" aria-label="为什么这里的方案可信">
-            <li><i aria-hidden />{catalogCount !== null ? `${catalogCount.toLocaleString("zh-CN")} 条已核硬件目录` : "已核硬件目录"}</li>
-            <li><i aria-hidden />兼容规则逐条核验</li>
-            <li><i aria-hidden />价格有据可查</li>
-          </ul>
-
           <form className="home-composer" onSubmit={(event) => void startDesign(event)}>
             <label className="sr-only" htmlFor="design-goal">描述你的装机目标</label>
             <textarea

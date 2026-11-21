@@ -679,16 +679,6 @@ select {
   font-family: var(--font-ui);
 }
 .home-entry h1 { margin: var(--space-md) 0 0; font-size: var(--wb-text-2xl); font-weight: 700; letter-spacing: -0.03em; }
-/* 信任事实行：点标 + 文案，安静 */
-.home-trust {
-  list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-2xs) var(--space-sm);
-  margin: var(--space-xs) 0 0; padding: 0;
-}
-.home-trust li {
-  display: inline-flex; align-items: center; gap: 6px;
-  color: var(--wb-ink-muted); font-size: var(--wb-text-sm);
-}
-.home-trust li i { width: 4px; height: 4px; border-radius: 50%; background: var(--wb-pass); }
 
 /* composer 签名物：全站唯一 16px 圆角容器，三态输入 */
 .home-composer {
